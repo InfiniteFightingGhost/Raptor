@@ -18,6 +18,7 @@ Opcode is always 6 bits long
 | ABx | 8 bits | 18 bits | 0 bits |
 | sBx | 26 bits(signed) | 0 bits | 0 bits |
 
+
 | OpCode | Destitation Register | RC 1 | RC 2(if it's needed) | Notation |
 | --------------- | --------------- | --------------- | --------------- | --------------- |
 | LOADC | A | Bx | | R(A) := C(Bx) |
