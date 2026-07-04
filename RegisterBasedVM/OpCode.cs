@@ -19,4 +19,6 @@ public enum OpCode
     PRINT,
     PRINTA,
     RAND,
+    SQRT,
+    FISR,
 }

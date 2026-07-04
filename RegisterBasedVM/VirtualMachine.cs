@@ -9,121 +9,28 @@ public class VirtualMachine
     int _pc = 0;
     private float[] _registers = new float[256];
     private static readonly Random random = new Random();
+    private int[] _breakpoints = null!;
 
-    public void LoadProgram(uint[] instructions, float[] constants)
+    public void LoadProgram(uint[] instructions, float[] constants, int[] breakpoints)
     {
         _instructions = instructions;
         _constants = constants;
         _pc = 0;
         Array.Clear(_registers);
+        _breakpoints = breakpoints;
     }
 
-    public void Run()
+    private void DumpRegisters(int count = 32)
     {
-        bool isRunning = true;
-
-        while (isRunning)
+        for (int i = 0; i < count; i++)
         {
-            uint instruction = _instructions[_pc];
-            byte opcode = (byte)(instruction & 0x3F);
-            byte a = (byte)((instruction >> 6) & 0xFF);
-            switch (opcode)
-            {
-                case (byte)OpCode.LOADC:
-                    uint constantIndex = (byte)(instruction >> 14 & 0x0000FFFFFF);
-                    _registers[a] = _constants[constantIndex];
-                    break;
-                case (byte)OpCode.MOVE:
-                    byte b1 = (byte)((instruction >> 14) & 0xFF);
-                    _registers[a] = _registers[b1];
-                    break;
-                case (byte)OpCode.SWP:
-                    byte bSwap = (byte)((instruction >> 14) & 0xFF);
-                    (_registers[a], _registers[bSwap]) = (_registers[bSwap], _registers[a]);
-                    break;
-                case (byte)OpCode.UNM:
-                    byte b2 = (byte)((instruction >> 14) & 0xFF);
-                    _registers[a] = -_registers[b2];
-                    break;
-                case (byte)OpCode.JUMP:
-                    const int sBxBias = 33554431;
-                    uint unsignedBx = (uint)(instruction >> 6);
-                    int sBx = (int)(unsignedBx - sBxBias);
-                    _pc += sBx - 1;
-                    break;
-                case (byte)OpCode.ADD:
-                    uint b3 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c3 = (uint)(instruction >> 23) & 0x1FF;
-                    _registers[a] = _registers[b3] + _registers[c3];
-                    break;
-                case (byte)OpCode.SUB:
-                    uint b4 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c4 = (uint)(instruction >> 23) & 0x1FF;
-                    _registers[a] = _registers[b4] - _registers[c4];
-                    break;
-                case (byte)OpCode.MUL:
-                    uint b5 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c5 = (uint)(instruction >> 23) & 0x1FF;
-                    _registers[a] = _registers[b5] * _registers[c5];
-                    break;
-                case (byte)OpCode.DIV:
-                    uint b6 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c6 = (uint)(instruction >> 23) & 0x1FF;
-                    _registers[a] = _registers[b6] / _registers[c6];
-                    break;
-                case (byte)OpCode.POW:
-                    uint b7 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c7 = (uint)(instruction >> 23) & 0x1FF;
-                    _registers[a] = (float)Math.Pow(_registers[b7], _registers[c7]);
-                    break;
-                case (byte)OpCode.EQ:
-                    uint b8 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c8 = (uint)(instruction >> 23) & 0x1FF;
-                    bool comparison = _registers[b8] == _registers[c8];
-                    bool expected = (a != 0);
-                    if (comparison == expected)
-                    {
-                        _pc++;
-                    }
-                    break;
-                case (byte)OpCode.LT:
-                    uint b9 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c9 = (uint)(instruction >> 23) & 0x1FF;
-                    bool comparison2 = _registers[b9] < _registers[c9];
-                    bool expected2 = (a != 0);
-                    if (comparison2 != expected2)
-                    {
-                        _pc++;
-                    }
-                    break;
-                case (byte)OpCode.LE:
-                    uint b10 = (uint)(instruction >> 14) & 0x1FF;
-                    uint c10 = (uint)(instruction >> 23) & 0x1FF;
-                    bool comparison3 = _registers[b10] <= _registers[c10];
-                    bool expected3 = (a != 0);
-                    if (comparison3 == expected3)
-                    {
-                        _pc++;
-                    }
-                    break;
-                case (byte)OpCode.PRINT:
-                    Console.WriteLine(_registers[a]);
-                    break;
-                case (byte)OpCode.PRINTA:
-                    Console.Write((char)_registers[a]);
-                    break;
-                case (byte)OpCode.HALT:
-                    isRunning = false;
-                    break;
-                default:
-                    Console.WriteLine($"Uknown instruction at {_pc} -> {opcode}");
-                    return;
-            }
-            _pc++;
+            int bits = BitConverter.SingleToInt32Bits(_registers[i]);
+            Console.Write($"R{i:D2}: 0x{bits:X8} | ");
+
+            if ((i + 1) % 4 == 0)
+                Console.WriteLine();
         }
     }
-
-    // The signature: Takes the instruction, memory pointers, and PC. Returns a bool.
 
     public unsafe void RunFast()
     {
@@ -145,20 +52,29 @@ public class VirtualMachine
         dispatchTable[(int)OpCode.PRINT] = &ExecutePrint;
         dispatchTable[(int)OpCode.PRINTA] = &ExecutePrintA;
         dispatchTable[(int)OpCode.RAND] = &ExecuteRand;
+        dispatchTable[(int)OpCode.FISR] = &ExecuteFisr;
+        dispatchTable[(int)OpCode.SQRT] = &ExecuteSqrt;
         fixed (uint* instPtr = _instructions)
         fixed (float* regPtr = _registers)
         fixed (float* constPtr = _constants)
         {
             bool isRunning = true;
-
+            Console.WriteLine("Starting VM...");
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (isRunning)
             {
+                if (_breakpoints.Contains(_pc))
+                {
+                    DumpRegisters();
+                    Console.ReadLine();
+                }
                 uint instruction = instPtr[_pc];
                 byte opcode = (byte)(instruction & 0x3F);
-
                 isRunning = dispatchTable[opcode](instruction, regPtr, constPtr, ref _pc);
                 _pc++;
             }
+            stopwatch.Stop();
+            Console.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
         }
     }
 
@@ -171,7 +87,7 @@ public class VirtualMachine
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
-        uint constantIndex = (byte)(instruction >> 14 & 0x0000FFFFFF);
+        uint constantIndex = (byte)(instruction >> 14 & 0xFFFFFF);
         regPtr[a] = constPtr[constantIndex];
         return true;
     }
@@ -434,6 +350,48 @@ public class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         regPtr[a] = random.NextSingle();
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe bool ExecuteSqrt(
+        uint instruction,
+        float* regPtr,
+        float* constPtr,
+        ref int pc
+    )
+    {
+        byte a = (byte)((instruction >> 6) & 0xFF);
+        uint b = (uint)((instruction >> 14) & 0xFF);
+        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        regPtr[a] = (float)Math.Sqrt(valB);
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe bool ExecuteFisr(
+        uint instruction,
+        float* regPtr,
+        float* constPtr,
+        ref int pc
+    )
+    {
+        byte a = (byte)((instruction >> 6) & 0xFF);
+        uint b = (uint)((instruction >> 14) & 0xFF);
+        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        long i;
+        float x2,
+            y;
+        const float threehalfs = 1.5F;
+
+        x2 = valB * 0.5F;
+        y = valB;
+        i = *(int*)&y; // evil floating point bit level hacking
+        i = 0x5f3759df - (i >> 1); // what the fuck?
+        y = *(float*)&i;
+        y = y * (threehalfs - (x2 * y * y)); // 1st iteration
+        //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+        regPtr[a] = y;
         return true;
     }
 }
