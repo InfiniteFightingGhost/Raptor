@@ -19,8 +19,8 @@ Opcode is always 6 bits long
 | Format | Destitation Register | RC 1 | RC 2 |
 | --------------- | --------------- | --------------- | --------------- |
 | ABC | 8 bits | 9 bits | 9 bits |
-| ABx | 8 bits | 18 bits | 0 bits |
-| sBx | 26 bits(signed) | 0 bits | 0 bits |
+| ABx | 8 bits | 18 bits (unsigned) | 0 bits |
+| sBx | 18 bits(signed) | 0 bits | 0 bits |
 
 
 | OpCode | Destitation Register | RC 1 | RC 2(if it's needed) | Notation |
@@ -38,14 +38,15 @@ Opcode is always 6 bits long
 | EQ | A | B | C | if ((RC(B) == RC(C)) != A) then PC++ |
 | LT | A | B | C | if ((RC(B) < RC(C)) != A) then PC++ |
 | LE | A | B | C | if ((RC(B) <= RC(C)) != A) then PC++ |
-| HALT | | | | | 
+| HALT | | | | |
 | PRINT | A | | | Console.WriteLine(R(A)) |
 | PRINTA | A | | | Console.WriteLine((char)R(A)) |
 | RAND | A | | | | R(A) = Random.NextSingle()
 | SQRT | A | B | | R(A) := Math.Sqrt(RC(B)) |
 | FISR | A | B | | R(A) := FISR algorithm (RC(B)) |
-| CALL | sBx|  | | CS.Push(PC); PC += sBx,
+| CALL | sBx| A | | CS.Push(PC); PC += sBx, Bias += A
 | RET| | | | PC = CS.Pop() + 1 |
+
 ## Example programs:
 
 ### Fibonacci:

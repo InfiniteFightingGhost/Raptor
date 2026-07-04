@@ -2,25 +2,25 @@ namespace RegisterBasedVM;
 
 public enum OpCode
 {
-    LOADC,
-    MOVE,
-    SWP,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    POW,
-    UNM,
-    JUMP,
-    EQ,
-    LT,
-    LE,
-    HALT,
-    PRINT,
-    PRINTA,
-    RAND,
-    SQRT,
-    FISR,
-    CALL,
-    RET,
+    LOADC, //0
+    MOVE, // 1
+    SWAP, // 2
+    ADD, //  3
+    SUB, //  4
+    MUL, //  5
+    DIV, // 6
+    POW, // 7
+    UNM, // 8
+    JUMP, // 9
+    EQ, // 10
+    LT, // 11
+    LE, // 12
+    HALT, // 13
+    PRINT, // 14
+    PRINTA, // 15
+    RAND, // 16
+    SQRT, // 17
+    FISR, // 18
+    CALL, // 19
+    RETURN, // 20
 }

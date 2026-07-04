@@ -9,27 +9,119 @@ public class Assembler
         _chunk = chunk;
     }
 
+    public IEnumerable<string> CleanFirstPass(string[] rawLines)
+    {
+        foreach (string rawLine in rawLines)
+        {
+            string line = rawLine.Trim();
+
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            if (line.StartsWith("DEFINE "))
+                continue;
+            yield return line;
+        }
+    }
+
+    public IEnumerable<string> CleanLines(string[] rawLines)
+    {
+        foreach (string rawLine in rawLines)
+        {
+            string line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line))
+                continue;
+
+            if (line.StartsWith("DEFINE "))
+                continue;
+
+            if (line.EndsWith(":"))
+                if (!line.StartsWith("JUMP"))
+                    continue;
+
+            if (line.EndsWith("()"))
+                if (!line.StartsWith("JUMP"))
+                    continue;
+            yield return line;
+        }
+    }
+
     public void Parse(string[] lines)
     {
-        Dictionary<string, int> labels = new();
+        Dictionary<string, string> definitions = new();
+
+        //Having a 3 pass system will make it easier for future me to implement multi line definitions if I want to
         for (int i = 0; i < lines.Length; i++)
         {
-            var line = lines[i];
-            if (line.StartsWith("$"))
+            string[] words = lines[i].Split(" ");
+            if (lines[i].StartsWith("DEFINE"))
             {
-                if (!labels.ContainsKey(line))
+                if (!definitions.TryAdd(words[1], words[2]))
+                    throw new Exception(
+                        $"Definition for {words[1]} already exists on line {definitions[words[1]]}"
+                    );
+            }
+            else
+            {
+                if (lines[i].Contains(";"))
                 {
-                    labels.Add(line, i);
+                    lines[i] = lines[i].Split(";")[0].Trim();
                 }
-                else
-                    throw new Exception("Label name already exists on line " + labels[line]);
+
+                for (int j = 0; j < words.Length; j++)
+                {
+                    foreach (var pair in definitions)
+                    {
+                        if (words[j] == pair.Key)
+                            words[j] = pair.Value;
+                    }
+                }
+                lines[i] = string.Join(" ", words);
             }
         }
-        List<UInt32> instructions = new List<UInt32>();
-        for (int i = 0; i < lines.Length; i++)
+
+        Dictionary<string, int> labels = new();
+        Dictionary<string, int> methods = new();
+        int memAddress = 0;
+#if DEBUG
+        Console.WriteLine("After first pass");
+#endif
+        foreach (var item in CleanFirstPass(lines))
         {
-            var item = lines[i];
-            var words = item.Split(';')[0].Trim()?.Split(' ');
+#if DEBUG
+            Console.WriteLine(item);
+#endif
+            if (item.EndsWith(":"))
+            {
+                if (!item.StartsWith("JUMP "))
+                {
+                    if (!labels.TryAdd(item.TrimEnd(':'), memAddress))
+                        throw new Exception("Label name already exists on line " + labels[item]);
+                }
+                else { }
+            }
+            else if (item.EndsWith("()"))
+            {
+                if (!lines.StartsWith("CALL"))
+                {
+                    if (!methods.TryAdd(item.TrimEnd(')').TrimEnd('('), memAddress))
+                        throw new Exception("Method name already exists on line " + methods[item]);
+                }
+            }
+            else
+                memAddress++;
+        }
+        List<UInt32> instructions = new List<UInt32>();
+        int pc = 0;
+#if DEBUG
+        Console.WriteLine("After second pass");
+#endif
+        foreach (var item in CleanLines(lines))
+        {
+#if DEBUG
+            Console.WriteLine(item);
+#endif
+            var words = item.Split();
             uint instruction = 0;
             uint opcode = 0;
             try
@@ -52,15 +144,15 @@ public class Assembler
                         break;
                     case "MOVE":
                         opcode = (uint)OpCode.MOVE;
-                        uint destA2 = uint.Parse(words[1]);
+                        uint destA2 = uint.Parse(string.Join("", words[1].Skip(1)));
                         destA2 = destA2 & 0xFF;
 
-                        uint destB2 = uint.Parse(words[2]);
+                        uint destB2 = uint.Parse(string.Join("", words[2].Skip(1)));
                         destB2 = destB2 & 0x1FF;
                         instruction = opcode | (destA2 << 6) | (destB2 << 14);
                         break;
                     case "SWP":
-                        opcode = (uint)OpCode.SWP;
+                        opcode = (uint)OpCode.SWAP;
                         uint destA5 = uint.Parse(words[1]);
                         destA5 = destA5 & 0xFF;
 
@@ -78,7 +170,7 @@ public class Assembler
                         uint destA3;
                         if (words[1].StartsWith("r"))
                         {
-                            destA3 = uint.Parse(string.Join("", words[1].Skip(1)));
+                            destA3 = uint.Parse(words[1].TrimStart('r'));
                         }
                         else
                         {
@@ -89,7 +181,7 @@ public class Assembler
                         uint destB3;
                         if (words[2].StartsWith("r"))
                         {
-                            destB3 = uint.Parse(string.Join("", words[2].Skip(1)));
+                            destB3 = uint.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
@@ -100,7 +192,7 @@ public class Assembler
                         uint destC3;
                         if (words[3].StartsWith("r"))
                         {
-                            destC3 = uint.Parse(string.Join("", words[3].Skip(1)));
+                            destC3 = uint.Parse(words[3].TrimStart('r'));
                         }
                         else
                         {
@@ -118,7 +210,7 @@ public class Assembler
 
                         if (words[2].StartsWith("r"))
                         {
-                            destB3 = uint.Parse(string.Join("", words[2].Skip(1)));
+                            destB3 = uint.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
@@ -128,7 +220,7 @@ public class Assembler
 
                         if (words[3].StartsWith("r"))
                         {
-                            destC3 = uint.Parse(string.Join("", words[3].Skip(1)));
+                            destC3 = uint.Parse(words[3].TrimStart('r'));
                         }
                         else
                         {
@@ -139,18 +231,19 @@ public class Assembler
                         break;
                     case "UNM":
                         opcode = (uint)OpCode.UNM;
-                        var destA4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                        var destA4 = uint.Parse(words[1].TrimStart('r'));
                         destA4 = destA4 & 0xFF;
 
                         uint destB4;
-                        if (words[1].StartsWith("r"))
+                        if (words[2].StartsWith("r"))
                         {
-                            destB4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                            destB4 = uint.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
                             destB4 = _chunk.SetConstant(float.Parse(words[1])) + 256;
                         }
+
                         destB4 = destB4 & 0x1FF;
                         instruction = opcode | (destA4 << 6) | (destB4 << 14);
                         break;
@@ -159,14 +252,13 @@ public class Assembler
                         int labelIndex;
                         try
                         {
-                            labelIndex = labels[words[1]];
+                            labelIndex = labels[words[1]] - pc;
                         }
                         catch
                         {
                             Console.WriteLine("There isnt a label with name " + words[1]);
                             return;
                         }
-                        labelIndex -= i;
                         const int sBxBias = 33554431;
 
                         int rawSbx = labelIndex + sBxBias;
@@ -177,18 +269,17 @@ public class Assembler
                         opcode = (uint)OpCode.CALL;
                         try
                         {
-                            labelIndex = labels[words[1]];
+                            labelIndex = methods[words[1]] - pc;
                         }
                         catch
                         {
-                            Console.WriteLine("There isnt a label with name " + words[1]);
+                            Console.WriteLine("There isnt a method with name " + words[1]);
                             return;
                         }
-                        labelIndex -= i;
 
                         rawSbx = labelIndex + sBxBias;
                         unsignedBx = (uint)(rawSbx & 0x3FFFFFF);
-                        instruction = opcode | (uint)((unsignedBx << 6)); // |(((sBx >> 25) << 31)));
+                        instruction = opcode | (uint)((unsignedBx << 6));
                         break;
                     case "RET":
                         opcode = (uint)OpCode.CALL;
@@ -201,7 +292,7 @@ public class Assembler
                         uint printA;
                         if (words[1].StartsWith("r"))
                         {
-                            printA = uint.Parse(string.Join("", words[1].Skip(1)));
+                            printA = uint.Parse(words[1].TrimStart('r'));
                         }
                         else
                         {
@@ -222,7 +313,7 @@ public class Assembler
                         uint printA1;
                         if (words[1].StartsWith("r"))
                         {
-                            printA1 = uint.Parse(string.Join("", words[1].Skip(1)));
+                            printA1 = uint.Parse(words[1].TrimStart('r'));
                         }
                         else
                         {
@@ -238,15 +329,15 @@ public class Assembler
                         break;
                     case "SQRT":
                         opcode = (uint)OpCode.SQRT;
-                        destA4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                        destA4 = uint.Parse(words[1].TrimStart('r'));
                         destA4 = destA4 & 0xFF;
-                        if (words[1].StartsWith("r"))
+                        if (words[2].StartsWith("r"))
                         {
-                            destB4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                            destB4 = uint.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
-                            destB4 = _chunk.SetConstant(float.Parse(words[1])) + 256;
+                            destB4 = _chunk.SetConstant(float.Parse(words[2])) + 256;
                         }
                         destB4 = destB4 & 0x1FF;
                         instruction = opcode | (destA4 << 6) | (destB4 << 14);
@@ -254,28 +345,29 @@ public class Assembler
                     case "FISR":
                         opcode = (uint)OpCode.FISR;
 
-                        destA4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                        destA4 = uint.Parse(words[2].TrimStart('r'));
                         destA4 = destA4 & 0xFF;
-                        if (words[1].StartsWith("r"))
+                        if (words[2].StartsWith("r"))
                         {
-                            destB4 = uint.Parse(string.Join("", words[1].Skip(1)));
+                            destB4 = uint.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
-                            destB4 = _chunk.SetConstant(float.Parse(words[1])) + 256;
+                            destB4 = _chunk.SetConstant(float.Parse(words[2])) + 256;
                         }
                         destB4 = destB4 & 0x1FF;
                         instruction = opcode | (destA4 << 6) | (destB4 << 14);
                         break;
                     default:
-                        throw new Exception($"Unknown opcode found: {words[0]} on line {i}");
+                        throw new Exception($"Unknown opcode found: {words[0]} on line {pc}");
                 }
             }
             catch (Exception x)
             {
-                Console.WriteLine($"{x.Message} at line {i}");
+                Console.WriteLine($"{x.Message} at line {pc}");
             }
             instructions.Add(instruction);
+            pc++;
         }
         _chunk.Instructions = instructions.ToArray();
     }

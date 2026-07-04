@@ -7,17 +7,20 @@ public unsafe class VirtualMachine
     private uint[] _instructions = null!;
     private float[] _constants = null!;
     int _pc = 0;
+    int _basePtr = 0;
     private float[] _registers = new float[256];
     private static readonly Random random = new Random();
     private int[] _breakpoints = null!;
-    private int[] _callStack = new int[16];
+    private StackFrame[] _callStack = new StackFrame[32];
 
     public void LoadProgram(uint[] instructions, float[] constants, int[] breakpoints)
     {
         _instructions = instructions;
         _constants = constants;
         _pc = 0;
+        _basePtr = 0;
         Array.Clear(_registers);
+        Array.Clear(_callStack);
         _breakpoints = breakpoints;
     }
 
@@ -35,10 +38,12 @@ public unsafe class VirtualMachine
 
     public unsafe void RunFast()
     {
-        var dispatchTable = new delegate* <uint, float*, float*, ref int, int*, bool>[64];
+        delegate* <uint, float*, float*, ref int, ref int, StackFrame*, bool>* dispatchTable =
+            stackalloc delegate* <uint, float*, float*, ref int, ref int, StackFrame*, bool>[64];
+
         dispatchTable[(int)OpCode.LOADC] = &ExecuteLoadC;
         dispatchTable[(int)OpCode.MOVE] = &ExecuteMove;
-        dispatchTable[(int)OpCode.SWP] = &ExecuteSwp;
+        dispatchTable[(int)OpCode.SWAP] = &ExecuteSwp;
         dispatchTable[(int)OpCode.ADD] = &ExecuteAdd;
         dispatchTable[(int)OpCode.SUB] = &ExecuteSub;
         dispatchTable[(int)OpCode.MUL] = &ExecuteMul;
@@ -55,27 +60,30 @@ public unsafe class VirtualMachine
         dispatchTable[(int)OpCode.RAND] = &ExecuteRand;
         dispatchTable[(int)OpCode.FISR] = &ExecuteFisr;
         dispatchTable[(int)OpCode.SQRT] = &ExecuteSqrt;
-        dispatchTable[(int)OpCode.CALL] = &ExecuteFisr;
-        dispatchTable[(int)OpCode.RET] = &ExecuteSqrt;
+        dispatchTable[(int)OpCode.CALL] = &ExecuteCall;
+        dispatchTable[(int)OpCode.RETURN] = &ExecuteRet;
+
         fixed (uint* instPtr = _instructions)
         fixed (float* regPtr = _registers)
         fixed (float* constPtr = _constants)
-        fixed (int* callStackPtr = _callStack)
+        fixed (StackFrame* callStackPtr = _callStack)
         {
             bool isRunning = true;
             Console.WriteLine("Starting VM...");
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             while (isRunning)
             {
+#if DEBUG
                 if (_breakpoints.Contains(_pc))
                 {
                     DumpRegisters();
                     Console.ReadLine();
                 }
+#endif
                 uint instruction = instPtr[_pc];
                 byte opcode = (byte)(instruction & 0x3F);
                 isRunning = dispatchTable[opcode]
-                    (instruction, regPtr, constPtr, ref _pc, callStackPtr);
+                    (instruction, regPtr, constPtr, ref _pc, ref _basePtr, callStackPtr);
                 _pc++;
             }
             stopwatch.Stop();
@@ -84,12 +92,19 @@ public unsafe class VirtualMachine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private unsafe float* Reg(float* regPtr, int basePtr, int index)
+    {
+        return (float*)(regPtr + ((basePtr + index))); // TODO: check if this actually works like this
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteLoadC(
         uint instruction,
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -104,7 +119,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -119,7 +135,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -134,7 +151,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -150,7 +168,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         const int sBxBias = 33554431;
@@ -165,14 +184,18 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         const int sBxBias = 33554431;
-        uint unsignedBx = (uint)(instruction >> 6);
+        byte a = (byte)((instruction >> 6) & 0xFF);
+        uint unsignedBx = (uint)(instruction >> 14);
         int sBx = (int)(unsignedBx - sBxBias);
-        *(callStackPtr++) = pc;
+        StackFrame frame = new StackFrame(pc, basePtr);
+        *(callStackPtr++) = frame;
         pc += sBx - 1;
+        basePtr += a;
         return true;
     }
 
@@ -181,10 +204,13 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
-        int target = *(callStackPtr--);
+        int target = callStackPtr->ReturnPC;
+        basePtr = callStackPtr->PreviousBase;
+        callStackPtr--;
         pc = target;
         return true;
     }
@@ -195,7 +221,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -213,7 +240,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -231,7 +259,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -249,7 +278,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -267,7 +297,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -285,7 +316,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -308,7 +340,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -317,6 +350,7 @@ public unsafe class VirtualMachine
         uint c = (uint)(instruction >> 23) & 0x1FF;
         float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
         bool comparison = valB < valC;
+
         bool expected = (a != 0);
         if (comparison != expected)
         {
@@ -331,7 +365,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -354,7 +389,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         uint a = (uint)((instruction >> 6) & 0xFF);
@@ -369,7 +405,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         uint a = (uint)((instruction >> 6) & 0xFF);
@@ -384,7 +421,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         return false;
@@ -396,7 +434,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -410,7 +449,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
@@ -426,7 +466,8 @@ public unsafe class VirtualMachine
         float* regPtr,
         float* constPtr,
         ref int pc,
-        int* callStackPtr
+        ref int basePtr,
+        StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);

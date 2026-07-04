@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RegisterBasedVM")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d3e57e016da3ea950adc610d90e780c076563e80")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+74d094e0a2813ea10dd34034616b67eb624ba31e")]
 [assembly: System.Reflection.AssemblyProductAttribute("RegisterBasedVM")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RegisterBasedVM")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
