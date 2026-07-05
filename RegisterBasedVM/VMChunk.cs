@@ -4,7 +4,8 @@ public class VMChunk
 {
     private uint currUsedConstantsIndex = 0;
     public UInt32[] Instructions { get; set; }
-    public float[] Constants { get; private set; } = new float[512];
+    public double[] Constants { get; private set; } = new double[512];
+    public uint[] MethodTable { get; private set; } = new uint[512];
 
     public uint SetConstant(float value)
     {

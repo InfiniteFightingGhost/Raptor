@@ -45,7 +45,7 @@ Opcode is always 6 bits long
 | SQRT | A | B | | R(A) := Math.Sqrt(RC(B)) |
 | FISR | A | B | | R(A) := FISR algorithm (RC(B)) |
 | CALL | sBx| A | | CS.Push(PC); PC += sBx, Bias += A
-| RET| | | | PC = CS.Pop() + 1 |
+| RETURN| | | | PC = CS.Pop() + 1 |
 
 ## Example programs:
 
@@ -64,16 +64,21 @@ Opcode is always 6 bits long
 | 10   | HALT           | Halt the program|
 Code block for ease of ctrl + C:
 ```asm
-LOADC 0 1
-LOADC 4 1
-MOVE 2 1
-MOVE 1 0
-PRINT r0
-ADD r0 r1 r2
-ADD r4 r4 1
-LT 0 r4 10
-JUMP -6
-PRINT r4
+DEFINE result r0
+DEFINE last r1
+DEFINE lastlast r2
+DEFINE counter r4
+DEFINE n 10
+LOADC result 1
+LOADC counter 1
+loop:
+    MOVE lastlast last
+    MOVE last result
+    ADD result last lastlast
+    ADD counter counter 1
+    LT 1 counter n
+    JUMP loop
+PRINT result
 HALT
 ```
 

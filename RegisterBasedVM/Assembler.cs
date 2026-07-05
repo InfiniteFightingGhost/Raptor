@@ -79,10 +79,10 @@ public class Assembler
                 lines[i] = string.Join(" ", words);
             }
         }
-
-        Dictionary<string, int> labels = new();
-        Dictionary<string, int> methods = new();
-        int memAddress = 0;
+        Dictionary<string, uint> labels = new();
+        Dictionary<string, uint> methods = new();
+        uint memoryAddress = 0;
+        uint methodAddress = 0;
 #if DEBUG
         Console.WriteLine("After first pass");
 #endif
@@ -95,21 +95,27 @@ public class Assembler
             {
                 if (!item.StartsWith("JUMP "))
                 {
-                    if (!labels.TryAdd(item.TrimEnd(':'), memAddress))
+                    if (!labels.TryAdd(item.TrimEnd(':'), memoryAddress))
                         throw new Exception("Label name already exists on line " + labels[item]);
                 }
-                else { }
             }
             else if (item.EndsWith("()"))
             {
                 if (!lines.StartsWith("CALL"))
                 {
-                    if (!methods.TryAdd(item.TrimEnd(')').TrimEnd('('), memAddress))
-                        throw new Exception("Method name already exists on line " + methods[item]);
+                    if (!methods.TryAdd(item, memoryAddress))
+                        throw new Exception(
+                            "Method name already exists on line "
+                                + _chunk.MethodTable[methods[item]]
+                        );
+                    else
+                    {
+                        _chunk.MethodTable[methodAddress++] = memoryAddress;
+                    }
                 }
             }
             else
-                memAddress++;
+                memoryAddress++;
         }
         List<UInt32> instructions = new List<UInt32>();
         int pc = 0;
@@ -252,7 +258,8 @@ public class Assembler
                         int labelIndex;
                         try
                         {
-                            labelIndex = labels[words[1]] - pc;
+                            labelIndex = (int)(labels[words[1]] - pc);
+                            Console.WriteLine(labelIndex);
                         }
                         catch
                         {
@@ -267,24 +274,29 @@ public class Assembler
                         break;
                     case "CALL":
                         opcode = (uint)OpCode.CALL;
+                        byte methodIndex = 0;
                         try
                         {
-                            labelIndex = methods[words[1]] - pc;
+                            methodIndex = (byte)methods[words[1]];
                         }
                         catch
                         {
                             Console.WriteLine("There isnt a method with name " + words[1]);
                             return;
                         }
-
-                        rawSbx = labelIndex + sBxBias;
-                        unsignedBx = (uint)(rawSbx & 0x3FFFFFF);
-                        instruction = opcode | (uint)((unsignedBx << 6));
+                        byte start = byte.Parse(words[2].TrimStart('r'));
+                        rawSbx = methodIndex + sBxBias;
+                        instruction =
+                            opcode
+                            | (uint)((methodIndex << 6) & 0x1FF)
+                            | (uint)((start << 15) & 0xFF);
                         break;
-                    case "RET":
-                        opcode = (uint)OpCode.CALL;
-
-                        instruction = opcode;
+                    case "RETURN":
+                        opcode = (uint)OpCode.RETURN;
+                        start = byte.Parse(words[1].TrimStart('r'));
+                        byte end = byte.Parse(words[2].TrimStart('r'));
+                        instruction =
+                            opcode | (uint)((start << 6) & 0xFF) | (uint)((end << 14) & 0xFF);
                         break;
                     case "PRINT":
                         opcode = (uint)OpCode.PRINT;
@@ -304,7 +316,7 @@ public class Assembler
                         break;
                     case "RAND":
                         opcode = (uint)OpCode.RAND;
-                        uint randR = uint.Parse(words[1]);
+                        uint randR = uint.Parse(words[1].TrimStart('r'));
                         instruction = opcode | (randR << 6);
                         break;
                     case "PRINTA":

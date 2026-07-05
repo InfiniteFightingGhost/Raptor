@@ -1,6 +1,25 @@
 ﻿using RegisterBasedVM;
 
-string instructions =
+string recursiveFib =
+    @"
+DEFINE n 10
+DEFINE result r0
+LOADC result n
+CALL method() result
+method()
+    LE 1 r0 2
+    JUMP math
+        RETURN 1
+    math:
+    SUB r1 r0 1
+    CALL method() r1
+    CALL method() r2
+    ADD r1 r1 r2
+    RETURN r1 r1
+PRINT result
+HALT";
+
+string linearFib =
     @"DEFINE result r0
 DEFINE last r1
 DEFINE lastlast r2
@@ -18,11 +37,35 @@ loop:
 PRINT result
 HALT";
 
+string monteCarlo =
+    @"
+DEFINE epochs 100000000
+DEFINE x r1
+DEFINE y r2
+DEFINE hits r4
+DEFINE i r5
+loop:
+    RAND x
+    RAND y
+    MUL x x x
+    MUL y y y
+    ADD y y x
+    LE 0 y 1
+    ADD hits hits 1
+    ADD i i 1
+    LE 0 i epochs
+    JUMP loop
+DEFINE result r6
+DIV result hits epochs
+MUL result result 4
+PRINT result
+HALT";
+
 VMChunk chunk = new VMChunk();
 Assembler ass = new(chunk);
-ass.Parse(instructions.Split("\n"));
+ass.Parse(recursiveFib.Split("\n"));
 
 VirtualMachine vm = new();
 Console.WriteLine(chunk.Instructions.Count());
-vm.LoadProgram(chunk.Instructions, chunk.Constants, new int[] { });
+vm.LoadProgram(chunk, new int[] { });
 vm.RunFast();

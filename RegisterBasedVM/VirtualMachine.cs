@@ -5,41 +5,55 @@ namespace RegisterBasedVM;
 public unsafe class VirtualMachine
 {
     private uint[] _instructions = null!;
-    private float[] _constants = null!;
+    private double[] _constants = null!;
     int _pc = 0;
     int _basePtr = 0;
-    private float[] _registers = new float[256];
     private static readonly Random random = new Random();
     private int[] _breakpoints = null!;
-    private StackFrame[] _callStack = new StackFrame[32];
+    private uint[] _methods = new uint[512];
 
-    public void LoadProgram(uint[] instructions, float[] constants, int[] breakpoints)
+    public void LoadProgram(VMChunk chunk, int[] breakpoints)
     {
-        _instructions = instructions;
-        _constants = constants;
+        _instructions = chunk.Instructions;
+        _constants = chunk.Constants;
+        _methods = chunk.MethodTable;
         _pc = 0;
         _basePtr = 0;
-        Array.Clear(_registers);
-        Array.Clear(_callStack);
         _breakpoints = breakpoints;
     }
 
-    private void DumpRegisters(int count = 32)
+    private unsafe void DumpRegisters(double* registers, int count = 32)
     {
         for (int i = 0; i < count; i++)
         {
-            int bits = BitConverter.SingleToInt32Bits(_registers[i]);
-            Console.Write($"R{i:D2}: 0x{bits:X8} | ");
+            double bits = BitConverter.DoubleToInt64Bits(registers[i]);
+            Console.Write($"R{i:D2}: 0x{bits:X16} | ");
 
-            if ((i + 1) % 4 == 0)
+            if ((i + 1) % 2 == 0)
                 Console.WriteLine();
         }
     }
 
     public unsafe void RunFast()
     {
-        delegate* <uint, float*, float*, ref int, ref int, StackFrame*, bool>* dispatchTable =
-            stackalloc delegate* <uint, float*, float*, ref int, ref int, StackFrame*, bool>[64];
+        delegate* <
+            uint,
+            double*,
+            double*,
+            uint*,
+            ref int,
+            ref int,
+            StackFrame*,
+            bool>* dispatchTable =
+            stackalloc delegate* <
+                uint,
+                double*,
+                double*,
+                uint*,
+                ref int,
+                ref int,
+                StackFrame*,
+                bool>[64];
 
         dispatchTable[(int)OpCode.LOADC] = &ExecuteLoadC;
         dispatchTable[(int)OpCode.MOVE] = &ExecuteMove;
@@ -61,12 +75,15 @@ public unsafe class VirtualMachine
         dispatchTable[(int)OpCode.FISR] = &ExecuteFisr;
         dispatchTable[(int)OpCode.SQRT] = &ExecuteSqrt;
         dispatchTable[(int)OpCode.CALL] = &ExecuteCall;
-        dispatchTable[(int)OpCode.RETURN] = &ExecuteRet;
+        dispatchTable[(int)OpCode.RETURN] = &ExecuteReturn;
 
+        double* regPtr = stackalloc double[256];
+        Unsafe.InitBlockUnaligned(regPtr, 0, 256 * sizeof(float));
+
+        StackFrame* framePtr = stackalloc StackFrame[32];
         fixed (uint* instPtr = _instructions)
-        fixed (float* regPtr = _registers)
-        fixed (float* constPtr = _constants)
-        fixed (StackFrame* callStackPtr = _callStack)
+        fixed (double* constPtr = _constants)
+        fixed (uint* methodTablePtr = _methods)
         {
             bool isRunning = true;
             Console.WriteLine("Starting VM...");
@@ -76,14 +93,22 @@ public unsafe class VirtualMachine
 #if DEBUG
                 if (_breakpoints.Contains(_pc))
                 {
-                    DumpRegisters();
+                    DumpRegisters(regPtr);
                     Console.ReadLine();
                 }
 #endif
                 uint instruction = instPtr[_pc];
                 byte opcode = (byte)(instruction & 0x3F);
                 isRunning = dispatchTable[opcode]
-                    (instruction, regPtr, constPtr, ref _pc, ref _basePtr, callStackPtr);
+                    (
+                        instruction,
+                        regPtr,
+                        constPtr,
+                        methodTablePtr,
+                        ref _pc,
+                        ref _basePtr,
+                        framePtr
+                    );
                 _pc++;
             }
             stopwatch.Stop();
@@ -92,16 +117,17 @@ public unsafe class VirtualMachine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private unsafe float* Reg(float* regPtr, int basePtr, int index)
+    private static unsafe ref double Reg(double* regPtr, int basePtr, uint index)
     {
-        return (float*)(regPtr + ((basePtr + index))); // TODO: check if this actually works like this
+        return ref regPtr[basePtr + index];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteLoadC(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -109,15 +135,16 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint constantIndex = (byte)(instruction >> 14 & 0xFFFFFF);
-        regPtr[a] = constPtr[constantIndex];
+        Reg(regPtr, basePtr, a) = constPtr[constantIndex];
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteMove(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -125,15 +152,16 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         byte b = (byte)((instruction >> 14) & 0xFF);
-        regPtr[a] = regPtr[b];
+        Reg(regPtr, basePtr, a) = Reg(regPtr, basePtr, b);
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteSwp(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -141,15 +169,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         byte b = (byte)((instruction >> 14) & 0xFF);
-        (regPtr[a], regPtr[b]) = (regPtr[b], regPtr[a]);
+        (Reg(regPtr, basePtr, a), Reg(regPtr, basePtr, b)) = (
+            Reg(regPtr, basePtr, b),
+            Reg(regPtr, basePtr, a)
+        );
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteUnm(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -157,16 +189,17 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)((instruction >> 14) & 0xFF);
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
-        regPtr[a] = -valB;
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
+        Reg(regPtr, basePtr, a) = -valB;
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteJump(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -179,35 +212,44 @@ public unsafe class VirtualMachine
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteCall(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
     )
     {
-        const int sBxBias = 33554431;
-        byte a = (byte)((instruction >> 6) & 0xFF);
-        uint unsignedBx = (uint)(instruction >> 14);
-        int sBx = (int)(unsignedBx - sBxBias);
+        ushort methodIndex = (ushort)((instruction >> 6) & 0x1FF);
+        byte start = (byte)((instruction >> 15) & 0xFF);
+
         StackFrame frame = new StackFrame(pc, basePtr);
         *(callStackPtr++) = frame;
-        pc += sBx - 1;
-        basePtr += a;
+        pc = (int)methodTablePtr[methodIndex] - 1; // TODO: check if this -1 needs to be here
+        basePtr += start;
         return true;
     }
 
-    public static unsafe bool ExecuteRet(
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe bool ExecuteReturn(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
     )
     {
+        byte start = (byte)(instruction >> 6);
+        byte end = (byte)(instruction >> 14);
+        for (uint i = start; i <= end; i++)
+        {
+            Reg(regPtr, basePtr, i) = Reg(regPtr, basePtr, start + i);
+        }
         int target = callStackPtr->ReturnPC;
         basePtr = callStackPtr->PreviousBase;
         callStackPtr--;
@@ -218,8 +260,9 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteAdd(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -227,18 +270,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
-        regPtr[a] = valB + valC;
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
+        Reg(regPtr, basePtr, a) = valB + valC;
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteSub(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -246,18 +290,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
-        regPtr[a] = valB - valC;
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
+        Reg(regPtr, basePtr, a) = valB - valC;
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteMul(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -265,18 +310,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
-        regPtr[a] = valB * valC;
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
+        Reg(regPtr, basePtr, a) = valB * valC;
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteDiv(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -284,18 +330,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
-        regPtr[a] = valB / valC;
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
+        Reg(regPtr, basePtr, a) = valB / valC;
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecutePow(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -303,18 +350,19 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
-        regPtr[a] = (float)Math.Pow(valB, valC);
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
+        Reg(regPtr, basePtr, a) = (float)Math.Pow(valB, valC);
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteEq(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -322,9 +370,9 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
         bool comparison = valB == valC;
         bool expected = (a != 0);
         if (comparison == expected)
@@ -337,8 +385,9 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteLt(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -346,9 +395,9 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
         bool comparison = valB < valC;
 
         bool expected = (a != 0);
@@ -362,8 +411,9 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteLe(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -371,9 +421,9 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)(instruction >> 14) & 0x1FF;
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         uint c = (uint)(instruction >> 23) & 0x1FF;
-        float valC = c < 256 ? regPtr[c] : constPtr[c - 256];
+        double valC = c < 256 ? Reg(regPtr, basePtr, c) : constPtr[c - 256];
         bool comparison = valB <= valC;
         bool expected = (a != 0);
         if (comparison == expected)
@@ -386,15 +436,16 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecutePrint(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
     )
     {
         uint a = (uint)((instruction >> 6) & 0xFF);
-        float valA = a < 256 ? regPtr[a] : constPtr[a - 256];
+        double valA = a < 256 ? Reg(regPtr, basePtr, a) : constPtr[a - 256];
         Console.WriteLine(valA);
         return true;
     }
@@ -402,15 +453,16 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecutePrintA(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
     )
     {
         uint a = (uint)((instruction >> 6) & 0xFF);
-        float valA = a < 256 ? regPtr[a] : constPtr[a - 256];
+        double valA = a < 256 ? Reg(regPtr, basePtr, a) : constPtr[a - 256];
         Console.WriteLine((char)valA);
         return true;
     }
@@ -418,8 +470,9 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteHalt(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -431,23 +484,25 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteRand(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
     )
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
-        regPtr[a] = random.NextSingle();
+        Reg(regPtr, basePtr, a) = random.NextSingle();
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteSqrt(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
@@ -455,37 +510,38 @@ public unsafe class VirtualMachine
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)((instruction >> 14) & 0xFF);
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
-        regPtr[a] = (float)Math.Sqrt(valB);
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
+        Reg(regPtr, basePtr, a) = (float)Math.Sqrt(valB);
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteFisr(
         uint instruction,
-        float* regPtr,
-        float* constPtr,
+        double* regPtr,
+        double* constPtr,
+        uint* methodTablePtr,
         ref int pc,
         ref int basePtr,
         StackFrame* callStackPtr
-    )
+    ) // TODO: Make sure that FISR works even with doubles
     {
         byte a = (byte)((instruction >> 6) & 0xFF);
         uint b = (uint)((instruction >> 14) & 0xFF);
-        float valB = b < 256 ? regPtr[b] : constPtr[b - 256];
+        double valB = b < 256 ? Reg(regPtr, basePtr, b) : constPtr[b - 256];
         long i;
-        float x2,
+        double x2,
             y;
         const float threehalfs = 1.5F;
 
-        x2 = valB * 0.5F;
+        x2 = valB * 0.5d;
         y = valB;
-        i = *(int*)&y; // evil floating point bit level hacking
+        i = *(long*)&y; // evil floating point bit level hacking
         i = 0x5f3759df - (i >> 1); // what the fuck?
-        y = *(float*)&i;
+        y = *(double*)&i;
         y = y * (threehalfs - (x2 * y * y)); // 1st iteration
         //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
-        regPtr[a] = y;
+        Reg(regPtr, basePtr, a) = y;
         return true;
     }
 }
