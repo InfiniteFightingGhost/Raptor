@@ -97,18 +97,15 @@ public class Assembler
                     }
                 }
             }
+            else if (lines[i].StartsWith("FOR "))
+                memoryAddress += 2;
             else
                 memoryAddress++;
-        }
-        foreach (var item in methods)
-        {
-            Console.WriteLine($"Name: {item.Key}, place: {_chunk.MethodTable[item.Value]}");
         }
         List<UInt32> instructions = new List<UInt32>();
         int pc = 0;
         foreach (var item in lines)
         {
-            Console.WriteLine($"{pc}: {item}");
             var words = item.Split();
             uint instruction = 0;
             try
@@ -117,7 +114,7 @@ public class Assembler
                 {
                     case "LOADC":
                         var destA1 = byte.Parse(words[1].TrimStart('r'));
-                        float constant = float.Parse(words[2]);
+                        double constant = double.Parse(words[2]);
 
                         uint bx = _chunk.SetConstant(constant);
 
@@ -153,7 +150,7 @@ public class Assembler
                         }
                         else
                         {
-                            destB3 = (ushort)(_chunk.SetConstant(float.Parse(words[2])) + 256);
+                            destB3 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         }
 
                         ushort destC3;
@@ -163,7 +160,7 @@ public class Assembler
                         }
                         else
                         {
-                            destC3 = (ushort)(_chunk.SetConstant(float.Parse(words[3])) + 256);
+                            destC3 = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
                         }
 
                         instruction = Instruction.CreateABC(
@@ -184,7 +181,7 @@ public class Assembler
                         }
                         else
                         {
-                            destB3 = (ushort)(_chunk.SetConstant(float.Parse(words[2])) + 256);
+                            destB3 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         }
 
                         if (words[3].StartsWith("r"))
@@ -193,7 +190,7 @@ public class Assembler
                         }
                         else
                         {
-                            destC3 = (ushort)(_chunk.SetConstant(float.Parse(words[3])) + 256);
+                            destC3 = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
                         }
                         instruction = Instruction.CreateABC(
                             GetOpCode(words[0]),
@@ -205,14 +202,14 @@ public class Assembler
                     case "UNM":
                         byte destA4 = byte.Parse(words[1].TrimStart('r'));
 
-                        uint destB4;
+                        ushort destB4;
                         if (words[2].StartsWith("r"))
                         {
-                            destB4 = uint.Parse(words[2].TrimStart('r'));
+                            destB4 = ushort.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
-                            destB4 = _chunk.SetConstant(float.Parse(words[1])) + 256;
+                            destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         }
 
                         instruction = Instruction.CreateABx(OpCode.UNM, destA4, destB4);
@@ -259,7 +256,7 @@ public class Assembler
                         }
                         else
                         {
-                            printA = (ushort)(_chunk.SetConstant(float.Parse(words[1])) + 256);
+                            printA = (ushort)(_chunk.SetConstant(double.Parse(words[1])) + 256);
                         }
 
                         instruction = Instruction.CreateABC(OpCode.PRINT, 0, printA, 0);
@@ -276,7 +273,7 @@ public class Assembler
                         }
                         else
                         {
-                            printA = (ushort)(_chunk.SetConstant(float.Parse(words[1])) + 256);
+                            printA = (ushort)(_chunk.SetConstant(double.Parse(words[1])) + 256);
                         }
 
                         instruction = Instruction.CreateABC(OpCode.PRINTA, 0, printA, 0);
@@ -293,7 +290,7 @@ public class Assembler
                         }
                         else
                         {
-                            destB4 = _chunk.SetConstant(float.Parse(words[2])) + 256;
+                            destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         }
                         instruction = Instruction.CreateABx(OpCode.SQRT, destA4, destB4);
                         break;
@@ -301,11 +298,11 @@ public class Assembler
                         destA4 = byte.Parse(words[2].TrimStart('r'));
                         if (words[2].StartsWith("r"))
                         {
-                            destB4 = uint.Parse(words[2].TrimStart('r'));
+                            destB4 = ushort.Parse(words[2].TrimStart('r'));
                         }
                         else
                         {
-                            destB4 = _chunk.SetConstant(float.Parse(words[2])) + 256;
+                            destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         }
                         instruction = Instruction.CreateABx(OpCode.FISR, destA4, destB4);
                         break;
@@ -315,13 +312,13 @@ public class Assembler
                         if (words[2].StartsWith("r"))
                             rMax = ushort.Parse(words[2].TrimStart('r'));
                         else
-                            rMax = (ushort)(_chunk.SetConstant(float.Parse(words[2])) + 256);
+                            rMax = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
 
                         ushort rStep;
                         if (words[3].StartsWith("r"))
                             rStep = ushort.Parse(words[3].TrimStart('r'));
                         else
-                            rStep = (ushort)(_chunk.SetConstant(float.Parse(words[3])) + 256);
+                            rStep = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
                         byte comp = 0;
                         switch (words[4])
                         {
@@ -341,6 +338,7 @@ public class Assembler
                         int jumpOffset = (int)(labels[words[5]] - pc);
                         instruction = Instruction.CreateABC(OpCode.FOR, rIndex, rMax, rStep);
                         instructions.Add(instruction);
+                        pc++;
                         instruction = Instruction.CreateAsBx(OpCode.FOR, comp, jumpOffset);
                         break;
                     case "NEWARR":
@@ -362,14 +360,32 @@ public class Assembler
                                 code = OpCode.PRINT;
                                 break;
                         }
-                        byte regPtr = byte.Parse(words[1]);
+                        byte regPtr = byte.Parse(words[1].Trim("r"));
 
                         ushort index;
                         if (words[2].StartsWith("r"))
                             index = ushort.Parse(words[2].TrimStart('r'));
                         else
-                            index = (ushort)(_chunk.SetConstant(float.Parse(words[2])) + 256);
+                            index = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
                         instruction = Instruction.CreateABC(code, regPtr, index, 0);
+                        break;
+                    case "FREEARR":
+                        regPtr = byte.Parse(words[1].Trim("r"));
+                        instruction = Instruction.CreateABC(OpCode.FREEARR, regPtr, 0, 0);
+                        break;
+                    case "PRINTS":
+
+                        ushort printS;
+                        if (words[1].StartsWith("r"))
+                        {
+                            printS = ushort.Parse(words[1].TrimStart('r'));
+                        }
+                        else
+                        {
+                            printS = (ushort)(_chunk.SetConstant(double.Parse(words[1])) + 256);
+                        }
+
+                        instruction = Instruction.CreateABC(OpCode.PRINT, 0, printS, 0);
                         break;
                     default:
                         throw new Exception($"Unknown opcode found: {words[0]} on line {pc}");
@@ -408,10 +424,10 @@ public class Assembler
                 return OpCode.LT;
             case "LE":
                 return OpCode.LE;
-            case "GETARR":
-                return OpCode.GETARR;
-            case "GETARRA":
-                return OpCode.GETARRA;
+            case "SETARR":
+                return OpCode.SETARR;
+            case "SETARRA":
+                return OpCode.SETARRA;
         }
         return OpCode.LOADC;
     }

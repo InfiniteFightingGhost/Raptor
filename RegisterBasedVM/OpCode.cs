@@ -26,8 +26,10 @@ public enum OpCode
     FOR, // 21
     MOD, // 22
     NEWARR, // 23
-    SETARR, // 24
-    SETARRA, // 25
-    GETARR, // 26
-    GETARRA, // 27
+    FREEARR, // 24
+    SETARR, // 25
+    SETARRA, // 26
+    GETARR, // 27
+    GETARRA, // 28
+    PRINTS, // 29
 }

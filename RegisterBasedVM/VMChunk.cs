@@ -7,12 +7,14 @@ public class VMChunk
     public double[] Constants { get; private set; } = new double[512];
     public uint[] MethodTable { get; private set; } = new uint[512];
 
-    public uint SetConstant(float value)
+    public uint SetConstant(double value)
     {
-        var index = Constants.IndexOf(value);
-        if (index != -1)
+        for (int i = 0; i < currUsedConstantsIndex; i++)
         {
-            return (uint)index;
+            if (Constants[i] == value)
+            {
+                return (uint)i;
+            }
         }
         Constants[currUsedConstantsIndex] = value;
         return currUsedConstantsIndex++;
