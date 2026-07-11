@@ -14,14 +14,50 @@ public unsafe class VirtualMachine
     private static readonly int _heapSize = 16 * 1024 * 1024;
     private uint _heapHeader = 0;
     private byte[] _heap = new byte[_heapSize];
-    uint rngState = 2463534215; // RNG seed
+    private uint _rngState = 2463534215; // RNG seed
     private char[] _outBuffer = new char[65536];
+
+    private readonly Dictionary<ushort, HostFFIDelegate> _registeredHostMethods = new();
+
+    public void RegisterHostMethod(ushort methodIndex, HostFFIDelegate del)
+    {
+        _registeredHostMethods[methodIndex] = del;
+    }
+
+    public delegate void HostFFIDelegate(ref VMState state);
+
+    public Span<double> GetDoubleSpan(double registerValue, int count) =>
+        new Span<double>((void*)(ulong)registerValue, count);
+
+    public Span<byte> GetByteSpan(double registerValue, int count) =>
+        new Span<byte>((void*)(ulong)registerValue, count);
+
+    public Span<double> GetDoubleSpanFromOffset(uint offset, int count)
+    {
+        fixed (byte* heapPtr = _heap)
+            return new Span<double>(heapPtr + offset, count);
+    }
+
+    public Span<byte> GetByteSpanFromOffset(uint offset, int count)
+    {
+        fixed (byte* heapPtr = _heap)
+            return new Span<byte>(heapPtr + offset, count);
+    }
 
     public void LoadProgram(VMChunk chunk, int[] breakpoints)
     {
         _instructions = chunk.Instructions;
         _constants = chunk.Constants;
         _methods = chunk.MethodTable;
+
+        foreach (var pair in _registeredHostMethods)
+        {
+            if ((_methods[pair.Key] & 0x80000000) == 0)
+            {
+                _methods[pair.Key] = pair.Key | 0x80000000;
+            }
+        }
+
         BasePtr = 0;
         _breakpoints = breakpoints;
     }
@@ -37,7 +73,7 @@ public unsafe class VirtualMachine
         }
     }
 
-    public unsafe void RunFast()
+    public unsafe ExecutionResult RunFast()
     {
         double* RegPtr = stackalloc double[256];
         Unsafe.InitBlockUnaligned(RegPtr, 0, 256 * sizeof(double));
@@ -52,7 +88,6 @@ public unsafe class VirtualMachine
             *(uint*)heapPtr = 0xFFFFFFFF;
             *(uint*)(heapPtr + 4) = (uint)_heapSize;
             Console.Error.WriteLine("Starting VM...");
-            // var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             VMState state = new VMState
             {
                 RegPtr = RegPtr,
@@ -64,134 +99,377 @@ public unsafe class VirtualMachine
                 FreeBlockHeaderPointer = _heapHeader,
                 BasePtr = 0,
                 CallStackPtr = framePtr,
-                RngState = rngState,
+                CallStackLimit = framePtr + 32,
+                RngState = _rngState,
                 OutBufferPtr = outBufferPtr,
                 OutBufferCapacity = _outBuffer.Length,
                 OutBufferOffset = 0,
             };
             var stopwatch = Stopwatch.StartNew();
-            while (true)
+            try
             {
-                Instruction instruction = new Instruction(*state.Ip++);
-#if DEBUG
-                if (_breakpoints.Contains((int)state.Ip - (int)state.InstPtr))
+                while (true)
                 {
-                    DumpRegisters(state.RegPtr);
-                    Console.ReadLine();
-                }
-                Thread.Sleep(50);
-                Console.WriteLine(
-                    $"[TRACE] PC:{(state.Ip - state.InstPtr):D4} | Op:{instruction.Op, -8} | A:{instruction.A, -3} | B:{instruction.B, -3} | C:{instruction.C, -3} | R45:{Reg(state.RegPtr, state.BasePtr, 45)} | R46:{Reg(state.RegPtr, state.BasePtr, 46)} | R47:{Reg(state.RegPtr, state.BasePtr, 47)} | R59:{Reg(state.RegPtr, state.BasePtr, 59)} | R60:{Reg(state.RegPtr, state.BasePtr, 60)} | R61:{Reg(state.RegPtr, state.BasePtr, 61)}"
-                );
+                    Instruction instruction = new Instruction(*state.Ip++);
+#if DEBUG_SLOW
+                    if (_breakpoints.Contains((int)state.Ip - (int)state.InstPtr))
+                    {
+                        DumpRegisters(state.RegPtr);
+                        Console.ReadLine();
+                    }
+                    Thread.Sleep(50);
+                    Console.WriteLine(
+                        $"[TRACE] PC:{(state.Ip - state.InstPtr):D4} | Op:{instruction.Op, -8} | A:{instruction.A, -3} | B:{instruction.B, -3} | C:{instruction.C, -3} | R45:{Reg(state.RegPtr, state.BasePtr, 45)} | R46:{Reg(state.RegPtr, state.BasePtr, 46)} | R47:{Reg(state.RegPtr, state.BasePtr, 47)} | R59:{Reg(state.RegPtr, state.BasePtr, 59)} | R60:{Reg(state.RegPtr, state.BasePtr, 60)} | R61:{Reg(state.RegPtr, state.BasePtr, 61)}"
+                    );
 #endif
-                switch (instruction.Op)
-                {
-                    case OpCode.LOADC:
-                        ExecuteLoadC(instruction, ref state);
-                        break;
-                    case OpCode.MOVE:
-                        ExecuteMove(instruction, ref state);
-                        break;
-                    case OpCode.UNM:
-                        ExecuteUnm(instruction, ref state);
-                        break;
-                    case OpCode.SWAP:
-                        ExecuteSwap(instruction, ref state);
-                        break;
-                    case OpCode.ADD:
-                        ExecuteAdd(instruction, ref state);
-                        break;
-                    case OpCode.SUB:
-                        ExecuteSub(instruction, ref state);
-                        break;
-                    case OpCode.MUL:
-                        ExecuteMul(instruction, ref state);
-                        break;
-                    case OpCode.DIV:
-                        ExecuteDiv(instruction, ref state);
-                        break;
-                    case OpCode.POW:
-                        ExecutePow(instruction, ref state);
-                        break;
-                    case OpCode.SQRT:
-                        ExecuteSqrt(instruction, ref state);
-                        break;
-                    case OpCode.FISR:
-                        ExecuteFisr(instruction, ref state);
-                        break;
-                    case OpCode.JUMP:
-                        ExecuteJump(instruction, ref state);
-                        break;
-                    case OpCode.CALL:
-                        ExecuteCall(instruction, ref state);
-                        break;
-                    case OpCode.RETURN:
-                        ExecuteReturn(instruction, ref state);
-                        break;
-                    case OpCode.PRINT:
-                        ExecutePrint(instruction, ref state);
-                        break;
-                    case OpCode.PRINTA:
-                        ExecutePrintA(instruction, ref state);
-                        break;
-                    case OpCode.EQ:
-                        ExecuteEq(instruction, ref state);
-                        break;
-                    case OpCode.LT:
-                        ExecuteLt(instruction, ref state);
-                        break;
-                    case OpCode.LE:
-                        ExecuteLe(instruction, ref state);
-                        break;
-                    case OpCode.HALT:
-                        stopwatch.Stop();
-                        ExecuteHalt(instruction, ref state);
-                        Console.Error.WriteLine($"Execution time:{stopwatch.ElapsedMilliseconds} ms");
-                        return;
-                    case OpCode.RAND:
-                        ExecuteRand(instruction, ref state);
-                        break;
-                    case OpCode.FOR:
-                        ExecuteFor(instruction, ref state);
-                        break;
-                    case OpCode.NEWARR:
-                        ExecuteNewArray(instruction, ref state);
-                        break;
-                    case OpCode.SETARR:
-                        ExecuteSetArray(instruction, ref state);
-                        break;
-                    case OpCode.SETARRA:
-                        ExecuteSetArrayASCII(instruction, ref state);
-                        break;
-                    case OpCode.GETARR:
-                        ExecuteGetArray(instruction, ref state);
-                        break;
-                    case OpCode.GETARRA:
-                        ExecuteGetArrayASCII(instruction, ref state);
-                        break;
-                    case OpCode.FREEARR:
-                        ExecuteFreeArray(instruction, ref state);
-                        break;
-                    case OpCode.BINAND:
-                        ExecuteBinaryAnd(instruction, ref state);
-                        break;
-                    case OpCode.BINOR:
-                        ExecuteBinaryOr(instruction, ref state);
-                        break;
-                    case OpCode.BINXOR:
-                        ExecuteBinaryXor(instruction, ref state);
-                        break;
-                    case OpCode.BINLSH:
-                        ExecuteBinaryLeftShift(instruction, ref state);
-                        break;
-                    case OpCode.BINRSH:
-                        ExecuteBinaryRightShift(instruction, ref state);
-                        break;
+                    switch (instruction.Op)
+                    {
+                        case OpCode.LOADC:
+                            ExecuteLoadC(instruction, ref state);
+                            break;
+                        case OpCode.MOVE:
+                            ExecuteMove(instruction, ref state);
+                            break;
+                        case OpCode.UNM:
+                            ExecuteUnm(instruction, ref state);
+                            break;
+                        case OpCode.SWAP:
+                            ExecuteSwap(instruction, ref state);
+                            break;
+                        case OpCode.ADD:
+                            ExecuteAdd(instruction, ref state);
+                            break;
+                        case OpCode.SUB:
+                            ExecuteSub(instruction, ref state);
+                            break;
+                        case OpCode.MUL:
+                            ExecuteMul(instruction, ref state);
+                            break;
+                        case OpCode.DIV:
+                            ExecuteDiv(instruction, ref state);
+                            break;
+                        case OpCode.POW:
+                            ExecutePow(instruction, ref state);
+                            break;
+                        case OpCode.SQRT:
+                            ExecuteSqrt(instruction, ref state);
+                            break;
+                        case OpCode.FISR:
+                            ExecuteFisr(instruction, ref state);
+                            break;
+                        case OpCode.JUMP:
+                            ExecuteJump(instruction, ref state);
+                            break;
+                        case OpCode.CALL:
+                            ExecuteCallOrFFI(instruction, ref state, this);
+                            break;
+                        case OpCode.RETURN:
+                            ExecuteReturn(instruction, ref state);
+                            break;
+                        case OpCode.PRINT:
+                            ExecutePrint(instruction, ref state);
+                            break;
+                        case OpCode.PRINTA:
+                            ExecutePrintA(instruction, ref state);
+                            break;
+                        case OpCode.EQ:
+                            ExecuteEq(instruction, ref state);
+                            break;
+                        case OpCode.LT:
+                            ExecuteLt(instruction, ref state);
+                            break;
+                        case OpCode.LE:
+                            ExecuteLe(instruction, ref state);
+                            break;
+                        case OpCode.HALT:
+                            stopwatch.Stop();
+                            ExecuteHalt(instruction, ref state);
+                            _rngState = state.RngState;
+                            Console.Error.WriteLine(
+                                $"Execution time:{stopwatch.ElapsedMilliseconds} ms ({stopwatch.ElapsedTicks} ticks, {stopwatch.Elapsed.TotalMicroseconds:F1} us)"
+                            );
+
+                            double[] regSnapshot = new double[256];
+                            new ReadOnlySpan<double>(RegPtr, 256).CopyTo(regSnapshot);
+
+                            int stackCount = (int)(state.CallStackPtr - framePtr);
+                            StackFrame[] stackSnapshot = new StackFrame[stackCount];
+                            for (int i = 0; i < stackCount; i++)
+                            {
+                                stackSnapshot[i] = framePtr[i];
+                            }
+
+                            return new ExecutionResult
+                            {
+                                Status = VMStatus.Halted,
+                                IpOffset = (int)(state.Ip - state.InstPtr - 1),
+                                RegistersSnapshot = regSnapshot,
+                                CallStackSnapshot = stackSnapshot,
+                                ErrorMessage = null,
+                            };
+                        case OpCode.RAND:
+                            ExecuteRand(instruction, ref state);
+                            break;
+                        case OpCode.FOR:
+                            ExecuteFor(instruction, ref state);
+                            break;
+                        case OpCode.NEWARR:
+                            ExecuteNewArray(instruction, ref state);
+                            break;
+                        case OpCode.SETARR:
+                            ExecuteSetArray(instruction, ref state);
+                            break;
+                        case OpCode.SETARRA:
+                            ExecuteSetArrayASCII(instruction, ref state);
+                            break;
+                        case OpCode.GETARR:
+                            ExecuteGetArray(instruction, ref state);
+                            break;
+                        case OpCode.GETARRA:
+                            ExecuteGetArrayASCII(instruction, ref state);
+                            break;
+                        case OpCode.FREEARR:
+                            ExecuteFreeArray(instruction, ref state);
+                            break;
+                        case OpCode.BINAND:
+                            ExecuteBinaryAnd(instruction, ref state);
+                            break;
+                        case OpCode.BINOR:
+                            ExecuteBinaryOr(instruction, ref state);
+                            break;
+                        case OpCode.BINXOR:
+                            ExecuteBinaryXor(instruction, ref state);
+                            break;
+                        case OpCode.BINLSH:
+                            ExecuteBinaryLeftShift(instruction, ref state);
+                            break;
+                        case OpCode.BINRSH:
+                            ExecuteBinaryRightShift(instruction, ref state);
+                            break;
+                    }
                 }
             }
+            catch (VMPanicException ex)
+            {
+                stopwatch.Stop();
+                _rngState = state.RngState;
 
-            // stopwatch.Stop();
-            // Console.Error.WriteLine($"Time: {stopwatch.ElapsedMilliseconds} ms");
+                double[] regSnapshot = new double[256];
+                new ReadOnlySpan<double>(RegPtr, 256).CopyTo(regSnapshot);
+
+                int stackCount = (int)(state.CallStackPtr - framePtr);
+                StackFrame[] stackSnapshot = new StackFrame[stackCount];
+                for (int i = 0; i < stackCount; i++)
+                {
+                    stackSnapshot[i] = framePtr[i];
+                }
+
+                return new ExecutionResult
+                {
+                    Status = ex.Status,
+                    IpOffset = ex.IpOffset,
+                    RegistersSnapshot = regSnapshot,
+                    CallStackSnapshot = stackSnapshot,
+                    ErrorMessage = ex.Message,
+                };
+            }
+        }
+    }
+
+    public delegate void DebugHook(ref VMState state, Instruction instruction);
+
+    public unsafe ExecutionResult RunDebug(DebugHook onInstructionExecuted)
+    {
+        double* RegPtr = stackalloc double[256];
+        Unsafe.InitBlockUnaligned(RegPtr, 0, 256 * sizeof(double));
+
+        StackFrame* framePtr = stackalloc StackFrame[32];
+        fixed (uint* instPtr = _instructions)
+        fixed (double* constPtr = _constants)
+        fixed (uint* methodTablePtr = _methods)
+        fixed (byte* heapPtr = _heap)
+        fixed (char* outBufferPtr = _outBuffer)
+        {
+            *(uint*)heapPtr = 0xFFFFFFFF;
+            *(uint*)(heapPtr + 4) = (uint)_heapSize;
+            Console.Error.WriteLine("Starting VM in Debug Mode...");
+            VMState state = new VMState
+            {
+                RegPtr = RegPtr,
+                ConstPtr = constPtr,
+                MethodTablePtr = methodTablePtr,
+                InstPtr = instPtr,
+                Ip = instPtr,
+                HeapPtr = heapPtr,
+                FreeBlockHeaderPointer = _heapHeader,
+                BasePtr = 0,
+                CallStackPtr = framePtr,
+                CallStackLimit = framePtr + 32,
+                RngState = _rngState,
+                OutBufferPtr = outBufferPtr,
+                OutBufferCapacity = _outBuffer.Length,
+                OutBufferOffset = 0,
+            };
+            var stopwatch = Stopwatch.StartNew();
+            try
+            {
+                while (true)
+                {
+                    Instruction instruction = new Instruction(*state.Ip++);
+
+                    onInstructionExecuted?.Invoke(ref state, instruction);
+
+                    switch (instruction.Op)
+                    {
+                        case OpCode.LOADC:
+                            ExecuteLoadC(instruction, ref state);
+                            break;
+                        case OpCode.MOVE:
+                            ExecuteMove(instruction, ref state);
+                            break;
+                        case OpCode.UNM:
+                            ExecuteUnm(instruction, ref state);
+                            break;
+                        case OpCode.SWAP:
+                            ExecuteSwap(instruction, ref state);
+                            break;
+                        case OpCode.ADD:
+                            ExecuteAdd(instruction, ref state);
+                            break;
+                        case OpCode.SUB:
+                            ExecuteSub(instruction, ref state);
+                            break;
+                        case OpCode.MUL:
+                            ExecuteMul(instruction, ref state);
+                            break;
+                        case OpCode.DIV:
+                            ExecuteDiv(instruction, ref state);
+                            break;
+                        case OpCode.POW:
+                            ExecutePow(instruction, ref state);
+                            break;
+                        case OpCode.SQRT:
+                            ExecuteSqrt(instruction, ref state);
+                            break;
+                        case OpCode.FISR:
+                            ExecuteFisr(instruction, ref state);
+                            break;
+                        case OpCode.JUMP:
+                            ExecuteJump(instruction, ref state);
+                            break;
+                        case OpCode.CALL:
+                            ExecuteCallOrFFI(instruction, ref state, this);
+                            break;
+                        case OpCode.RETURN:
+                            ExecuteReturn(instruction, ref state);
+                            break;
+                        case OpCode.PRINT:
+                            ExecutePrint(instruction, ref state);
+                            break;
+                        case OpCode.PRINTA:
+                            ExecutePrintA(instruction, ref state);
+                            break;
+                        case OpCode.EQ:
+                            ExecuteEq(instruction, ref state);
+                            break;
+                        case OpCode.LT:
+                            ExecuteLt(instruction, ref state);
+                            break;
+                        case OpCode.LE:
+                            ExecuteLe(instruction, ref state);
+                            break;
+                        case OpCode.HALT:
+                            stopwatch.Stop();
+                            ExecuteHalt(instruction, ref state);
+                            _rngState = state.RngState;
+                            Console.Error.WriteLine(
+                                $"Debug Execution time:{stopwatch.ElapsedMilliseconds} ms ({stopwatch.ElapsedTicks} ticks, {stopwatch.Elapsed.TotalMicroseconds:F1} us)"
+                            );
+
+                            double[] regSnapshot = new double[256];
+                            new ReadOnlySpan<double>(RegPtr, 256).CopyTo(regSnapshot);
+
+                            int stackCount = (int)(state.CallStackPtr - framePtr);
+                            StackFrame[] stackSnapshot = new StackFrame[stackCount];
+                            for (int i = 0; i < stackCount; i++)
+                            {
+                                stackSnapshot[i] = framePtr[i];
+                            }
+
+                            return new ExecutionResult
+                            {
+                                Status = VMStatus.Halted,
+                                IpOffset = (int)(state.Ip - state.InstPtr - 1),
+                                RegistersSnapshot = regSnapshot,
+                                CallStackSnapshot = stackSnapshot,
+                                ErrorMessage = null,
+                            };
+                        case OpCode.RAND:
+                            ExecuteRand(instruction, ref state);
+                            break;
+                        case OpCode.FOR:
+                            ExecuteFor(instruction, ref state);
+                            break;
+                        case OpCode.NEWARR:
+                            ExecuteNewArray(instruction, ref state);
+                            break;
+                        case OpCode.SETARR:
+                            ExecuteSetArray(instruction, ref state);
+                            break;
+                        case OpCode.SETARRA:
+                            ExecuteSetArrayASCII(instruction, ref state);
+                            break;
+                        case OpCode.GETARR:
+                            ExecuteGetArray(instruction, ref state);
+                            break;
+                        case OpCode.GETARRA:
+                            ExecuteGetArrayASCII(instruction, ref state);
+                            break;
+                        case OpCode.FREEARR:
+                            ExecuteFreeArray(instruction, ref state);
+                            break;
+                        case OpCode.BINAND:
+                            ExecuteBinaryAnd(instruction, ref state);
+                            break;
+                        case OpCode.BINOR:
+                            ExecuteBinaryOr(instruction, ref state);
+                            break;
+                        case OpCode.BINXOR:
+                            ExecuteBinaryXor(instruction, ref state);
+                            break;
+                        case OpCode.BINLSH:
+                            ExecuteBinaryLeftShift(instruction, ref state);
+                            break;
+                        case OpCode.BINRSH:
+                            ExecuteBinaryRightShift(instruction, ref state);
+                            break;
+                    }
+                }
+            }
+            catch (VMPanicException ex)
+            {
+                stopwatch.Stop();
+                _rngState = state.RngState;
+
+                double[] regSnapshot = new double[256];
+                new ReadOnlySpan<double>(RegPtr, 256).CopyTo(regSnapshot);
+
+                int stackCount = (int)(state.CallStackPtr - framePtr);
+                StackFrame[] stackSnapshot = new StackFrame[stackCount];
+                for (int i = 0; i < stackCount; i++)
+                {
+                    stackSnapshot[i] = framePtr[i];
+                }
+
+                return new ExecutionResult
+                {
+                    Status = ex.Status,
+                    IpOffset = ex.IpOffset,
+                    RegistersSnapshot = regSnapshot,
+                    CallStackSnapshot = stackSnapshot,
+                    ErrorMessage = ex.Message,
+                };
+            }
         }
     }
 
@@ -264,8 +542,39 @@ public unsafe class VirtualMachine
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static unsafe void ExecuteCallOrFFI(
+        Instruction instruction,
+        ref VMState state,
+        VirtualMachine vm
+    )
+    {
+        ushort methodIndex = instruction.B;
+        if ((vm._methods[methodIndex] & 0x80000000) != 0)
+        {
+            byte start = instruction.A;
+            state.BasePtr += start;
+            state.RegPtr += state.BasePtr;
+            vm._registeredHostMethods[methodIndex](ref state);
+            state.RegPtr -= state.BasePtr;
+            state.BasePtr -= start;
+        }
+        else
+        {
+            ExecuteCall(instruction, ref state);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteCall(Instruction instruction, ref VMState state)
     {
+        if (state.CallStackPtr >= state.CallStackLimit)
+        {
+            throw new VMPanicException(
+                VMStatus.StackOverflow,
+                (int)(state.Ip - state.InstPtr - 1),
+                "Call stack overflow"
+            );
+        }
         byte start = instruction.A;
         ushort methodIndex = instruction.B;
         int currentPcIndex = (int)(state.Ip - state.InstPtr);
@@ -341,6 +650,14 @@ public unsafe class VirtualMachine
         double valB = b < 256 ? Reg(state.RegPtr, state.BasePtr, b) : state.ConstPtr[b - 256];
         ushort c = instruction.C;
         double valC = c < 256 ? Reg(state.RegPtr, state.BasePtr, c) : state.ConstPtr[c - 256];
+        if (valC == 0.0)
+        {
+            throw new VMPanicException(
+                VMStatus.DivisionByZero,
+                (int)(state.Ip - state.InstPtr - 1),
+                "Division by zero"
+            );
+        }
         Reg(state.RegPtr, state.BasePtr, a) = valB / valC;
         return true;
     }
@@ -442,8 +759,18 @@ public unsafe class VirtualMachine
             FlushOutput(ref state);
         }
 
-        Span<char> span = new Span<char>(state.OutBufferPtr + state.OutBufferOffset, state.OutBufferCapacity - state.OutBufferOffset);
-        if (valB.TryFormat(span, out int charsWritten, default, System.Globalization.CultureInfo.InvariantCulture))
+        Span<char> span = new Span<char>(
+            state.OutBufferPtr + state.OutBufferOffset,
+            state.OutBufferCapacity - state.OutBufferOffset
+        );
+        if (
+            valB.TryFormat(
+                span,
+                out int charsWritten,
+                default,
+                System.Globalization.CultureInfo.InvariantCulture
+            )
+        )
         {
             state.OutBufferOffset += charsWritten;
             state.OutBufferPtr[state.OutBufferOffset++] = '\n';
@@ -477,8 +804,18 @@ public unsafe class VirtualMachine
             FlushOutput(ref state);
         }
 
-        Span<char> span = new Span<char>(state.OutBufferPtr + state.OutBufferOffset, state.OutBufferCapacity - state.OutBufferOffset);
-        if (valB.TryFormat(span, out int charsWritten, default, System.Globalization.CultureInfo.InvariantCulture))
+        Span<char> span = new Span<char>(
+            state.OutBufferPtr + state.OutBufferOffset,
+            state.OutBufferCapacity - state.OutBufferOffset
+        );
+        if (
+            valB.TryFormat(
+                span,
+                out int charsWritten,
+                default,
+                System.Globalization.CultureInfo.InvariantCulture
+            )
+        )
         {
             state.OutBufferOffset += charsWritten;
         }
@@ -584,9 +921,6 @@ public unsafe class VirtualMachine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state)
     {
-        /*
-         * TODO: fix this code so that it works with the new linked list architecture
-         */
         byte pointerAddress = instruction.A;
         uint size = instruction.Bx;
 
@@ -608,15 +942,13 @@ public unsafe class VirtualMachine
         }
         if (currAddress == 0xFFFFFFFF || blockSize < valSize)
         {
-            throw new OutOfMemoryException(
-                "VM heap ran out of memory on instruction " + (state.Ip - state.InstPtr)
+            throw new VMPanicException(
+                VMStatus.OutOfMemory,
+                (int)(state.Ip - state.InstPtr - 1),
+                "VM heap ran out of memory"
             );
         }
 
-        // Console.Error.WriteLine(
-        //     $"prev: {prevAddress}, curr: {currAddress}, valSize: {valSize} next: {nextAddress}"
-        // );
-        // Console.Error.WriteLine(state.FreeBlockHeaderPointer);
         if (blockSize > valSize)
         {
             if (prevAddress != 0xFFFFFFFF)
@@ -629,7 +961,8 @@ public unsafe class VirtualMachine
             *(uint*)(state.HeapPtr + currAddress) = valSize;
             *(uint*)(state.HeapPtr + currAddress + valSize) = nextAddress;
             *(uint*)(state.HeapPtr + currAddress + valSize + 4) = blockSize - valSize;
-            Reg(state.RegPtr, state.BasePtr, pointerAddress) = currAddress + 4;
+            Reg(state.RegPtr, state.BasePtr, pointerAddress) = (double)
+                (ulong)(state.HeapPtr + currAddress + 4);
         }
         else
         {
@@ -638,7 +971,8 @@ public unsafe class VirtualMachine
             else
                 state.FreeBlockHeaderPointer = 0xFFFFFFFF;
             *(uint*)(state.HeapPtr + currAddress) = valSize;
-            Reg(state.RegPtr, state.BasePtr, pointerAddress) = currAddress + 4;
+            Reg(state.RegPtr, state.BasePtr, pointerAddress) = (double)
+                (ulong)(state.HeapPtr + currAddress + 4);
         }
         return true;
     }
@@ -647,8 +981,10 @@ public unsafe class VirtualMachine
     public static unsafe bool ExecuteFreeArray(Instruction instruction, ref VMState state)
     {
         byte registerAddress = instruction.A;
-        uint vmPointer = (uint)Reg(state.RegPtr, state.BasePtr, registerAddress);
-        uint realAddress = vmPointer - 4;
+        byte* arrayPtr = (byte*)(ulong)Reg(state.RegPtr, state.BasePtr, registerAddress);
+        if (arrayPtr == null)
+            return true;
+        uint realAddress = (uint)(arrayPtr - state.HeapPtr) - 4;
         uint freedSize = *(uint*)(state.HeapPtr + realAddress);
         uint leftBlock = 0xFFFFFFFF;
         uint rightBlock = state.FreeBlockHeaderPointer;
@@ -703,12 +1039,8 @@ public unsafe class VirtualMachine
         );
         double valValue =
             value < 256 ? Reg(state.RegPtr, state.BasePtr, value) : state.ConstPtr[value - 256];
-        uint destination = (uint)Reg(state.RegPtr, state.BasePtr, pointerAddress);
-        *(double*)(state.HeapPtr + destination + (valIndex) * 8) = valValue;
-        /*
-         * Very simple line. We take the heap pointer, increment it by the start of the array we allocated.
-         * Then increment it by the index of the value we want to set, multiplied by 8, because its a double.
-         */
+        byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, state.BasePtr, pointerAddress);
+        *(double*)(destinationPtr + (valIndex) * 8) = valValue;
         return true;
     }
 
@@ -724,9 +1056,8 @@ public unsafe class VirtualMachine
         byte valValue = (byte)(
             value < 256 ? Reg(state.RegPtr, state.BasePtr, value) : state.ConstPtr[value - 256]
         );
-        uint destination = (uint)Reg(state.RegPtr, state.BasePtr, pointerAddress);
-        *(state.HeapPtr + destination + valIndex) = valValue;
-        // Same thing as the double SetArray method, but for a byte
+        byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, state.BasePtr, pointerAddress);
+        *(destinationPtr + valIndex) = valValue;
         return true;
     }
 
@@ -735,15 +1066,13 @@ public unsafe class VirtualMachine
     {
         byte destination = instruction.A;
         ushort register = instruction.B;
-        uint address = (uint)Reg(state.RegPtr, state.BasePtr, register);
+        byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, state.BasePtr, register);
         ushort c = instruction.C;
         uint valIndex = (uint)(
             c < 256 ? Reg(state.RegPtr, state.BasePtr, c) : state.ConstPtr[c - 256]
         );
 
-        Reg(state.RegPtr, state.BasePtr, destination) = *(double*)(
-            state.HeapPtr + address + (valIndex * 8)
-        );
+        Reg(state.RegPtr, state.BasePtr, destination) = *(double*)(addressPtr + (valIndex * 8));
         return true;
     }
 
@@ -752,13 +1081,13 @@ public unsafe class VirtualMachine
     {
         byte destination = instruction.A;
         ushort register = instruction.B;
-        uint address = (uint)Reg(state.RegPtr, state.BasePtr, register);
+        byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, state.BasePtr, register);
         ushort c = instruction.C;
         uint valIndex = (uint)(
             c < 256 ? Reg(state.RegPtr, state.BasePtr, c) : state.ConstPtr[c - 256]
         );
 
-        Reg(state.RegPtr, state.BasePtr, destination) = *(state.HeapPtr + address + valIndex);
+        Reg(state.RegPtr, state.BasePtr, destination) = *(addressPtr + valIndex);
         return true;
     }
 
@@ -820,5 +1149,179 @@ public unsafe class VirtualMachine
         double valC = c < 256 ? Reg(state.RegPtr, state.BasePtr, c) : state.ConstPtr[c - 256];
         Reg(state.RegPtr, state.BasePtr, a) = (double)((long)valB >> (int)valC);
         return true;
+    }
+
+    public static string Disassemble(VMChunk chunk)
+    {
+        if (chunk == null || chunk.Instructions == null)
+            return string.Empty;
+
+        var sb = new System.Text.StringBuilder();
+        int pc = 0;
+        uint[] instructions = chunk.Instructions;
+        double[] constants = chunk.Constants;
+
+        string GetValString(ushort val)
+        {
+            if (val < 256)
+                return $"r{val}";
+            int constIndex = val - 256;
+            if (constIndex < constants.Length)
+                return constants[constIndex]
+                    .ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return $"c[{constIndex}]";
+        }
+
+        while (pc < instructions.Length)
+        {
+            Instruction inst = new Instruction(instructions[pc]);
+            sb.Append($"{pc:D4}: ");
+
+            switch (inst.Op)
+            {
+                case OpCode.LOADC:
+                    {
+                        uint bx = inst.Bx;
+                        string val =
+                            bx < constants.Length
+                                ? constants[bx]
+                                    .ToString(System.Globalization.CultureInfo.InvariantCulture)
+                                : $"c[{bx}]";
+                        sb.AppendLine($"LOADC r{inst.A} {val}");
+                    }
+                    break;
+                case OpCode.MOVE:
+                    sb.AppendLine($"MOVE r{inst.A} r{inst.Bx}");
+                    break;
+                case OpCode.SWAP:
+                    sb.AppendLine($"SWP r{inst.A} r{inst.Bx}");
+                    break;
+                case OpCode.ADD:
+                case OpCode.SUB:
+                case OpCode.MUL:
+                case OpCode.DIV:
+                case OpCode.POW:
+                case OpCode.MOD:
+                case OpCode.SETARR:
+                case OpCode.SETARRA:
+                case OpCode.GETARR:
+                case OpCode.GETARRA:
+                case OpCode.BINAND:
+                case OpCode.BINOR:
+                case OpCode.BINXOR:
+                case OpCode.BINLSH:
+                case OpCode.BINRSH:
+                    {
+                        string opName = inst.Op.ToString();
+                        if (opName == "SWAP")
+                            opName = "SWP";
+                        sb.AppendLine(
+                            $"{opName} r{inst.A} {GetValString(inst.B)} {GetValString(inst.C)}"
+                        );
+                    }
+                    break;
+                case OpCode.UNM:
+                    sb.AppendLine($"UNM r{inst.A} {GetValString(inst.B)}");
+                    break;
+                case OpCode.JUMP:
+                    {
+                        int target = pc + 1 + inst.sBx26;
+                        sb.AppendLine($"JUMP {target:D4}");
+                    }
+                    break;
+                case OpCode.EQ:
+                case OpCode.LT:
+                case OpCode.LE:
+                    sb.AppendLine(
+                        $"{inst.Op} {inst.A} {GetValString(inst.B)} {GetValString(inst.C)}"
+                    );
+                    break;
+                case OpCode.HALT:
+                    sb.AppendLine("HALT");
+                    break;
+                case OpCode.PRINT:
+                    sb.AppendLine($"PRINT {GetValString(inst.B)}");
+                    break;
+                case OpCode.PRINTA:
+                    sb.AppendLine($"PRINTA {GetValString(inst.B)}");
+                    break;
+                case OpCode.RAND:
+                    sb.AppendLine($"RAND r{inst.A}");
+                    break;
+                case OpCode.SQRT:
+                    sb.AppendLine($"SQRT r{inst.A} {GetValString(inst.B)}");
+                    break;
+                case OpCode.FISR:
+                    sb.AppendLine($"FISR r{inst.A} {GetValString(inst.B)}");
+                    break;
+                case OpCode.CALL:
+                    {
+                        uint methodIndex = inst.Bx;
+                        sb.AppendLine($"CALL {methodIndex} r{inst.A}");
+                    }
+                    break;
+                case OpCode.RETURN:
+                    sb.AppendLine($"RETURN r{inst.A} r{inst.Bx}");
+                    break;
+                case OpCode.FOR:
+                    {
+                        if (pc + 1 < instructions.Length)
+                        {
+                            Instruction nextInst = new Instruction(instructions[pc + 1]);
+                            if (nextInst.Op == OpCode.FOR)
+                            {
+                                byte rIndex = inst.A;
+                                string rMax = GetValString(inst.B);
+                                string rStep = GetValString(inst.C);
+                                byte comp = nextInst.A;
+                                string compStr = comp switch
+                                {
+                                    0 => "<",
+                                    1 => ">",
+                                    2 => "<=",
+                                    3 => ">=",
+                                    _ => "?",
+                                };
+                                int target = (pc + 1) + nextInst.sBx16;
+                                sb.AppendLine(
+                                    $"FOR r{rIndex} {rMax} {rStep} {compStr} {target:D4}"
+                                );
+                                pc++;
+                                break;
+                            }
+                        }
+                        sb.AppendLine(
+                            $"FOR (incomplete) r{inst.A} {GetValString(inst.B)} {GetValString(inst.C)}"
+                        );
+                    }
+                    break;
+                case OpCode.FREEARR:
+                    sb.AppendLine($"FREEARR r{inst.A}");
+                    break;
+                default:
+                    sb.AppendLine($"UNKNOWN opcode {inst.Op} (value: {inst.Value})");
+                    break;
+            }
+            pc++;
+        }
+
+        return sb.ToString();
+    }
+
+    public static string Disassemble(byte[] bytecode)
+    {
+        if (bytecode == null || bytecode.Length < 4)
+            return string.Empty;
+
+        int instructionCount = bytecode.Length / 4;
+        uint[] insts = new uint[instructionCount];
+        for (int i = 0; i < instructionCount; i++)
+        {
+            insts[i] = BitConverter.ToUInt32(bytecode, i * 4);
+        }
+
+        VMChunk chunk = new VMChunk();
+        chunk.Instructions = insts;
+        return Disassemble(chunk);
     }
 }

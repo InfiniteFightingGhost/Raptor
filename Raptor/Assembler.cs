@@ -3,10 +3,18 @@ namespace Raptor;
 public class Assembler
 {
     private readonly VMChunk _chunk;
+    private readonly Dictionary<string, uint> _hostMethods = new();
 
     public Assembler(VMChunk chunk)
     {
         _chunk = chunk;
+    }
+
+    public void RegisterHostMethod(string name, uint index)
+    {
+        string key = name.EndsWith("()") ? name : name + "()";
+        _hostMethods[key] = index;
+        _chunk.MethodTable[index] = index | 0x80000000;
     }
 
     public void Parse(List<string> lines)
@@ -228,11 +236,15 @@ public class Assembler
                         break;
                     case "CALL":
                         uint methodIndex = 0;
-                        try
+                        if (methods.TryGetValue(words[1], out uint idx))
                         {
-                            methodIndex = (uint)methods[words[1]];
+                            methodIndex = idx;
                         }
-                        catch
+                        else if (_hostMethods.TryGetValue(words[1], out uint hostIdx))
+                        {
+                            methodIndex = hostIdx;
+                        }
+                        else
                         {
                             Console.WriteLine("There isnt a method with name " + words[1]);
                             return;

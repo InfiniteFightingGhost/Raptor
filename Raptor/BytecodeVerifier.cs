@@ -4,7 +4,8 @@ namespace Raptor;
 
 public class VerificationException : Exception
 {
-    public VerificationException(string message) : base(message) { }
+    public VerificationException(string message)
+        : base(message) { }
 }
 
 public static class BytecodeVerifier
@@ -35,24 +36,29 @@ public static class BytecodeVerifier
             {
                 if (isForPayload[i])
                 {
-                    throw new VerificationException($"Instruction at index {i} cannot be a FOR opcode because it is inside the payload of a preceding FOR instruction.");
+                    throw new VerificationException(
+                        $"Instruction at index {i} cannot be a FOR opcode because it is inside the payload of a preceding FOR instruction."
+                    );
                 }
                 if (i + 1 >= length)
                 {
-                    throw new VerificationException($"Incomplete FOR loop instruction at the end of the program (index {i}).");
+                    throw new VerificationException(
+                        $"Incomplete FOR loop instruction at the end of the program (index {i})."
+                    );
                 }
-                
+
                 isForPayload[i + 1] = true;
                 Instruction secondWord = new Instruction(chunk.Instructions[i + 1]);
                 if (secondWord.Op != OpCode.FOR)
                 {
-                    throw new VerificationException($"Invalid compound FOR instruction structure at index {i + 1}. Second word opcode must be FOR.");
+                    throw new VerificationException(
+                        $"Invalid compound FOR instruction structure at index {i + 1}. Second word opcode must be FOR."
+                    );
                 }
-                
+
                 i++; // Skip the second word in boundary scan
             }
         }
-
         // Pass 2: Verify each instruction's operands, jumps, methods, and memory sizes
         for (int i = 0; i < length; i++)
         {
@@ -113,7 +119,9 @@ public static class BytecodeVerifier
                 case OpCode.LOADC:
                     if (inst.Bx >= chunk.Constants.Length)
                     {
-                        throw new VerificationException($"Instruction at index {i} ({op}) references constant index {inst.Bx} which is out of bounds (pool size: {chunk.Constants.Length}).");
+                        throw new VerificationException(
+                            $"Instruction at index {i} ({op}) references constant index {inst.Bx} which is out of bounds (pool size: {chunk.Constants.Length})."
+                        );
                     }
                     break;
 
@@ -122,11 +130,15 @@ public static class BytecodeVerifier
                         int target = i + inst.sBx26;
                         if (target < 0 || target >= length)
                         {
-                            throw new VerificationException($"Instruction at index {i} ({op}) jumps out of bounds to target index {target}.");
+                            throw new VerificationException(
+                                $"Instruction at index {i} ({op}) jumps out of bounds to target index {target}."
+                            );
                         }
                         if (!validStarts[target])
                         {
-                            throw new VerificationException($"Instruction at index {i} ({op}) jumps to invalid instruction start at index {target} (middle of a FOR instruction).");
+                            throw new VerificationException(
+                                $"Instruction at index {i} ({op}) jumps to invalid instruction start at index {target} (middle of a FOR instruction)."
+                            );
                         }
                     }
                     break;
@@ -137,17 +149,23 @@ public static class BytecodeVerifier
                         int target = i + secondWord.sBx16;
                         if (target < 0 || target >= length)
                         {
-                            throw new VerificationException($"FOR loop at index {i} has loop back jump target {target} which is out of bounds.");
+                            throw new VerificationException(
+                                $"FOR loop at index {i} has loop back jump target {target} which is out of bounds."
+                            );
                         }
                         if (!validStarts[target])
                         {
-                            throw new VerificationException($"FOR loop at index {i} has loop back jump target {target} which lands on an invalid instruction start (middle of a FOR instruction).");
+                            throw new VerificationException(
+                                $"FOR loop at index {i} has loop back jump target {target} which lands on an invalid instruction start (middle of a FOR instruction)."
+                            );
                         }
-                        
+
                         byte comp = secondWord.A;
                         if (comp > 3)
                         {
-                            throw new VerificationException($"FOR loop at index {i} has invalid comparison code {comp} (must be 0, 1, 2, or 3).");
+                            throw new VerificationException(
+                                $"FOR loop at index {i} has invalid comparison code {comp} (must be 0, 1, 2, or 3)."
+                            );
                         }
                     }
                     break;
@@ -157,19 +175,27 @@ public static class BytecodeVerifier
                 case OpCode.LE:
                     if (i + 1 >= length)
                     {
-                        throw new VerificationException($"Conditional branch at index {i} ({op}) is at the end of the program and cannot skip.");
+                        throw new VerificationException(
+                            $"Conditional branch at index {i} ({op}) is at the end of the program and cannot skip."
+                        );
                     }
                     if (!validStarts[i + 1])
                     {
-                        throw new VerificationException($"Conditional branch at index {i} ({op}) has its branch slot at index {i + 1} which is not a valid instruction start.");
+                        throw new VerificationException(
+                            $"Conditional branch at index {i} ({op}) has its branch slot at index {i + 1} which is not a valid instruction start."
+                        );
                     }
                     if (i + 2 >= length)
                     {
-                        throw new VerificationException($"Conditional branch at index {i} ({op}) has no instruction to execute if skip occurs.");
+                        throw new VerificationException(
+                            $"Conditional branch at index {i} ({op}) has no instruction to execute if skip occurs."
+                        );
                     }
                     if (!validStarts[i + 2])
                     {
-                        throw new VerificationException($"Conditional branch at index {i} ({op}) skips to index {i + 2} which is not a valid instruction start.");
+                        throw new VerificationException(
+                            $"Conditional branch at index {i} ({op}) skips to index {i + 2} which is not a valid instruction start."
+                        );
                     }
                     break;
 
@@ -178,16 +204,27 @@ public static class BytecodeVerifier
                         ushort methodIndex = inst.B;
                         if (methodIndex >= chunk.MethodTable.Length)
                         {
-                            throw new VerificationException($"Instruction at index {i} ({op}) references method index {methodIndex} which is out of bounds (Method Table size: {chunk.MethodTable.Length}).");
+                            throw new VerificationException(
+                                $"Instruction at index {i} ({op}) references method index {methodIndex} which is out of bounds (Method Table size: {chunk.MethodTable.Length})."
+                            );
                         }
                         uint targetAddress = chunk.MethodTable[methodIndex];
+                        if ((targetAddress & 0x80000000) != 0)
+                        {
+                            // Host FFI call, skip bytecode address verification
+                            break;
+                        }
                         if (targetAddress >= length)
                         {
-                            throw new VerificationException($"Method index {methodIndex} points to target address {targetAddress} which is out of bounds.");
+                            throw new VerificationException(
+                                $"Method index {methodIndex} points to target address {targetAddress} which is out of bounds."
+                            );
                         }
                         if (!validStarts[targetAddress])
                         {
-                            throw new VerificationException($"Method index {methodIndex} points to target address {targetAddress} which is not a valid instruction start.");
+                            throw new VerificationException(
+                                $"Method index {methodIndex} points to target address {targetAddress} which is not a valid instruction start."
+                            );
                         }
                     }
                     break;
@@ -203,11 +240,15 @@ public static class BytecodeVerifier
                                 double constVal = chunk.Constants[constIdx];
                                 if (constVal < 0)
                                 {
-                                    throw new VerificationException($"Instruction at index {i} ({op}) allocates negative array size {constVal}.");
+                                    throw new VerificationException(
+                                        $"Instruction at index {i} ({op}) allocates negative array size {constVal}."
+                                    );
                                 }
                                 if (constVal * 8 > heapSize)
                                 {
-                                    throw new VerificationException($"Instruction at index {i} ({op}) allocates array of size {constVal} doubles ({constVal * 8} bytes) which exceeds total heap size {heapSize} bytes.");
+                                    throw new VerificationException(
+                                        $"Instruction at index {i} ({op}) allocates array of size {constVal} doubles ({constVal * 8} bytes) which exceeds total heap size {heapSize} bytes."
+                                    );
                                 }
                             }
                         }
@@ -227,20 +268,34 @@ public static class BytecodeVerifier
             throw new VerificationException("Program contains no valid instructions.");
         }
         Instruction lastInst = new Instruction(chunk.Instructions[lastInstIndex]);
-        if (lastInst.Op != OpCode.HALT && lastInst.Op != OpCode.RETURN && lastInst.Op != OpCode.JUMP)
+        if (
+            lastInst.Op != OpCode.HALT
+            && lastInst.Op != OpCode.RETURN
+            && lastInst.Op != OpCode.JUMP
+        )
         {
-            throw new VerificationException($"Program does not end with a terminating instruction (HALT, RETURN, or JUMP). Found {lastInst.Op} at index {lastInstIndex}.");
+            throw new VerificationException(
+                $"Program does not end with a terminating instruction (HALT, RETURN, or JUMP). Found {lastInst.Op} at index {lastInstIndex}."
+            );
         }
     }
 
-    private static void VerifyRcOperand(ushort operand, int constantsCount, int instructionIndex, string operandName, OpCode op)
+    private static void VerifyRcOperand(
+        ushort operand,
+        int constantsCount,
+        int instructionIndex,
+        string operandName,
+        OpCode op
+    )
     {
         if (operand >= 256)
         {
             int constIndex = operand - 256;
             if (constIndex >= constantsCount)
             {
-                throw new VerificationException($"Instruction at index {instructionIndex} ({op}) has operand '{operandName}' mapping to constant index {constIndex} which is out of bounds (pool size: {constantsCount}).");
+                throw new VerificationException(
+                    $"Instruction at index {instructionIndex} ({op}) has operand '{operandName}' mapping to constant index {constIndex} which is out of bounds (pool size: {constantsCount})."
+                );
             }
         }
     }

@@ -1,620 +1,459 @@
 using Raptor;
 
-string recursiveFib =
-    @"DEFINE n 25
-DEFINE result r0
-LOADC result n
+// --- FFI & MEMORY ACCESS UNIT TEST ---
+Console.Error.WriteLine("Running Phase 3 FFI and Direct Memory Access Unit Tests...");
+VMChunk testChunk = new VMChunk();
+Assembler testAss = new(testChunk);
 
-CALL method() result
-PRINT result
-HALT
+testAss.RegisterHostMethod("addNumbers", 5);
+testAss.RegisterHostMethod("verifySpan", 6);
+testAss.RegisterHostMethod("verifyModifiedSpan", 7);
 
-method()
-    PRINT r0
-    LE 1 r0 2
-    JUMP math
-    LOADC r0 1
-    RETURN r0 r0
-
-math:
-    SUB r1 r0 1
-    CALL method() r1
-    SUB r2 r0 2
-    CALL method() r2
-    ADD r1 r1 r2
-    RETURN r1 r1";
-
-string linearFib =
-    @"DEFINE result r0
-DEFINE last r1
-DEFINE lastlast r2
-DEFINE counter r4
-DEFINE n 5
-LOADC result 1
-LOADC counter 1
-loop:
-    MOVE lastlast last
-    MOVE last result
-    ADD result last lastlast
-    ADD counter counter 1
-    PRINT counter
-    LT 1 counter n
-    JUMP loop
-PRINT result
-HALT";
-
-string monteCarlo =
-    @"DEFINE epochs 250000000
-DEFINE x r1
-DEFINE y r2
-DEFINE hits r4
-DEFINE i r5
-loop:
-    RAND x
-    RAND y
-    MUL x x x
-    MUL y y y
-    ADD y y x
-    LE 0 y 1
-    ADD hits hits 1
-    RAND x
-    RAND y
-    MUL x x x
-    MUL y y y
-    ADD y y x
-    LE 0 y 1
-    ADD hits hits 1
-    RAND x
-    RAND y
-    MUL x x x
-    MUL y y y
-    ADD y y x
-    LE 0 y 1
-    ADD hits hits 1
-    RAND x
-    RAND y
-    MUL x x x
-    MUL y y y
-    ADD y y x
-    LE 0 y 1
-    ADD hits hits 1
-    FOR i epochs 1 < loop
-DEFINE result r6
-DIV result hits epochs
-PRINT result
-HALT";
-
-string perceptron =
+string testScript =
     @"
-; --- CORE REGISTERS ---
-DEFINE x1 r0
-DEFINE x2 r1
-DEFINE w1 r2
-DEFINE w2 r3
-DEFINE b r4
-DEFINE expected r5
-DEFINE result r6
-DEFINE error r7
-DEFINE epochs r8
-DEFINE i r10
+LOADC r1 42.0
+LOADC r2 58.0
+CALL addNumbers() r1
+PRINT r1
 
-; --- SCRATCHPAD REGISTERS ---
-DEFINE temp1 r21
-DEFINE temp2 r22
-DEFINE temp3 r23
+NEWARR r3 8
+LOADC r4 0
+LOADC r5 999.0
+SETARR r3 r4 r5
 
-; --- INITIALIZATION ---
-LOADC epochs 10
-LOADC w1 1
-LOADC w2 1
-LOADC b 0
-
-loop:
-    ; --- Example 1: (0, 0) -> 0 ---
-    LOADC x1 0
-    LOADC x2 0
-    LOADC expected 0
-    CALL error() x1
-    CALL update() x1
-
-    ; --- Example 2: (1, 0) -> 1 ---
-    LOADC x1 1
-    LOADC x2 0
-    LOADC expected 0
-    CALL error() x1
-    CALL update() x1
-
-    ; --- Example 3: (0, 1) -> 1 ---
-    LOADC x1 0
-    LOADC x2 1
-    LOADC expected 0
-    CALL error() x1
-    CALL update() x1
-
-    ; --- Example 4: (1, 1) -> 1 ---
-    LOADC x1 1
-    LOADC x2 1
-    LOADC expected 1
-    CALL error() x1
-    CALL update() x1
-    FOR i epochs 1 < loop
-
-; --- OUTPUT RESULTS ---
-PRINT w1
-PRINT w2
-PRINT b
-HALT
-
-; --- FUNCTIONS ---
-
-print()
-    PRINT w1
-    PRINT w2
-    PRINT b
-    PRINTA 10
-    RETURN r0 r0
-
-dot()
-    MUL temp1 x1 w1
-    MUL temp2 x2 w2
-    ADD result temp1 temp2
-    RETURN r0 r0
-
-perceive()
-    CALL dot() x1
-    ADD result result b
-    LE 1 result 0
-    JUMP perceive_if
-    LOADC result 0
-    JUMP perceive_return
-    perceive_if:
-    LOADC result 1
-    perceive_return:
-    RETURN r0 r0
-
-error()
-    CALL perceive() x1
-    SUB error expected result
-    RETURN r0 r0
-
-update()
-    ; Update w1: w1 = w1 + (error * x1)
-    MUL temp1 error x1
-    ADD w1 w1 temp1
-
-    ; Update w2: w2 = w2 + (error * x2)
-    MUL temp2 error x2
-    ADD w2 w2 temp2
-
-    ; Update Bias: b = b + error
-    ADD b b error
-    
-    RETURN r0 r0";
-
-string hardArrayTest =
-    @"DEFINE n 25
-DEFINE result r0
-LOADC result n
-
-CALL method() result
-PRINT result
-HALT
-
-method()
-    LE 1 r0 2
-    JUMP math
-    LOADC r0 1
-    RETURN r0 r0
-
-math:
-    SUB r1 r0 1
-    CALL method() r1
-    SUB r2 r0 2
-    CALL method() r2
-    ADD r1 r1 r2
-    RETURN r1 r1";
-
-string arrayTest =
-    @"
-NEWARR r0 100
-NEWARR r1 100
-NEWARR r2 100
-FREEARR r0
-FREEARR r2
-FREEARR r1
-NEWARR r0 100
+CALL verifySpan() r3
+CALL verifyModifiedSpan() r3
 HALT
 ";
 
-string rayTracer =
-    @"
-; --- REGISTER DEFINITIONS ---
-; r0 is reserved as the index register for GETARR and GETARRA
-DEFINE width r1
-DEFINE height r2
-DEFINE i r3
-DEFINE j r4
-DEFINE spheres r5
-DEFINE t_min r6
-DEFINE hit_idx r7
-DEFINE rx r8
-DEFINE ry r9
-DEFINE rz r10
-DEFINE dx r11
-DEFINE dy r12
-DEFINE dz r13
-DEFINE len_sq r14
-DEFINE inv_len r15
-DEFINE sp_x r16
-DEFINE sp_y r17
-DEFINE sp_z r18
-DEFINE sp_r r19
-DEFINE sp_cr r20
-DEFINE sp_cg r21
-DEFINE sp_cb r22
-DEFINE b_coeff r23
-DEFINE c r24
-DEFINE disc r25
-DEFINE t r26
-DEFINE vx r27
-DEFINE vy r28
-DEFINE vz r29
-DEFINE vv r30
-DEFINE r_sq r31
-DEFINE px r32
-DEFINE py r33
-DEFINE pz r34
-DEFINE nx r35
-DEFINE ny r36
-DEFINE nz r37
-DEFINE lx r38
-DEFINE ly r39
-DEFINE lz r40
-DEFINE diffuse r41
-DEFINE temp1 r42
-DEFINE temp2 r43
-DEFINE temp3 r44
-DEFINE r r45
-DEFINE g r46
-DEFINE b_val r47
-DEFINE sky_t r48
-DEFINE noise r49
-DEFINE cx r50
-DEFINE cy r51
-DEFINE cz r52
-DEFINE rad r53
-DEFINE offset r54
-DEFINE b_neg r55
-DEFINE sq_disc r56
-DEFINE header_ptr r57
-DEFINE one_minus_sky_t r58
-DEFINE zero r59
-DEFINE max_val r60
-DEFINE one_val r61
-DEFINE r_temp r62
-DEFINE g_temp r63
-DEFINE b_temp r64
-DEFINE sin_theta r65
-DEFINE cos_theta r66
-DEFINE cam_x r67
-DEFINE cam_y r68
-DEFINE cam_z r69
-DEFINE step r70
+VirtualMachine testVm = new VirtualMachine();
 
-; --- INITIALIZATION ---
-LOADC width 2048
-LOADC height 2048
-LOADC zero 0.0
-LOADC max_val 255.0
-LOADC one_val 1.0
-LOADC sin_theta -999.123
-LOADC cos_theta -999.456
-LOADC cam_x -999.789
-LOADC cam_y -999.012
-LOADC cam_z -999.345
-SUB temp1 width one_val
-LOADC temp2 2.0
-DIV step temp2 temp1
+testVm.RegisterHostMethod(
+    5,
+    (ref VMState state) =>
+    {
+        unsafe
+        {
+            double a = state.RegPtr[0];
+            double b = state.RegPtr[1];
+            state.RegPtr[0] = a + b;
+        }
+    }
+);
 
-; Harmless swap to showcase SWAP instruction
-SWP temp1 temp2
+testVm.RegisterHostMethod(
+    6,
+    (ref VMState state) =>
+    {
+        unsafe
+        {
+            double ptrVal = state.RegPtr[0];
+            Span<double> span = testVm.GetDoubleSpan(ptrVal, 1);
+            if (span[0] != 999.0)
+            {
+                throw new Exception($"verifySpan failed: Expected 999.0, got {span[0]}");
+            }
+            Console.Error.WriteLine("Span verify success: raw memory contains " + span[0]);
+            span[0] = 777.0;
+        }
+    }
+);
 
-; Allocate and write PPM header into heap
-NEWARR header_ptr 18
-SETARRA header_ptr 0 80   ; 'P'
-SETARRA header_ptr 1 51   ; '3'
-SETARRA header_ptr 2 10   ; '\n'
-SETARRA header_ptr 3 50   ; '1'
-SETARRA header_ptr 4 48   ; '0'
-SETARRA header_ptr 5 52   ; '2'
-SETARRA header_ptr 6 56   ; '4'
-SETARRA header_ptr 7 32   ; ' '
-SETARRA header_ptr 8 50   ; '1'
-SETARRA header_ptr 9 48   ; '0'
-SETARRA header_ptr 10 52  ; '2'
-SETARRA header_ptr 11 56  ; '4'
-SETARRA header_ptr 12 10  ; '\n'
-SETARRA header_ptr 13 50  ; '2'
-SETARRA header_ptr 14 53  ; '5'
-SETARRA header_ptr 15 53  ; '5'
-SETARRA header_ptr 16 10  ; '\n'
-SETARRA header_ptr 17 0   ; Null-terminator
+testVm.RegisterHostMethod(
+    7,
+    (ref VMState state) =>
+    {
+        unsafe
+        {
+            double ptrVal = state.RegPtr[0];
+            Span<double> span = testVm.GetDoubleSpan(ptrVal, 1);
+            if (span[0] != 777.0)
+            {
+                throw new Exception($"verifyModifiedSpan failed: Expected 777.0, got {span[0]}");
+            }
+            Console.Error.WriteLine("Span verify success: modified raw memory contains " + span[0]);
+        }
+    }
+);
 
-LOADC offset 0
-print_header:
-    MOVE r0 offset
-    GETARRA temp1 header_ptr
-    EQ 0 temp1 zero
-    JUMP header_done
-    PRINTA temp1
-    ADD offset offset 1
-    JUMP print_header
-header_done:
-    FREEARR header_ptr
+testAss.Parse(testScript.Split("\n").ToList());
+BytecodeVerifier.Verify(testChunk, 1024);
+testVm.LoadProgram(testChunk, new int[] { });
+testVm.RunFast();
+Console.Error.WriteLine("Phase 3 FFI and Direct Memory Access Unit Tests PASSED.");
 
-; Initialize sphere data in heap (size 14: 2 spheres * 7 parameters)
-NEWARR spheres 14
-; Sphere 1: Center=(0, 0, 3), Radius=1, Color=(255, 100, 20)
-SETARR spheres 0 0
-SETARR spheres 1 0
-SETARR spheres 2 3
-SETARR spheres 3 1
-SETARR spheres 4 255
-SETARR spheres 5 100
-SETARR spheres 6 20
-; Sphere 2: Center=(0, -100.5, 3), Radius=100, Color=(20, 200, 20)
-SETARR spheres 7 0
-SETARR spheres 8 -100.5
-SETARR spheres 9 3
-SETARR spheres 10 100
-SETARR spheres 11 20
-SETARR spheres 12 200
-SETARR spheres 13 20
+// --- PHASE 5: PANIC DUMP UNIT TESTS ---
+Console.Error.WriteLine("Running Phase 5 Panic Dump Unit Tests...");
 
-LOADC j 0
-LOADC ry 1.0
-
-y_loop:
-    LOADC i 0
-    LOADC rx -1.0
-x_loop:
-    ; Normalize ray direction D = (rx, ry, 1.0)
-    MUL dx rx cos_theta
-    SUB dx dx sin_theta
-    MOVE dy ry
-    MUL dz rx sin_theta
-    ADD dz dz cos_theta
-    MUL len_sq rx rx
-    MUL temp1 ry ry
-    ADD len_sq len_sq temp1
-    ADD len_sq len_sq 1.0
-    MOVE inv_len len_sq
-    FISR inv_len inv_len
-    MUL dx dx inv_len
-    MUL dy dy inv_len
-    MUL dz dz inv_len
-
-    LOADC t_min 999999.0
-    LOADC hit_idx -1
-
-    ; Check Sphere 1
-    LOADC r0 0
-    GETARR sp_x spheres
-    LOADC r0 1
-    GETARR sp_y spheres
-    LOADC r0 2
-    GETARR sp_z spheres
-    LOADC r0 3
-    GETARR sp_r spheres
-    CALL intersect() r0
-    LE 0 t zero
-    JUMP check_sp2
-    LT 1 t t_min
-    JUMP set_sp1
-    JUMP check_sp2
-set_sp1:
-    MOVE t_min t
-    LOADC hit_idx 0
-
-check_sp2:
-    ; Check Sphere 2
-    LOADC r0 7
-    GETARR sp_x spheres
-    LOADC r0 8
-    GETARR sp_y spheres
-    LOADC r0 9
-    GETARR sp_z spheres
-    LOADC r0 10
-    GETARR sp_r spheres
-    CALL intersect() r0
-    LE 0 t zero
-    JUMP end_check
-    LT 1 t t_min
-    JUMP set_sp2
-    JUMP end_check
-set_sp2:
-    MOVE t_min t
-    LOADC hit_idx 1
-
-end_check:
-    EQ 0 hit_idx -1
-    JUMP render_sky
-
-    ; Shading for sphere hits
-    MUL px dx t_min
-    ADD px px cam_x
-    MUL py dy t_min
-    ADD py py cam_y
-    MUL pz dz t_min
-    ADD pz pz cam_z
-
-    EQ 0 hit_idx zero
-    JUMP hit_sphere1
-    JUMP hit_sphere2
-
-hit_sphere1:
-    LOADC cx 0.0
-    LOADC cy 0.0
-    LOADC cz 3.0
-    LOADC rad 1.0
-    LOADC r0 4
-    GETARR sp_cr spheres
-    LOADC r0 5
-    GETARR sp_cg spheres
-    LOADC r0 6
-    GETARR sp_cb spheres
-    JUMP compute_shading
-
-hit_sphere2:
-    LOADC cx 0.0
-    LOADC cy -100.5
-    LOADC cz 3.0
-    LOADC rad 100.0
-    LOADC sp_cr 10.0
-    LOADC sp_cg 80.0
-    LOADC sp_cb 10.0
-
-compute_shading:
-    ; Normal N = (P - C) / rad
-    SUB nx px cx
-    SUB ny py cy
-    SUB nz pz cz
-    DIV nx nx rad
-    DIV ny ny rad
-    DIV nz nz rad
-
-    ; Light direction L = normalized(1, 1, -1)
-    LOADC lx 0.57735
-    LOADC ly 0.57735
-    LOADC lz -0.57735
-
-    ; Diffuse = N . L
-    MUL diffuse nx lx
-    MUL temp1 ny ly
-    ADD diffuse diffuse temp1
-    MUL temp1 nz lz
-    ADD diffuse diffuse temp1
-
-    LE 0 diffuse zero
-    JUMP set_ambient
-    JUMP apply_diffuse
-set_ambient:
-    LOADC diffuse 0
-apply_diffuse:
-    ADD diffuse diffuse 0.15
-    LE 0 diffuse one_val
-    JUMP output_color
-    LOADC diffuse 1.0
-
-output_color:
-    MUL r sp_cr diffuse
-    MUL g sp_cg diffuse
-    MUL b_val sp_cb diffuse
-    JUMP print_pixel
-
-render_sky:
-    MUL sky_t dy 0.5
-    ADD sky_t sky_t 0.5
-    SUB one_minus_sky_t 1.0 sky_t
-    MUL r one_minus_sky_t 255.0
-    MUL temp1 sky_t 128.0
-    ADD r r temp1
-    MUL g one_minus_sky_t 255.0
-    MUL temp1 sky_t 178.0
-    ADD g g temp1
-    MUL b_val one_minus_sky_t 255.0
-    MUL temp1 sky_t 255.0
-    ADD b_val b_val temp1
-
-    ; Add random grain to sky background
-    RAND noise
-    MUL noise noise 15.0
-    ADD r r noise
-    ADD g g noise
-    ADD b_val b_val noise
-
-print_pixel:
-    ; Clamp and truncate r
-    LT 0 r zero
-    JUMP r_not_neg
-    LOADC r 0.0
-r_not_neg:
-    LT 0 max_val r
-    JUMP r_not_high
-    LOADC r 255.0
-r_not_high:
-    BINAND r r r
-    ; Clamp and truncate g
-    LT 0 g zero
-    JUMP g_not_neg
-    LOADC g 0.0
-g_not_neg:
-    LT 0 max_val g
-    JUMP g_not_high
-    LOADC g 255.0
-g_not_high:
-    BINAND g g g
-    ; Clamp and truncate b_val
-    LT 0 b_val zero
-    JUMP b_not_neg
-    LOADC b_val 0.0
-b_not_neg:
-    LT 0 max_val b_val
-    JUMP b_not_high
-    LOADC b_val 255.0
-b_not_high:
-    BINAND b_val b_val b_val
-    PRINT r
-    PRINT g
-    PRINT b_val
-
-    ADD rx rx step
-    ADD i i 1
-    LT 1 i width
-    JUMP x_loop
-
-    SUB ry ry step
-    FOR j height 1 < y_loop
-
-FREEARR spheres
+// 1. Division by Zero Test
+{
+    VMChunk chunkDivZero = new VMChunk();
+    Assembler assDiv = new(chunkDivZero);
+    string script =
+        @"
+LOADC r1 10.0
+LOADC r2 0.0
+DIV r3 r1 r2
 HALT
-
-; --- SPHERE INTERSECTION FUNCTION ---
-intersect()
-    SUB vx cam_x sp_x
-    SUB vy cam_y sp_y
-    SUB vz cam_z sp_z
-    MUL temp1 vx vx
-    MUL temp2 vy vy
-    MUL temp3 vz vz
-    ADD vv temp1 temp2
-    ADD vv vv temp3
-    MUL r_sq sp_r sp_r
-    SUB c vv r_sq
-    MUL b_coeff vx dx
-    MUL temp1 vy dy
-    ADD b_coeff b_coeff temp1
-    MUL temp1 vz dz
-    ADD b_coeff b_coeff temp1
-    MUL temp1 b_coeff b_coeff
-    SUB disc temp1 c
-    LT 1 disc zero
-    JUMP no_hit
-    SQRT sq_disc disc
-    UNM b_neg b_coeff
-    SUB t b_neg sq_disc
-    RETURN r0 r0
-no_hit:
-    LOADC t -1.0
-    RETURN r0 r0
 ";
+    assDiv.Parse(script.Split("\n").ToList());
+    BytecodeVerifier.Verify(chunkDivZero, 1024);
+    VirtualMachine vm = new VirtualMachine();
+    vm.LoadProgram(chunkDivZero, new int[] { });
+    ExecutionResult result = vm.RunFast();
+    if (result.Status != VMStatus.DivisionByZero)
+    {
+        throw new Exception(
+            $"Panic Dump check failed: Expected DivisionByZero, got {result.Status}"
+        );
+    }
+    if (result.RegistersSnapshot[1] != 10.0 || result.RegistersSnapshot[2] != 0.0)
+    {
+        throw new Exception("Panic Dump check failed: Register snapshot values are incorrect.");
+    }
+    Console.Error.WriteLine(
+        "Division by zero panic dump: PASSED (IpOffset: " + result.IpOffset + ")"
+    );
+}
 
-VMChunk chunk = new VMChunk();
-Assembler ass = new(chunk);
-ass.Parse(monteCarlo.Split("\n").ToList());
-VirtualMachine machine = new VirtualMachine();
-machine.LoadProgram(chunk, new int[] { });
-machine.RunFast();
+// 2. Heap Out of Memory Test
+{
+    VMChunk chunkOom = new VMChunk();
+    Assembler assOom = new(chunkOom);
+    string script =
+        @"
+LOADC r1 20000000.0
+NEWARR r2 r1
+HALT
+";
+    assOom.Parse(script.Split("\n").ToList());
+    BytecodeVerifier.Verify(chunkOom, 1024);
+    VirtualMachine vm = new VirtualMachine();
+    vm.LoadProgram(chunkOom, new int[] { });
+    ExecutionResult result = vm.RunFast();
+    if (result.Status != VMStatus.OutOfMemory)
+    {
+        throw new Exception($"Panic Dump check failed: Expected OutOfMemory, got {result.Status}");
+    }
+    if (result.RegistersSnapshot[1] != 20000000.0)
+    {
+        throw new Exception("Panic Dump check failed: Register snapshot values are incorrect.");
+    }
+    Console.Error.WriteLine("OutOfMemory panic dump: PASSED (IpOffset: " + result.IpOffset + ")");
+}
+
+// 3. Call Stack Overflow Test
+{
+    VMChunk chunkOverflow = new VMChunk();
+    Assembler assOverflow = new(chunkOverflow);
+
+    string script =
+        @"
+CALL recCall() r0
+HALT
+recCall()
+CALL recCall() r0
+HALT
+";
+    assOverflow.Parse(script.Split("\n").ToList());
+
+    BytecodeVerifier.Verify(chunkOverflow, 1024);
+    VirtualMachine vm = new VirtualMachine();
+    vm.LoadProgram(chunkOverflow, new int[] { });
+    ExecutionResult result = vm.RunFast();
+    if (result.Status != VMStatus.StackOverflow)
+    {
+        throw new Exception(
+            $"Panic Dump check failed: Expected StackOverflow, got {result.Status}"
+        );
+    }
+    if (result.CallStackSnapshot.Length != 32)
+    {
+        throw new Exception(
+            $"Panic Dump check failed: Expected 32 frames, got {result.CallStackSnapshot.Length}"
+        );
+    }
+    Console.Error.WriteLine(
+        "StackOverflow panic dump: PASSED (Frames captured: "
+            + result.CallStackSnapshot.Length
+            + ")"
+    );
+}
+
+// --- PHASE 5: DISASSEMBLER UNIT TESTS ---
+Console.Error.WriteLine("Running Phase 5 Disassembler Unit Tests...");
+{
+    VMChunk disChunk = new VMChunk();
+    Assembler disAss = new(disChunk);
+    string script =
+        @"
+LOADC r1 10.0
+LOADC r2 5.5
+ADD r3 r1 r2
+FOR r4 100 1 < loop
+PRINT r3
+loop:
+HALT
+";
+    disAss.Parse(script.Split("\n").ToList());
+    BytecodeVerifier.Verify(disChunk, 1024);
+    string disassembly = VirtualMachine.Disassemble(disChunk);
+    Console.Error.WriteLine("Disassembly result:\n" + disassembly);
+    if (
+        !disassembly.Contains("LOADC r1 10")
+        || !disassembly.Contains("ADD r3 r1 r2")
+        || !disassembly.Contains("FOR r4 100 1 < 0007")
+    )
+    {
+        throw new Exception("Disassembler test failed: output formatting is incorrect.");
+    }
+    Console.Error.WriteLine("Disassembler test: PASSED");
+}
+
+// --- PHASE 5: DEBUGGER HOOKS UNIT TESTS ---
+Console.Error.WriteLine("Running Phase 5 Debugger Hooks Unit Tests...");
+{
+    VMChunk dbgChunk = new VMChunk();
+    Assembler dbgAss = new(dbgChunk);
+    string script =
+        @"
+LOADC r1 10.0
+LOADC r2 20.0
+ADD r3 r1 r2
+HALT
+";
+    dbgAss.Parse(script.Split("\n").ToList());
+    BytecodeVerifier.Verify(dbgChunk, 1024);
+    VirtualMachine vm = new VirtualMachine();
+    vm.LoadProgram(dbgChunk, new int[] { });
+
+    int instructionsExecuted = 0;
+    vm.RunDebug(
+        (ref VMState state, Instruction instruction) =>
+        {
+            instructionsExecuted++;
+            if (instruction.Op == OpCode.ADD)
+            {
+                unsafe
+                {
+                    double r1Val = state.RegPtr[1];
+                    double r2Val = state.RegPtr[2];
+                    if (r1Val != 10.0 || r2Val != 20.0)
+                    {
+                        throw new Exception(
+                            $"Debugger hook inspection failed: expected r1=10, r2=20, got r1={r1Val}, r2={r2Val}"
+                        );
+                    }
+                }
+            }
+        }
+    );
+
+    if (instructionsExecuted != 4)
+    {
+        throw new Exception(
+            $"Debugger hook count failed: expected 4 instructions, executed {instructionsExecuted}"
+        );
+    }
+    Console.Error.WriteLine("Debugger Hooks test: PASSED");
+}
+
+// --- PHASE 6: BINARY FORMAT & SCRIPT ENGINE UNIT TESTS ---
+Console.Error.WriteLine("Running Phase 6 Binary Format Unit Tests...");
+{
+    // 1. Binary round-trip test: compile → save → load → execute → verify
+    VMChunk rtChunk = new VMChunk();
+    Assembler rtAss = new(rtChunk);
+    string rtSource =
+        @"
+LOADC r1 42.0
+LOADC r2 58.0
+ADD r3 r1 r2
+PRINT r3
+HALT
+";
+    rtAss.Parse(rtSource.Split("\n").ToList());
+    BytecodeVerifier.Verify(rtChunk, 1024);
+
+    string tempPath = Path.Combine(Path.GetTempPath(), "raptor_test_roundtrip.rbc");
+    try
+    {
+        RaptorBinary.Save(rtChunk, tempPath);
+
+        // Verify file starts with correct magic bytes
+        byte[] fileBytes = File.ReadAllBytes(tempPath);
+        if (fileBytes.Length < 20)
+            throw new Exception("Binary file too small for header.");
+        uint fileMagic = BitConverter.ToUInt32(fileBytes, 0);
+        if (fileMagic != RaptorBinary.MagicSignature)
+            throw new Exception(
+                $"Magic signature mismatch: expected 0x{RaptorBinary.MagicSignature:X8}, got 0x{fileMagic:X8}."
+            );
+
+        // Load and execute
+        VMChunk loadedChunk = RaptorBinary.Load(tempPath);
+        if (loadedChunk.Instructions.Length != rtChunk.Instructions.Length)
+            throw new Exception(
+                $"Instruction count mismatch: expected {rtChunk.Instructions.Length}, got {loadedChunk.Instructions.Length}."
+            );
+        for (int i = 0; i < rtChunk.Instructions.Length; i++)
+        {
+            if (loadedChunk.Instructions[i] != rtChunk.Instructions[i])
+                throw new Exception($"Instruction mismatch at index {i}.");
+        }
+
+        VirtualMachine rtVm = new VirtualMachine();
+        rtVm.LoadProgram(loadedChunk, Array.Empty<int>());
+        ExecutionResult rtResult = rtVm.RunFast();
+        if (rtResult.Status != VMStatus.Halted)
+            throw new Exception($"Round-trip execution failed with status: {rtResult.Status}.");
+        // r3 should contain 100.0 (42 + 58)
+        if (rtResult.RegistersSnapshot[3] != 100.0)
+            throw new Exception(
+                $"Round-trip result mismatch: expected r3=100, got r3={rtResult.RegistersSnapshot[3]}."
+            );
+
+        Console.Error.WriteLine("Binary round-trip test: PASSED");
+    }
+    finally
+    {
+        if (File.Exists(tempPath))
+            File.Delete(tempPath);
+    }
+
+    // 2. Invalid magic rejection test
+    string badPath = Path.Combine(Path.GetTempPath(), "raptor_test_badmagic.rbc");
+    try
+    {
+        File.WriteAllBytes(
+            badPath,
+            new byte[]
+            {
+                0xDE,
+                0xAD,
+                0xBE,
+                0xEF,
+                0x01,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+            }
+        );
+        bool caughtException = false;
+        try
+        {
+            RaptorBinary.Load(badPath);
+        }
+        catch (InvalidDataException)
+        {
+            caughtException = true;
+        }
+        if (!caughtException)
+            throw new Exception(
+                "Invalid magic test failed: expected InvalidDataException was not thrown."
+            );
+        Console.Error.WriteLine("Invalid magic rejection test: PASSED");
+    }
+    finally
+    {
+        if (File.Exists(badPath))
+            File.Delete(badPath);
+    }
+}
+
+Console.Error.WriteLine("Running Phase 6 ScriptEngine Unit Tests...");
+{
+    // 3. ScriptEngine.Run test: compile + execute in one call
+    ScriptEngine engine = new ScriptEngine();
+    ExecutionResult runResult = engine.Run(
+        @"
+LOADC r1 7.0
+LOADC r2 6.0
+MUL r3 r1 r2
+HALT
+"
+    );
+    if (runResult.Status != VMStatus.Halted)
+        throw new Exception($"ScriptEngine.Run failed with status: {runResult.Status}.");
+    if (runResult.RegistersSnapshot[3] != 42.0)
+        throw new Exception(
+            $"ScriptEngine.Run result mismatch: expected r3=42, got r3={runResult.RegistersSnapshot[3]}."
+        );
+    Console.Error.WriteLine("ScriptEngine.Run test: PASSED");
+
+    // 4. ScriptEngine.Execute(filePath) test: save binary → load + execute via engine
+    string enginePath = Path.Combine(Path.GetTempPath(), "raptor_test_engine.rbc");
+    try
+    {
+        VMChunk engineChunk = engine.Compile(
+            @"
+LOADC r1 123.0
+LOADC r2 456.0
+ADD r3 r1 r2
+HALT
+"
+        );
+        engine.SaveToFile(engineChunk, enginePath);
+        ExecutionResult fileResult = engine.Execute(enginePath);
+        if (fileResult.Status != VMStatus.Halted)
+            throw new Exception(
+                $"ScriptEngine.Execute(file) failed with status: {fileResult.Status}."
+            );
+        if (fileResult.RegistersSnapshot[3] != 579.0)
+            throw new Exception(
+                $"ScriptEngine.Execute(file) result mismatch: expected r3=579, got r3={fileResult.RegistersSnapshot[3]}."
+            );
+        Console.Error.WriteLine("ScriptEngine.Execute(filePath) test: PASSED");
+    }
+    finally
+    {
+        if (File.Exists(enginePath))
+            File.Delete(enginePath);
+    }
+
+    // 5. ScriptEngine + FFI test
+    ScriptEngine ffiEngine = new ScriptEngine();
+    ffiEngine.RegisterHostMethod(
+        "double",
+        0,
+        (ref VMState state) =>
+        {
+            unsafe
+            {
+                state.RegPtr[0] = state.RegPtr[0] * 2.0;
+            }
+        }
+    );
+    ExecutionResult ffiResult = ffiEngine.Run(
+        @"
+LOADC r1 21.0
+CALL double() r1
+MOVE r2 r1
+HALT
+"
+    );
+    if (ffiResult.Status != VMStatus.Halted)
+        throw new Exception($"ScriptEngine FFI test failed with status: {ffiResult.Status}.");
+    if (ffiResult.RegistersSnapshot[2] != 42.0)
+        throw new Exception(
+            $"ScriptEngine FFI test result mismatch: expected r2=42, got r2={ffiResult.RegistersSnapshot[2]}."
+        );
+    Console.Error.WriteLine("ScriptEngine + FFI test: PASSED");
+}
+
+Console.Error.WriteLine("All Phase 6 tests PASSED.");
 
 // Console.Error.WriteLine($"Compiled {chunk.Instructions?.Length ?? 0} instructions.");
 //
@@ -631,7 +470,7 @@ machine.RunFast();
 // }
 //
 // // Run verifier unit tests
-RunVerifierUnitTests();
+// RunVerifierUnitTests();
 
 // int sinIndex = Array.IndexOf(chunk.Constants, -999.123);
 // int cosIndex = Array.IndexOf(chunk.Constants, -999.456);
@@ -683,116 +522,3 @@ var originalOut = Console.Out;
 // Restore standard output
 Console.SetOut(originalOut);
 Console.Error.WriteLine("Successfully rendered 30 frames!");
-
-void RunVerifierUnitTests()
-{
-    Console.Error.WriteLine("Running verifier unit tests...");
-
-    // Test 1: Empty instructions
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception(
-            "Test 1 failed: Expected VerificationException for empty instructions."
-        );
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 2: Missing terminating instruction
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        badChunk.Instructions = new uint[] { Instruction.CreateABC(OpCode.ADD, 0, 0, 0) };
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception(
-            "Test 2 failed: Expected VerificationException for missing termination."
-        );
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 3: Invalid jump out of bounds
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        badChunk.Instructions = new uint[]
-        {
-            Instruction.CreateSBx26(OpCode.JUMP, 10),
-            Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
-        };
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception(
-            "Test 3 failed: Expected VerificationException for jump out of bounds."
-        );
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 4: Jump into the middle of a FOR instruction
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        badChunk.Instructions = new uint[]
-        {
-            Instruction.CreateSBx26(OpCode.JUMP, 2),
-            Instruction.CreateABC(OpCode.FOR, 0, 0, 0),
-            Instruction.CreateAsBx(OpCode.FOR, 0, 0),
-            Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
-        };
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception(
-            "Test 4 failed: Expected VerificationException for jump into middle of FOR."
-        );
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 5: Register/Constant index out of bounds
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        typeof(VMChunk)
-            .GetProperty("Constants")
-            .GetSetMethod(true)
-            .Invoke(badChunk, new object[] { new double[0] });
-        badChunk.Instructions = new uint[]
-        {
-            Instruction.CreateABC(OpCode.ADD, 0, 256, 0),
-            Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
-        };
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception(
-            "Test 5 failed: Expected VerificationException for out of bounds constant."
-        );
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 6: Incomplete FOR instruction
-    try
-    {
-        VMChunk badChunk = new VMChunk();
-        badChunk.Instructions = new uint[] { Instruction.CreateABC(OpCode.FOR, 0, 0, 0) };
-        BytecodeVerifier.Verify(badChunk, 1024);
-        throw new Exception("Test 6 failed: Expected VerificationException for incomplete FOR.");
-    }
-    catch (VerificationException)
-    { /* expected */
-    }
-
-    // Test 7: Valid program passes
-    {
-        VMChunk goodChunk = new VMChunk();
-        goodChunk.Instructions = new uint[] { Instruction.CreateABC(OpCode.HALT, 0, 0, 0) };
-        BytecodeVerifier.Verify(goodChunk, 1024);
-    }
-
-    Console.Error.WriteLine("All verifier unit tests PASSED successfully.");
-}

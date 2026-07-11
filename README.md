@@ -39,13 +39,13 @@ The project documentation is split into architectural specifications (`docs/`) a
 ## Project Structure
 
 The codebase is highly modular, consisting of the following key source files:
-- [VirtualMachine.cs](RegisterBasedVM/VirtualMachine.cs): The hot execution engine containing the dispatch loop and instruction handlers.
-- [VMState.cs](RegisterBasedVM/VMState.cs): The execution state packed into a single unsafe struct passed by reference.
-- [Instruction.cs](RegisterBasedVM/Instruction.cs): The bit-packed 32-bit instruction layout helper.
-- [Assembler.cs](RegisterBasedVM/Assembler.cs): The three-pass assembler compiling textual assembly syntax into bytecode chunks.
-- [VMChunk.cs](RegisterBasedVM/VMChunk.cs): Encapsulates compiled bytecode, the constant pool, and method lookup table.
-- [StackFrame.cs](RegisterBasedVM/StackFrame.cs): Call stack frame metadata.
-- [Program.cs](RegisterBasedVM/Program.cs): Entry point loading and running the benchmark suites and orbit raytracer.
+- [VirtualMachine.cs](Raptor/VirtualMachine.cs): The hot execution engine containing the dispatch loop and instruction handlers.
+- [VMState.cs](Raptor/VMState.cs): The execution state packed into a single unsafe struct passed by reference.
+- [Instruction.cs](Raptor/Instruction.cs): The bit-packed 32-bit instruction layout helper.
+- [Assembler.cs](Raptor/Assembler.cs): The three-pass assembler compiling textual assembly syntax into bytecode chunks.
+- [VMChunk.cs](Raptor/VMChunk.cs): Encapsulates compiled bytecode, the constant pool, and method lookup table.
+- [StackFrame.cs](Raptor/StackFrame.cs): Call stack frame metadata.
+- [Program.cs](Raptor/Program.cs): Entry point loading and running the benchmark suites and orbit raytracer.
 
 ---
 
@@ -60,13 +60,13 @@ To run the VM benchmarks and orbit raytracer:
 ### Build and Run
 Build the project in Release configuration for maximum speed and run:
 ```bash
-cd RegisterBasedVM
+cd Raptor
 dotnet run -c Release
 ```
 
 To render the 30-frame orbiting raytracer and generate the GIF:
 ```bash
-cd RegisterBasedVM
+cd Raptor
 chmod +x run_ray_tracer.sh
 ./run_ray_tracer.sh
 ```
