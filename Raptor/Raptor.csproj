@@ -12,4 +12,8 @@
     <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Raptor.Tests" />
+    <Compile Remove="Examples\**" />
+  </ItemGroup>
 </Project>

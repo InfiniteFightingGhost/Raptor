@@ -4,6 +4,7 @@ using System.Linq;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
 using Raptor;
+using Raptor.Attributes;
 
 namespace Raptor.Benchmarks;
 
@@ -22,6 +23,10 @@ public class VmBenchmarks
     private VMChunk _monteCarloChunk = null!;
     private VMChunk _perceptronChunk = null!;
     private VMChunk _rayTracerChunk = null!;
+    private VMChunk _ffiDirectChunk = null!;
+    private VMChunk _ffiTypedChunk = null!;
+    private VMChunk _ffiFallbackChunk = null!;
+    private VMChunk _internalCallChunk = null!;
     private VirtualMachine _vm = null!;
 
     [GlobalSetup]
@@ -33,6 +38,28 @@ public class VmBenchmarks
 
         // Pre-allocate VirtualMachine instance to verify Zero-GC runtime execution
         _vm = new VirtualMachine();
+
+        // Setup FFI host table for benchmarks
+        var table = new FFIHostTable();
+        table.Register("directAdd", 100, (ref VMState state) =>
+        {
+            unsafe
+            {
+                state.RegPtr[0] = state.RegPtr[0] + state.RegPtr[0];
+            }
+        });
+        table.RegisterModule(typeof(FfiBenchmarkBindings));
+        table.RegisterModule(typeof(FallbackBenchmarkBindings));
+
+        _vm.RegisterHostTable(table);
+
+        var engine = new ScriptEngine();
+        engine.RegisterHostTable(table);
+
+        _ffiDirectChunk = engine.Compile(FfiDirectBindAsm);
+        _ffiTypedChunk = engine.Compile(FfiTypedWrapperAsm);
+        _ffiFallbackChunk = engine.Compile(FfiFallbackAsm);
+        _internalCallChunk = engine.Compile(InternalCallAsm);
 
         // Compile and verify Fibonacci
         _fibChunk = new VMChunk();
@@ -97,6 +124,34 @@ public class VmBenchmarks
     public void Benchmark_RayTracerSingleFrame()
     {
         _vm.LoadProgram(_rayTracerChunk);
+        _vm.RunFast();
+    }
+
+    [Benchmark]
+    public void Benchmark_FfiDirectBind()
+    {
+        _vm.LoadProgram(_ffiDirectChunk);
+        _vm.RunFast();
+    }
+
+    [Benchmark]
+    public void Benchmark_FfiTypedWrapper()
+    {
+        _vm.LoadProgram(_ffiTypedChunk);
+        _vm.RunFast();
+    }
+
+    [Benchmark]
+    public void Benchmark_InternalCall()
+    {
+        _vm.LoadProgram(_internalCallChunk);
+        _vm.RunFast();
+    }
+
+    [Benchmark]
+    public void Benchmark_FfiFallback()
+    {
+        _vm.LoadProgram(_ffiFallbackChunk);
         _vm.RunFast();
     }
 
@@ -542,4 +597,66 @@ intersect()
 no_hit:
     LOADC t -1.0
     RETURN r0 r0";
+
+    private const string FfiDirectBindAsm =
+        @"
+DEFINE epochs 10000
+DEFINE i r2
+LOADC r1 2.0
+loop:
+    CALL directAdd() r1
+    FOR i epochs 1 < loop
+HALT";
+
+    private const string FfiTypedWrapperAsm =
+        @"
+DEFINE epochs 10000
+DEFINE i r2
+LOADC r1 2.0
+loop:
+    CALL typedAdd() r1
+    FOR i epochs 1 < loop
+HALT";
+
+    private const string FfiFallbackAsm =
+        @"
+DEFINE epochs 10000
+DEFINE i r2
+LOADC r1 1.0
+LOADC r2 2.0
+LOADC r3 3.0
+LOADC r4 4.0
+LOADC r5 5.0
+loop:
+    CALL sumFive() r1
+    FOR i epochs 1 < loop
+HALT";
+
+    private const string InternalCallAsm =
+        @"
+DEFINE epochs 10000
+DEFINE i r2
+LOADC r1 2.0
+loop:
+    CALL internalAdd() r1
+    FOR i epochs 1 < loop
+HALT
+
+internalAdd()
+    ADD r0 r0 r0
+    RETURN r0 r0";
+}
+
+[RaptorModule]
+public static class FfiBenchmarkBindings
+{
+    [RaptorMethod("typedAdd", 101)]
+    public static double TypedAdd(double a) => a + a;
+}
+
+[RaptorModule]
+public static class FallbackBenchmarkBindings
+{
+    [RaptorMethod("sumFive", 200)]
+    public static double SumFive(double a, double b, double c, double d, double e) => a + b + c + d + e;
 }

@@ -33,6 +33,18 @@ public sealed class ScriptEngine
     }
 
     /// <summary>
+    /// Registers all host FFI methods from an <see cref="FFIHostTable"/>.
+    /// Must be called before Compile() or Run() for the methods to be available.
+    /// </summary>
+    public void RegisterHostTable(FFIHostTable table)
+    {
+        foreach (var (name, (index, callback)) in table.Methods)
+        {
+            RegisterHostMethod(name, index, callback);
+        }
+    }
+
+    /// <summary>
     /// Registers a host FFI method that scripts can call by name.
     /// Must be called before Compile() or Run() for the method to be available.
     /// </summary>
@@ -66,6 +78,15 @@ public sealed class ScriptEngine
     }
 
     /// <summary>
+    /// Compiles a .rasm assembly source file into a verified VMChunk.
+    /// </summary>
+    public VMChunk CompileFile(string filePath)
+    {
+        string sourceText = System.IO.File.ReadAllText(filePath);
+        return Compile(sourceText);
+    }
+
+    /// <summary>
     /// Executes a pre-compiled VMChunk.
     /// </summary>
     public ExecutionResult Execute(VMChunk chunk)
@@ -89,6 +110,15 @@ public sealed class ScriptEngine
     public ExecutionResult Run(string sourceText)
     {
         var chunk = Compile(sourceText);
+        return Execute(chunk);
+    }
+
+    /// <summary>
+    /// Compiles a .rasm assembly source file, verifies it, and executes it in one call.
+    /// </summary>
+    public ExecutionResult RunFile(string filePath)
+    {
+        var chunk = CompileFile(filePath);
         return Execute(chunk);
     }
 

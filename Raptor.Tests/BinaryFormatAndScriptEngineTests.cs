@@ -153,4 +153,129 @@ HALT
         Assert.Equal(VMStatus.Halted, ffiResult.Status);
         Assert.Equal(42.0, ffiResult.RegistersSnapshot[2]);
     }
+
+    [Fact]
+    public void ScriptEngineCompileFileTest()
+    {
+        ScriptEngine engine = new ScriptEngine();
+        string rasmPath = Path.Combine(Path.GetTempPath(), "test_script.rasm");
+        try
+        {
+            File.WriteAllText(rasmPath, @"
+LOADC r1 10.0
+LOADC r2 5.0
+SUB r3 r1 r2
+HALT
+");
+            VMChunk chunk = engine.CompileFile(rasmPath);
+            ExecutionResult result = engine.Execute(chunk);
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(5.0, result.RegistersSnapshot[3]);
+        }
+        finally
+        {
+            if (File.Exists(rasmPath))
+                File.Delete(rasmPath);
+        }
+    }
+
+    [Fact]
+    public void ScriptEngineRunFileTest()
+    {
+        ScriptEngine engine = new ScriptEngine();
+        string rasmPath = Path.Combine(Path.GetTempPath(), "test_run_script.rasm");
+        try
+        {
+            File.WriteAllText(rasmPath, @"
+LOADC r1 8.0
+LOADC r2 9.0
+MUL r3 r1 r2
+HALT
+");
+            ExecutionResult result = engine.RunFile(rasmPath);
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(72.0, result.RegistersSnapshot[3]);
+        }
+        finally
+        {
+            if (File.Exists(rasmPath))
+                File.Delete(rasmPath);
+        }
+    }
+
+    [Fact]
+    public void ScriptWatcherHotReloadTest()
+    {
+        ScriptEngine engine = new ScriptEngine();
+        string rasmPath = Path.Combine(Path.GetTempPath(), "test_hotreload.rasm");
+        try
+        {
+            File.WriteAllText(rasmPath, @"
+LOADC r1 10.0
+HALT
+");
+            using ScriptWatcher watcher = new ScriptWatcher(engine, rasmPath);
+            
+            // Execute initial version
+            ExecutionResult result1 = engine.Execute(watcher.ActiveChunk);
+            Assert.Equal(10.0, result1.RegistersSnapshot[1]);
+
+            // Set up tracking events
+            bool reloadedFired = false;
+            watcher.OnReloaded += (chunk) => reloadedFired = true;
+
+            // Modify the script file
+            File.WriteAllText(rasmPath, @"
+LOADC r1 20.0
+HALT
+");
+
+            // Wait a brief moment for the file watcher to detect, compile, and reload
+            for (int i = 0; i < 50; i++)
+            {
+                if (reloadedFired) break;
+                System.Threading.Thread.Sleep(10);
+            }
+
+            Assert.True(reloadedFired, "Reload event did not fire.");
+
+            // Execute reloaded version
+            ExecutionResult result2 = engine.Execute(watcher.ActiveChunk);
+            Assert.Equal(20.0, result2.RegistersSnapshot[1]);
+        }
+        finally
+        {
+            if (File.Exists(rasmPath))
+                File.Delete(rasmPath);
+        }
+    }
+
+    [Fact]
+    public void RaptorScriptCompilerTest()
+    {
+        string raptorScript = @"
+var x = 10.0;
+var y = 5.0;
+x += y;        // Desugars to x = x + y -> x = 15.0
+x++;           // Desugars to x = x + 1 -> x = 16.0
+
+var result = 0.0;
+if (x > 15.0) {
+    result = x * 2.0; // 16.0 * 2.0 = 32.0
+} else {
+    result = 0.0;
+}
+";
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, out var variables);
+
+        ScriptEngine engine = new ScriptEngine();
+        VMChunk chunk = engine.Compile(rasmCode);
+        ExecutionResult runResult = engine.Execute(chunk);
+
+        Assert.Equal(VMStatus.Halted, runResult.Status);
+        
+        // Look up the register for variable 'result' dynamically
+        int resultReg = variables["result"];
+        Assert.Equal(32.0, runResult.RegistersSnapshot[resultReg]);
+    }
 }

@@ -179,7 +179,7 @@ public class Assembler
                     case "EQ":
                     case "LT":
                     case "LE":
-                        destA3 = byte.Parse(words[1]);
+                        destA3 = byte.Parse(words[1].TrimStart('r'));
 
                         if (words[2].StartsWith("r"))
                         {
@@ -389,8 +389,7 @@ public class Assembler
             }
             catch (Exception x)
             {
-                Console.WriteLine($"{x.Message} at line {pc}");
-                return;
+                throw new Exception($"Assembling failed at line {pc} for instruction '{item}': {x.Message}", x);
             }
             instructions.Add(instruction);
             pc++;

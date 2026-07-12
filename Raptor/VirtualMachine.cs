@@ -27,6 +27,17 @@ public unsafe class VirtualMachine
         _registeredHostMethods[methodIndex] = del;
     }
 
+    /// <summary>
+    /// Registers all host FFI methods from an <see cref="FFIHostTable"/>.
+    /// </summary>
+    public void RegisterHostTable(FFIHostTable table)
+    {
+        foreach (var (_, (index, callback)) in table.Methods)
+        {
+            RegisterHostMethod(index, callback);
+        }
+    }
+
     public delegate void HostFFIDelegate(ref VMState state);
 
     public Span<double> GetDoubleSpan(double registerValue, int count) =>

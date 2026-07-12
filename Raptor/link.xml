@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="Raptor">
+    <type fullname="Raptor.Attributes.*" preserve="all" />
+    <type fullname="Raptor.FFIHostTable" preserve="all" />
+    <type fullname="Raptor.ScriptEngine" preserve="all" />
+    <type fullname="Raptor.VirtualMachine" preserve="all" />
+  </assembly>
+</linker>
