@@ -12,8 +12,12 @@ public class BuildCommand : Command<BuildCommand.Settings>
         public string ScriptPath { get; set; }
 
         [CommandOption("-a|--omit-assembly")]
-        [Description("Omit raptor assembly if building.")]
+        [Description("Omit raptor assembly.")]
         public bool OmitRaptorAssembly { get; set; }
+
+        [CommandOption("-p|--print-ast")]
+        [Description("Print the compiled abstract syntax tree")]
+        public bool PrintAst { get; set; }
     }
 
     private readonly ScriptEngine _engine;
@@ -33,7 +37,7 @@ public class BuildCommand : Command<BuildCommand.Settings>
     )
     {
         string code = File.ReadAllText(settings.ScriptPath);
-        string asm = RaptorScriptCompiler.Compile(code);
+        string asm = RaptorScriptCompiler.Compile(code, printAst: settings.PrintAst);
         if (!Path.Exists("build" + Path.DirectorySeparatorChar))
         {
             Directory.CreateDirectory("build");

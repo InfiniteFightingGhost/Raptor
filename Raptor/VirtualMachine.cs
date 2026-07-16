@@ -238,6 +238,7 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
+                    HasError = false,
                 };
                 try
                 {
@@ -416,6 +417,7 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
+                    HasError = false,
                 };
                 try
                 {
@@ -603,6 +605,7 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
+                    HasError = false,
                 };
                 var stopwatch = Stopwatch.StartNew();
                 try

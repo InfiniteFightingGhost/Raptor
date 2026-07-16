@@ -10,11 +10,11 @@ AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 ```
 | Method             | Mean              | Error          | StdDev         | Median            | Gen0     | Allocated |
 |------------------- |------------------:|---------------:|---------------:|------------------:|---------:|----------:|
-| CallStack_Depth_10 |   842,554.8734 ns |  8,144.2226 ns |  7,618.1109 ns |   838,644.3359 ns |        - |         - |
-| CallStack_Depth_30 | 2,350,237.2843 ns | 17,555.6962 ns | 15,562.6674 ns | 2,348,619.4492 ns |        - |         - |
-| Ffi_InternalCall   |    81,133.6978 ns |    421.9917 ns |    374.0847 ns |    81,010.9195 ns |        - |         - |
-| Ffi_DirectBind     |    51,737.7509 ns |    364.3053 ns |    322.9471 ns |    51,716.6266 ns |        - |         - |
-| Ffi_TypedWrapper   |    60,475.8086 ns |    734.8589 ns |    687.3875 ns |    60,084.0997 ns |        - |         - |
-| Ffi_Fallback       |   720,294.5923 ns |  9,519.7209 ns |  8,904.7528 ns |   719,430.8564 ns | 171.8750 | 1440001 B |
-| Ffi_DirectOverhead |    49,653.6458 ns |    472.7186 ns |    442.1813 ns |    49,543.2073 ns |        - |         - |
-| NativeDelegate     |         0.0015 ns |      0.0030 ns |      0.0028 ns |         0.0000 ns |        - |         - |
+| CallStack_Depth_10 |   887,144.4497 ns | 17,230.8673 ns | 22,404.9965 ns |   895,421.2046 ns |        - |         - |
+| CallStack_Depth_30 | 2,439,146.1992 ns | 48,748.7983 ns | 65,078.2510 ns | 2,469,385.0781 ns |        - |         - |
+| Ffi_InternalCall   |    84,206.4169 ns |  1,683.3092 ns |  1,801.1220 ns |    84,927.4987 ns |        - |         - |
+| Ffi_DirectBind     |    53,799.8095 ns |  1,062.2014 ns |  2,353.7650 ns |    55,113.2361 ns |        - |         - |
+| Ffi_TypedWrapper   |    67,177.9088 ns |  1,309.6980 ns |  2,000.0473 ns |    67,978.0582 ns |        - |         - |
+| Ffi_Fallback       |   736,332.2801 ns | 13,927.5500 ns | 15,480.4349 ns |   732,458.3203 ns | 171.8750 | 1440001 B |
+| Ffi_DirectOverhead |    54,278.0642 ns |  1,068.9314 ns |  2,059.4680 ns |    55,112.8470 ns |        - |         - |
+| NativeDelegate     |         0.0090 ns |      0.0068 ns |      0.0064 ns |         0.0086 ns |        - |         - |
