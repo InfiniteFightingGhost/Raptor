@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Raptor.Benchmarks.ControlFlowBenchmark-20260713-162815</title>
+<title>Raptor.Benchmarks.ControlFlowBenchmark-20260715-124912</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -16,18 +16,16 @@
 BenchmarkDotNet v0.14.0, Arch Linux
 AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.101
-  [Host]   : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
-  ShortRun : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  [Host]     : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  DefaultJob : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
 </code></pre>
-<pre><code>Job=ShortRun  IterationCount=3  LaunchCount=1  
-WarmupCount=3  
-</code></pre>
+<pre><code></code></pre>
 
 <table>
 <thead><tr><th>Method                 </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th><th>Allocated</th><th>Alloc Ratio</th>
 </tr>
-</thead><tbody><tr><td>Benchmark_PredictableBranch</td><td>204.6 &mu;s</td><td>117.14 &mu;s</td><td>6.42 &mu;s</td><td>1.00</td><td>0.04</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_UnpredictableBranch</td><td>581.7 &mu;s</td><td>16.26 &mu;s</td><td>0.89 &mu;s</td><td>2.85</td><td>0.08</td><td>-</td><td>NA</td>
+</thead><tbody><tr><td>Benchmark_PredictableBranch</td><td>183.6 &mu;s</td><td>1.60 &mu;s</td><td>1.50 &mu;s</td><td>1.00</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_UnpredictableBranch</td><td>563.5 &mu;s</td><td>4.06 &mu;s</td><td>3.80 &mu;s</td><td>3.07</td><td>0.03</td><td>-</td><td>NA</td>
 </tr></tbody></table>
 </body>
 </html>

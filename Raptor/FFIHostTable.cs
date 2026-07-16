@@ -24,6 +24,7 @@ namespace Raptor
         private readonly List<RaptorMethodInfo> _methodInfos = new();
         private readonly HashSet<ushort> _usedIndices = new();
         private ushort _nextAutoIndex = 0;
+        private readonly Dictionary<ushort, IntPtr> _unmanagedCallbacks = new();
 
         /// <summary>
         /// All registered methods, keyed by name.
@@ -32,6 +33,11 @@ namespace Raptor
             string,
             (ushort Index, VirtualMachine.HostFFIDelegate Callback)
         > Methods => _methods;
+
+        /// <summary>
+        /// All registered unmanaged callbacks, mapped by method index.
+        /// </summary>
+        public IReadOnlyDictionary<ushort, IntPtr> UnmanagedCallbacks => _unmanagedCallbacks;
 
         /// <summary>
         /// Metadata for all registered methods.
@@ -53,6 +59,38 @@ namespace Raptor
             _usedIndices.Add(index);
             _methodInfos.Add(
                 new RaptorMethodInfo(name, index, null, false, null, System.Array.Empty<string>())
+            );
+            if (callback.Method.IsStatic && callback.Target == null)
+            {
+                _unmanagedCallbacks[index] = callback.Method.MethodHandle.GetFunctionPointer();
+            }
+        }
+
+        /// <summary>
+        /// Manually registers an unmanaged host method function pointer.
+        /// </summary>
+        public unsafe void Register(
+            string name,
+            ushort index,
+            delegate* unmanaged[Cdecl]<VMState*, void> callback
+        )
+        {
+            ValidateNoDuplicateName(name, "manual_unmanaged");
+            ValidateNoDuplicateIndex(index, name);
+            _unmanagedCallbacks[index] = (IntPtr)callback;
+            _usedIndices.Add(index);
+            _methodInfos.Add(
+                new RaptorMethodInfo(name, index, null, false, null, System.Array.Empty<string>())
+            );
+            _methods[name] = (
+                index,
+                (ref VMState state) =>
+                {
+                    fixed (VMState* p = &state)
+                    {
+                        callback(p);
+                    }
+                }
             );
         }
 
@@ -166,10 +204,14 @@ namespace Raptor
 
             VirtualMachine.HostFFIDelegate callback = CreateDelegate(method, instance);
 
+            if (method.IsStatic && IsDirectBindSignature(method))
+            {
+                _unmanagedCallbacks[index] = method.MethodHandle.GetFunctionPointer();
+            }
+
             var descAttr = method.GetCustomAttribute<RaptorDescriptionAttribute>();
             bool isPure = method.GetCustomAttribute<RaptorPureAttribute>() != null;
             var paramDescs = CollectParameterDescriptions(method);
-            Console.WriteLine("Param descs found is " + paramDescs?.Count);
             var exposedParams = new List<string>();
             foreach (var item in method.GetCustomAttributes<RaptorParamAttribute>())
             {

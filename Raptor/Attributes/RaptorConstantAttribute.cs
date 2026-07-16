@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+
 /// <summary>
 /// Marks a constant for automatic constant registration.
 /// </summary>

@@ -108,7 +108,7 @@
     <div class="container">
         <header>
             <h1>Raptor VM Consolidated Dashboard</h1>
-            <p class="meta">Generated on 2026-07-13 17:25:39 | BenchmarkDotNet Test Suite</p>
+            <p class="meta">Generated on 2026-07-16 16:54:41 | BenchmarkDotNet Test Suite</p>
         </header>
         <div class="tabs">
             <button class="tab-btn active" onclick="showSuite('CallStackBenchmark', this)">CallStackBenchmark</button>
@@ -175,6 +175,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -225,9 +226,10 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>871.68 μs</td>
-                            <td>5.095 μs</td>
-                            <td>4.766 μs</td>
+                            <td>842,554.8734 ns</td>
+                            <td>8,144.2226 ns</td>
+                            <td>7,618.1109 ns</td>
+                            <td>838,644.3359 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -276,9 +278,10 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>2,318.44 μs</td>
-                            <td>15.071 μs</td>
-                            <td>14.097 μs</td>
+                            <td>2,350,237.2843 ns</td>
+                            <td>17,555.6962 ns</td>
+                            <td>15,562.6674 ns</td>
+                            <td>2,348,619.4492 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -327,9 +330,10 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>83.96 μs</td>
-                            <td>1.661 μs</td>
-                            <td>3.318 μs</td>
+                            <td>81,133.6978 ns</td>
+                            <td>421.9917 ns</td>
+                            <td>374.0847 ns</td>
+                            <td>81,010.9195 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -378,9 +382,10 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>49.78 μs</td>
-                            <td>0.193 μs</td>
-                            <td>0.181 μs</td>
+                            <td>51,737.7509 ns</td>
+                            <td>364.3053 ns</td>
+                            <td>322.9471 ns</td>
+                            <td>51,716.6266 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -429,9 +434,10 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>61.52 μs</td>
-                            <td>0.329 μs</td>
-                            <td>0.308 μs</td>
+                            <td>60,475.8086 ns</td>
+                            <td>734.8589 ns</td>
+                            <td>687.3875 ns</td>
+                            <td>60,084.0997 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -480,14 +486,15 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>850.82 μs</td>
-                            <td>16.915 μs</td>
-                            <td>16.613 μs</td>
+                            <td>720,294.5923 ns</td>
+                            <td>9,519.7209 ns</td>
+                            <td>8,904.7528 ns</td>
+                            <td>719,430.8564 ns</td>
                             <td>171.8750</td>
                             <td>1440001 B</td>
                         </tr>
                         <tr>
-                            <td class="highlight">Ffi_NoWorkDoneCall</td>
+                            <td class="highlight">Ffi_DirectOverhead</td>
                             <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
@@ -531,9 +538,62 @@
                             <td>Default</td>
                             <td>16</td>
                             <td>Default</td>
-                            <td>49.56 μs</td>
-                            <td>0.207 μs</td>
-                            <td>0.173 μs</td>
+                            <td>49,653.6458 ns</td>
+                            <td>472.7186 ns</td>
+                            <td>442.1813 ns</td>
+                            <td>49,543.2073 ns</td>
+                            <td>0.0000</td>
+                            <td>0 B</td>
+                        </tr>
+                        <tr>
+                            <td class="highlight">NativeDelegate</td>
+                            <td>DefaultJob</td>
+                            <td>False</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>1111111111111111</td>
+                            <td>Empty</td>
+                            <td>RyuJit</td>
+                            <td>Default</td>
+                            <td>X64</td>
+                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
+                            <td>.NET 10.0</td>
+                            <td>False</td>
+                            <td>True</td>
+                            <td>False</td>
+                            <td>True</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>False</td>
+                            <td>False</td>
+                            <td>False</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>16</td>
+                            <td>Default</td>
+                            <td>0.0015 ns</td>
+                            <td>0.0030 ns</td>
+                            <td>0.0028 ns</td>
+                            <td>0.0000 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -594,6 +654,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -601,7 +662,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Benchmark_PredictableBranch</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -633,9 +694,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -643,18 +704,18 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>204.6 μs</td>
-                            <td>117.14 μs</td>
-                            <td>6.42 μs</td>
+                            <td>Default</td>
+                            <td>183.6 μs</td>
+                            <td>1.60 μs</td>
+                            <td>1.50 μs</td>
                             <td>1.00</td>
-                            <td>0.04</td>
+                            <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_UnpredictableBranch</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -686,9 +747,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -696,12 +757,12 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>581.7 μs</td>
-                            <td>16.26 μs</td>
-                            <td>0.89 μs</td>
-                            <td>2.85</td>
-                            <td>0.08</td>
+                            <td>Default</td>
+                            <td>563.5 μs</td>
+                            <td>4.06 μs</td>
+                            <td>3.80 μs</td>
+                            <td>3.07</td>
+                            <td>0.03</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
@@ -762,6 +823,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -769,7 +831,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Gameplay_EcsUpdate</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -801,9 +863,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -811,15 +873,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>25.31 μs</td>
-                            <td>1.386 μs</td>
-                            <td>0.076 μs</td>
+                            <td>Default</td>
+                            <td>20.79 μs</td>
+                            <td>0.199 μs</td>
+                            <td>0.186 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Gameplay_GridPathfinding</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -851,9 +913,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -861,15 +923,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>16.28 μs</td>
-                            <td>2.977 μs</td>
-                            <td>0.163 μs</td>
+                            <td>Default</td>
+                            <td>13.25 μs</td>
+                            <td>0.048 μs</td>
+                            <td>0.042 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Gameplay_DialogueTree</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -901,9 +963,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -911,15 +973,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>88.56 μs</td>
-                            <td>5.323 μs</td>
-                            <td>0.292 μs</td>
+                            <td>Default</td>
+                            <td>82.90 μs</td>
+                            <td>0.328 μs</td>
+                            <td>0.307 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Gameplay_InventorySort</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -951,9 +1013,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -961,10 +1023,10 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>58.63 μs</td>
-                            <td>3.968 μs</td>
-                            <td>0.217 μs</td>
+                            <td>Default</td>
+                            <td>49.88 μs</td>
+                            <td>0.642 μs</td>
+                            <td>0.601 μs</td>
                             <td>0 B</td>
                         </tr>
                     </tbody>
@@ -1024,6 +1086,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -1031,7 +1094,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Benchmark_Baseline</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1063,9 +1126,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1073,18 +1136,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>153.2 μs</td>
-                            <td>5.09 μs</td>
-                            <td>0.28 μs</td>
+                            <td>Default</td>
+                            <td>155.3 μs</td>
+                            <td>1.11 μs</td>
+                            <td>1.04 μs</td>
+                            <td>155.0 μs</td>
                             <td>1.00</td>
-                            <td>0.00</td>
+                            <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Add</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1116,9 +1180,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1126,18 +1190,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>223.7 μs</td>
-                            <td>242.89 μs</td>
-                            <td>13.31 μs</td>
-                            <td>1.46</td>
-                            <td>0.08</td>
+                            <td>Default</td>
+                            <td>236.2 μs</td>
+                            <td>4.71 μs</td>
+                            <td>11.38 μs</td>
+                            <td>242.3 μs</td>
+                            <td>1.52</td>
+                            <td>0.07</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Sub</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1169,9 +1234,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1179,18 +1244,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>230.9 μs</td>
-                            <td>11.82 μs</td>
-                            <td>0.65 μs</td>
+                            <td>Default</td>
+                            <td>235.3 μs</td>
+                            <td>4.70 μs</td>
+                            <td>11.71 μs</td>
+                            <td>240.5 μs</td>
                             <td>1.51</td>
-                            <td>0.00</td>
+                            <td>0.08</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Mul</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1222,9 +1288,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1232,18 +1298,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>208.8 μs</td>
-                            <td>242.20 μs</td>
-                            <td>13.28 μs</td>
-                            <td>1.36</td>
+                            <td>Default</td>
+                            <td>235.3 μs</td>
+                            <td>4.70 μs</td>
+                            <td>12.13 μs</td>
+                            <td>242.4 μs</td>
+                            <td>1.51</td>
                             <td>0.08</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Div</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1275,9 +1342,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1285,18 +1352,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>225.1 μs</td>
-                            <td>295.69 μs</td>
-                            <td>16.21 μs</td>
-                            <td>1.47</td>
-                            <td>0.09</td>
+                            <td>Default</td>
+                            <td>251.7 μs</td>
+                            <td>4.98 μs</td>
+                            <td>8.72 μs</td>
+                            <td>254.4 μs</td>
+                            <td>1.62</td>
+                            <td>0.06</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Sqrt</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1328,62 +1396,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>16</td>
-                            <td>3</td>
-                            <td>210.4 μs</td>
-                            <td>313.91 μs</td>
-                            <td>17.21 μs</td>
-                            <td>1.37</td>
-                            <td>0.10</td>
-                            <td>0 B</td>
-                            <td>NA</td>
-                        </tr>
-                        <tr>
-                            <td class="highlight">Benchmark_Fisr</td>
-                            <td>ShortRun</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>1111111111111111</td>
-                            <td>Empty</td>
-                            <td>RyuJit</td>
-                            <td>Default</td>
-                            <td>X64</td>
-                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
-                            <td>.NET 10.0</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1391,18 +1406,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>427.2 μs</td>
-                            <td>30.04 μs</td>
-                            <td>1.65 μs</td>
-                            <td>2.79</td>
+                            <td>Default</td>
+                            <td>195.4 μs</td>
+                            <td>2.34 μs</td>
+                            <td>1.96 μs</td>
+                            <td>194.6 μs</td>
+                            <td>1.26</td>
                             <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
-                            <td class="highlight">Benchmark_Rand</td>
-                            <td>ShortRun</td>
+                            <td class="highlight">Benchmark_Fisr</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1434,9 +1450,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1444,18 +1460,73 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>263.4 μs</td>
-                            <td>12.18 μs</td>
-                            <td>0.67 μs</td>
+                            <td>Default</td>
+                            <td>434.8 μs</td>
+                            <td>4.76 μs</td>
+                            <td>4.45 μs</td>
+                            <td>436.3 μs</td>
+                            <td>2.80</td>
+                            <td>0.03</td>
+                            <td>0 B</td>
+                            <td>NA</td>
+                        </tr>
+                        <tr>
+                            <td class="highlight">Benchmark_Rand</td>
+                            <td>DefaultJob</td>
+                            <td>False</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>1111111111111111</td>
+                            <td>Empty</td>
+                            <td>RyuJit</td>
+                            <td>Default</td>
+                            <td>X64</td>
+                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
+                            <td>.NET 10.0</td>
+                            <td>False</td>
+                            <td>True</td>
+                            <td>False</td>
+                            <td>True</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>False</td>
+                            <td>False</td>
+                            <td>False</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>Default</td>
+                            <td>16</td>
+                            <td>Default</td>
+                            <td>266.6 μs</td>
+                            <td>0.95 μs</td>
+                            <td>0.84 μs</td>
+                            <td>266.3 μs</td>
                             <td>1.72</td>
-                            <td>0.00</td>
+                            <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Loadc</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1487,9 +1558,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1497,18 +1568,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>181.1 μs</td>
-                            <td>24.50 μs</td>
-                            <td>1.34 μs</td>
-                            <td>1.18</td>
+                            <td>Default</td>
+                            <td>192.4 μs</td>
+                            <td>1.23 μs</td>
+                            <td>1.15 μs</td>
+                            <td>192.2 μs</td>
+                            <td>1.24</td>
                             <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Move</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1540,9 +1612,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1550,18 +1622,19 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>180.1 μs</td>
-                            <td>5.00 μs</td>
-                            <td>0.27 μs</td>
-                            <td>1.18</td>
-                            <td>0.00</td>
+                            <td>Default</td>
+                            <td>192.3 μs</td>
+                            <td>0.81 μs</td>
+                            <td>0.72 μs</td>
+                            <td>192.3 μs</td>
+                            <td>1.24</td>
+                            <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Jump</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1593,9 +1666,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1603,11 +1676,12 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>239.1 μs</td>
-                            <td>16.42 μs</td>
-                            <td>0.90 μs</td>
-                            <td>1.56</td>
+                            <td>Default</td>
+                            <td>237.5 μs</td>
+                            <td>0.79 μs</td>
+                            <td>0.74 μs</td>
+                            <td>237.6 μs</td>
+                            <td>1.53</td>
                             <td>0.01</td>
                             <td>0 B</td>
                             <td>NA</td>
@@ -1669,6 +1743,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -1676,7 +1751,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Lifecycle_Compile</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1708,9 +1783,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1718,16 +1793,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>36,832.69 ns</td>
-                            <td>23,412.635 ns</td>
-                            <td>1,283.326 ns</td>
+                            <td>Default</td>
+                            <td>37,110.7 ns</td>
+                            <td>707.85 ns</td>
+                            <td>695.21 ns</td>
                             <td>2.4414</td>
-                            <td>20920 B</td>
+                            <td>20824 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Lifecycle_Verify</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1759,9 +1834,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1769,16 +1844,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>71.18 ns</td>
-                            <td>3.756 ns</td>
-                            <td>0.206 ns</td>
-                            <td>0.0114</td>
-                            <td>96 B</td>
+                            <td>Default</td>
+                            <td>125.4 ns</td>
+                            <td>1.32 ns</td>
+                            <td>1.17 ns</td>
+                            <td>0.0000</td>
+                            <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Lifecycle_Load</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1810,9 +1885,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1820,16 +1895,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>122.50 ns</td>
-                            <td>15.395 ns</td>
-                            <td>0.844 ns</td>
+                            <td>Default</td>
+                            <td>123.7 ns</td>
+                            <td>0.67 ns</td>
+                            <td>0.59 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Lifecycle_Execute</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1861,9 +1936,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1871,10 +1946,10 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>178,801.94 ns</td>
-                            <td>179,836.145 ns</td>
-                            <td>9,857.426 ns</td>
+                            <td>Default</td>
+                            <td>187,346.0 ns</td>
+                            <td>3,699.16 ns</td>
+                            <td>5,305.23 ns</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
@@ -1935,6 +2010,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -1942,7 +2018,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Memory_ArrayAccess</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1974,9 +2050,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -1984,15 +2060,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>66.08 μs</td>
-                            <td>1.779 μs</td>
-                            <td>0.098 μs</td>
+                            <td>Default</td>
+                            <td>56.18 μs</td>
+                            <td>0.185 μs</td>
+                            <td>0.164 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Memory_AllocDeallocClean</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2024,9 +2100,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2034,15 +2110,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>14.30 μs</td>
-                            <td>0.245 μs</td>
-                            <td>0.013 μs</td>
+                            <td>Default</td>
+                            <td>13.85 μs</td>
+                            <td>0.058 μs</td>
+                            <td>0.055 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Memory_AllocDeallocChurn</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2074,9 +2150,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2084,10 +2160,10 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>17.60 μs</td>
-                            <td>2.613 μs</td>
-                            <td>0.143 μs</td>
+                            <td>Default</td>
+                            <td>17.10 μs</td>
+                            <td>0.109 μs</td>
+                            <td>0.102 μs</td>
                             <td>0 B</td>
                         </tr>
                     </tbody>
@@ -2147,6 +2223,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -2154,7 +2231,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Multithreaded_Scale_1</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2186,9 +2263,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2196,16 +2273,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>184.5 μs</td>
-                            <td>3.31 μs</td>
-                            <td>0.18 μs</td>
+                            <td>Default</td>
+                            <td>185.4 μs</td>
+                            <td>3.60 μs</td>
+                            <td>4.55 μs</td>
                             <td>0.0000</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Multithreaded_Scale_4</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2237,9 +2314,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2247,16 +2324,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>212.9 μs</td>
-                            <td>44.89 μs</td>
-                            <td>2.46 μs</td>
+                            <td>Default</td>
+                            <td>163.1 μs</td>
+                            <td>3.26 μs</td>
+                            <td>4.78 μs</td>
                             <td>0.2441</td>
-                            <td>2386 B</td>
+                            <td>2389 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Multithreaded_Scale_8</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2288,9 +2365,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2298,12 +2375,12 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>324.1 μs</td>
-                            <td>65.30 μs</td>
-                            <td>3.58 μs</td>
+                            <td>Default</td>
+                            <td>248.4 μs</td>
+                            <td>7.22 μs</td>
+                            <td>21.30 μs</td>
                             <td>0.0000</td>
-                            <td>3296 B</td>
+                            <td>3288 B</td>
                         </tr>
                     </tbody>
                 </table>
@@ -2362,6 +2439,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -2369,7 +2447,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Registers_Pressure_4</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2401,9 +2479,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2411,15 +2489,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>976.2 μs</td>
-                            <td>84.72 μs</td>
-                            <td>4.64 μs</td>
+                            <td>Default</td>
+                            <td>967.9 μs</td>
+                            <td>5.85 μs</td>
+                            <td>5.47 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Registers_Pressure_64</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2451,9 +2529,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2461,15 +2539,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>762.6 μs</td>
-                            <td>1,195.36 μs</td>
-                            <td>65.52 μs</td>
+                            <td>Default</td>
+                            <td>667.2 μs</td>
+                            <td>3.54 μs</td>
+                            <td>3.14 μs</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Registers_Pressure_128</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2501,9 +2579,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2511,10 +2589,10 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>771.7 μs</td>
-                            <td>1,088.65 μs</td>
-                            <td>59.67 μs</td>
+                            <td>Default</td>
+                            <td>662.3 μs</td>
+                            <td>3.14 μs</td>
+                            <td>2.78 μs</td>
                             <td>0 B</td>
                         </tr>
                     </tbody>
@@ -2574,6 +2652,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -2581,7 +2660,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Verifier_Scale_100</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2613,9 +2692,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2623,17 +2702,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>290.2 ns</td>
-                            <td>61.82 ns</td>
-                            <td>3.39 ns</td>
-                            <td>0.0305</td>
+                            <td>Default</td>
+                            <td>360.0 ns</td>
+                            <td>1.38 ns</td>
+                            <td>1.22 ns</td>
                             <td>0.0000</td>
-                            <td>256 B</td>
+                            <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Verifier_Scale_1000</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2665,9 +2743,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2675,17 +2753,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>2,679.4 ns</td>
-                            <td>52.47 ns</td>
-                            <td>2.88 ns</td>
-                            <td>0.2441</td>
+                            <td>Default</td>
+                            <td>2,616.9 ns</td>
+                            <td>11.99 ns</td>
+                            <td>11.22 ns</td>
                             <td>0.0000</td>
-                            <td>2048 B</td>
+                            <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Verifier_Scale_10000</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2717,9 +2794,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2727,17 +2804,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>26,751.1 ns</td>
-                            <td>2,247.05 ns</td>
-                            <td>123.17 ns</td>
-                            <td>2.3804</td>
-                            <td>0.0305</td>
-                            <td>20048 B</td>
+                            <td>Default</td>
+                            <td>25,885.0 ns</td>
+                            <td>125.32 ns</td>
+                            <td>117.23 ns</td>
+                            <td>0.0000</td>
+                            <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Verifier_Safety_InvalidJump</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2769,9 +2845,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2779,17 +2855,16 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>1,368.0 ns</td>
-                            <td>237.20 ns</td>
-                            <td>13.00 ns</td>
-                            <td>0.0648</td>
-                            <td>0.0000</td>
-                            <td>552 B</td>
+                            <td>Default</td>
+                            <td>2,654.6 ns</td>
+                            <td>21.86 ns</td>
+                            <td>20.45 ns</td>
+                            <td>0.0687</td>
+                            <td>584 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Verifier_Safety_InvalidMemory</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2821,9 +2896,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2831,13 +2906,12 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>1,472.6 ns</td>
-                            <td>200.84 ns</td>
-                            <td>11.01 ns</td>
-                            <td>0.0820</td>
-                            <td>0.0000</td>
-                            <td>688 B</td>
+                            <td>Default</td>
+                            <td>3,168.9 ns</td>
+                            <td>17.57 ns</td>
+                            <td>16.44 ns</td>
+                            <td>0.0839</td>
+                            <td>720 B</td>
                         </tr>
                     </tbody>
                 </table>
@@ -2896,6 +2970,7 @@
                             <th>Mean</th>
                             <th>Error</th>
                             <th>StdDev</th>
+                            <th>Median</th>
                             <th>Gen0</th>
                             <th>Allocated</th>
                         </tr>
@@ -2903,7 +2978,7 @@
                     <tbody>
                         <tr>
                             <td class="highlight">Benchmark_Fibonacci</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2935,9 +3010,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2945,16 +3020,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>139.7 ns</td>
-                            <td>9.31 ns</td>
-                            <td>0.51 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>177.0 ns</td>
+                            <td>0.70 ns</td>
+                            <td>0.62 ns</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_MonteCarlo</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2986,9 +3060,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -2996,16 +3070,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>1,842,739.9 ns</td>
-                            <td>161,918.55 ns</td>
-                            <td>8,875.30 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>1,836,551.0 ns</td>
+                            <td>9,561.78 ns</td>
+                            <td>8,476.27 ns</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_Perceptron</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3037,9 +3110,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3047,16 +3120,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>189,750.9 ns</td>
-                            <td>18,959.64 ns</td>
-                            <td>1,039.24 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>181,875.2 ns</td>
+                            <td>1,304.03 ns</td>
+                            <td>1,155.99 ns</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_RayTracerSingleFrame</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3088,9 +3160,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3098,220 +3170,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>8,160.1 ns</td>
-                            <td>361.53 ns</td>
-                            <td>19.82 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>8,247.8 ns</td>
+                            <td>87.40 ns</td>
+                            <td>81.75 ns</td>
                             <td>0 B</td>
-                        </tr>
-                        <tr>
-                            <td class="highlight">Benchmark_FfiDirectBind</td>
-                            <td>ShortRun</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>1111111111111111</td>
-                            <td>Empty</td>
-                            <td>RyuJit</td>
-                            <td>Default</td>
-                            <td>X64</td>
-                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
-                            <td>.NET 10.0</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>16</td>
-                            <td>3</td>
-                            <td>49,977.5 ns</td>
-                            <td>4,917.51 ns</td>
-                            <td>269.55 ns</td>
-                            <td>0.0000</td>
-                            <td>0 B</td>
-                        </tr>
-                        <tr>
-                            <td class="highlight">Benchmark_FfiTypedWrapper</td>
-                            <td>ShortRun</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>1111111111111111</td>
-                            <td>Empty</td>
-                            <td>RyuJit</td>
-                            <td>Default</td>
-                            <td>X64</td>
-                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
-                            <td>.NET 10.0</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>16</td>
-                            <td>3</td>
-                            <td>62,125.0 ns</td>
-                            <td>2,098.34 ns</td>
-                            <td>115.02 ns</td>
-                            <td>0.0000</td>
-                            <td>0 B</td>
-                        </tr>
-                        <tr>
-                            <td class="highlight">Benchmark_InternalCall</td>
-                            <td>ShortRun</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>1111111111111111</td>
-                            <td>Empty</td>
-                            <td>RyuJit</td>
-                            <td>Default</td>
-                            <td>X64</td>
-                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
-                            <td>.NET 10.0</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>16</td>
-                            <td>3</td>
-                            <td>82,586.3 ns</td>
-                            <td>43,882.29 ns</td>
-                            <td>2,405.34 ns</td>
-                            <td>0.0000</td>
-                            <td>0 B</td>
-                        </tr>
-                        <tr>
-                            <td class="highlight">Benchmark_FfiFallback</td>
-                            <td>ShortRun</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>1111111111111111</td>
-                            <td>Empty</td>
-                            <td>RyuJit</td>
-                            <td>Default</td>
-                            <td>X64</td>
-                            <td>8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c</td>
-                            <td>.NET 10.0</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>False</td>
-                            <td>True</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>False</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>3</td>
-                            <td>Default</td>
-                            <td>1</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>Default</td>
-                            <td>16</td>
-                            <td>3</td>
-                            <td>759,439.5 ns</td>
-                            <td>72,407.36 ns</td>
-                            <td>3,968.89 ns</td>
-                            <td>171.8750</td>
-                            <td>1440001 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_PhysicsMovement</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3343,9 +3210,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3353,16 +3220,15 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>188,850.9 ns</td>
-                            <td>22,622.24 ns</td>
-                            <td>1,240.00 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>179,893.1 ns</td>
+                            <td>808.03 ns</td>
+                            <td>755.83 ns</td>
                             <td>0 B</td>
                         </tr>
                         <tr>
                             <td class="highlight">Benchmark_CombatDamage</td>
-                            <td>ShortRun</td>
+                            <td>DefaultJob</td>
                             <td>False</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3394,9 +3260,9 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
-                            <td>3</td>
                             <td>Default</td>
-                            <td>1</td>
+                            <td>Default</td>
+                            <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
                             <td>Default</td>
@@ -3404,11 +3270,10 @@
                             <td>Default</td>
                             <td>Default</td>
                             <td>16</td>
-                            <td>3</td>
-                            <td>866.3 ns</td>
-                            <td>164.71 ns</td>
-                            <td>9.03 ns</td>
-                            <td>0.0000</td>
+                            <td>Default</td>
+                            <td>800.2 ns</td>
+                            <td>10.18 ns</td>
+                            <td>9.52 ns</td>
                             <td>0 B</td>
                         </tr>
                     </tbody>

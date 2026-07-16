@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using UnityEngine;
 using Raptor;
 using Raptor.Attributes;
+using UnityEngine;
 
 [RaptorModule("enemy")]
 public unsafe class RaptorStressTest : MonoBehaviour
@@ -12,13 +12,13 @@ public unsafe class RaptorStressTest : MonoBehaviour
     {
         RaptorVM_FFI,
         RaptorVM_PropertyMapped,
-        NativeCSharp
+        NativeCSharp,
     }
 
     [Header("Benchmark Settings")]
     [Tooltip("Number of instances to spawn.")]
-    public int spawnCount = 5000;
-    
+    public int spawnCount = 50000;
+
     [Tooltip("Toggle between VM and Native C# execution.")]
     public ExecutionMode mode = ExecutionMode.RaptorVM_PropertyMapped;
 
@@ -27,24 +27,24 @@ public unsafe class RaptorStressTest : MonoBehaviour
 
     [Header("Visuals")]
     public Material cubeMaterial;
+    public Mesh cubeMesh; // Required for DrawMeshInstanced. Assign a default Cube mesh here.
 
     private struct Agent
     {
-        public GameObject GameObject;
-        public Transform Transform;
-        public VirtualMachine VM;
         public double X;
         public double Z;
         public double SpeedOffset;
     }
 
-    private List<Agent> _agents = new();
+    // Flat memory arrays for L1 Cache perfection
+    private Agent[] _agentsArray;
+    private Matrix4x4[][] _matrixBatches;
     private ScriptEngine _engine;
     private VMChunk _ffiHeavyChunk;
     private VMChunk _propertyMappedChunk;
     private FFIHostTable _ffiTable;
     private VirtualMachine _sharedVM;
-    
+
     // Shared FFI communication state
     private float _currentTime;
     private double _tempX;
@@ -53,50 +53,51 @@ public unsafe class RaptorStressTest : MonoBehaviour
     private double _newX;
     private double _newZ;
 
-    // Metrics tracking
-    private float _fps;
-    private float _fpsTimer;
-    private int _fpsCount;
-    private double _lastBatchExecutionTimeMs;
-
     private void Start()
     {
-        // 1. Initialize Raptor Engine and FFI
         _engine = new ScriptEngine();
         _ffiTable = new FFIHostTable();
         _ffiTable.RegisterModule(this);
-        
-        // Add basic math functions
-        _ffiTable.Register("math.cos", 100, (ref VMState s) => {
-            double val = s.RegPtr[0]; // Align with standard parameter offset starting from index 0
-            s.RegPtr[0] = Math.Cos(val);
-        });
-        _ffiTable.Register("math.sin", 101, (ref VMState s) => {
-            double val = s.RegPtr[0]; // Align with standard parameter offset starting from index 0
-            s.RegPtr[0] = Math.Sin(val);
-        });
+
+        _ffiTable.Register(
+            "math.cos",
+            100,
+            (ref VMState s) =>
+            {
+                double val = s.RegPtr[0];
+                s.RegPtr[0] = MathF.Cos((float)val);
+            }
+        );
+        _ffiTable.Register(
+            "math.sin",
+            101,
+            (ref VMState s) =>
+            {
+                double val = s.RegPtr[0];
+                s.RegPtr[0] = MathF.Sin((float)val);
+            }
+        );
 
         _engine.RegisterHostTable(_ffiTable);
 
-        // 2. Compile the old FFI-heavy script
-        string ffiHeavyScript = @"
+        // Compile FFI-heavy chunk
+        string ffiHeavyScript =
+            @"
 var x = enemy.getX();
 var z = enemy.getZ();
 var time = enemy.getTime();
 var offset = enemy.getOffset();
-
-// Compute circular orbital motion
 var angle = time * 0.8 + offset;
 var newX = math.cos(angle) * 15.0;
 var newZ = math.sin(angle) * 15.0;
-
 enemy.setPosition(newX, newZ);
 ";
         string ffiHeavyRasm = Raptor.Compiler.RaptorScriptCompiler.Compile(ffiHeavyScript);
         _ffiHeavyChunk = _engine.Compile(ffiHeavyRasm);
 
-        // 3. Compile the new Property-Mapped script
-        string propertyMappedScript = @"
+        // Compile Property-Mapped chunk
+        string propertyMappedScript =
+            @"
 var angle = enemy.time * 0.8 + enemy.offset;
 enemy.x = math.cos(angle) * 15.0;
 enemy.z = math.sin(angle) * 15.0;
@@ -106,72 +107,53 @@ enemy.z = math.sin(angle) * 15.0;
             { "enemy.x", 1 },
             { "enemy.z", 2 },
             { "enemy.time", 3 },
-            { "enemy.offset", 4 }
+            { "enemy.offset", 4 },
         };
-        string mappedRasm = Raptor.Compiler.RaptorScriptCompiler.Compile(propertyMappedScript, propertyMappings);
+        string mappedRasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            propertyMappedScript,
+            propertyMappings
+        );
         _propertyMappedChunk = _engine.Compile(mappedRasm);
 
-        // 4. Initialize the shared VM for the property mapped mode
+        // Initialize single shared VM for ALL processing
         _sharedVM = new VirtualMachine();
         _sharedVM.RegisterHostTable(_ffiTable);
         _sharedVM.LoadProgram(_propertyMappedChunk);
+        _lastMode = ExecutionMode.RaptorVM_PropertyMapped;
 
-        // 5. Spawn the agents
         SpawnAgents();
     }
 
     private void SpawnAgents()
     {
-        // Clean up old agents if any
-        foreach (var agent in _agents)
-        {
-            if (agent.GameObject != null) Destroy(agent.GameObject);
-        }
-        _agents.Clear();
+        _agentsArray = new Agent[spawnCount];
 
-        // Create container
-        GameObject container = new GameObject("SpawnedCubes");
-        container.transform.SetParent(transform);
+        // Setup Zero-Allocation GPU Batches (DrawMeshInstanced limits arrays to 1023 max)
+        int maxBatchSize = 1023;
+        int numBatches = Mathf.CeilToInt((float)spawnCount / maxBatchSize);
+        _matrixBatches = new Matrix4x4[numBatches][];
 
-        // Grid spawning
         int side = Mathf.CeilToInt(Mathf.Sqrt(spawnCount));
         float spacing = 1.5f;
+
+        for (int i = 0; i < numBatches; i++)
+        {
+            int size = Mathf.Min(maxBatchSize, spawnCount - (i * maxBatchSize));
+            _matrixBatches[i] = new Matrix4x4[size];
+        }
 
         for (int i = 0; i < spawnCount; i++)
         {
             int row = i / side;
             int col = i % side;
 
-            float posX = (col - (side / 2f)) * spacing;
-            float posZ = (row - (side / 2f)) * spacing;
-
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.transform.SetParent(container.transform);
-            cube.transform.position = new Vector3(posX, 0, posZ);
-            
-            // Assign material
-            if (cubeMaterial != null)
+            _agentsArray[i] = new Agent
             {
-                cube.GetComponent<MeshRenderer>().sharedMaterial = cubeMaterial;
-            }
-
-            // Create VM instance for this agent
-            var vm = new VirtualMachine();
-            vm.RegisterHostTable(_ffiTable);
-            vm.LoadProgram(_ffiHeavyChunk);
-
-            _agents.Add(new Agent
-            {
-                GameObject = cube,
-                Transform = cube.transform,
-                VM = vm,
-                X = posX,
-                Z = posZ,
-                SpeedOffset = UnityEngine.Random.Range(0f, 6.28f) // random orbit phase offset
-            });
+                X = (col - (side / 2f)) * spacing,
+                Z = (row - (side / 2f)) * spacing,
+                SpeedOffset = UnityEngine.Random.Range(0f, 6.28f),
+            };
         }
-
-        UpdateRenderers();
     }
 
     private void Update()
@@ -188,102 +170,95 @@ enemy.z = math.sin(angle) * 15.0;
             _fpsCount = 0;
         }
 
-        // Handle dynamically changing settings
-        if (_agents.Count != spawnCount)
+        if (_agentsArray == null || _agentsArray.Length != spawnCount)
         {
             SpawnAgents();
         }
-        UpdateRenderers();
 
-        // 4. Run the benchmark batch
+        // Switch active program chunk if mode changed
+        if (_lastMode != mode)
+        {
+            if (mode == ExecutionMode.RaptorVM_FFI)
+                _sharedVM.LoadProgram(_ffiHeavyChunk);
+            else if (mode == ExecutionMode.RaptorVM_PropertyMapped)
+                _sharedVM.LoadProgram(_propertyMappedChunk);
+            _lastMode = mode;
+        }
+
+        // ==========================================
+        // THE TIMED BENCHMARK BLOCK
+        // ==========================================
         Stopwatch sw = Stopwatch.StartNew();
 
         if (mode == ExecutionMode.RaptorVM_FFI)
         {
-            for (int i = 0; i < _agents.Count; i++)
+            for (int i = 0; i < spawnCount; i++)
             {
-                var agent = _agents[i];
-                
-                // Set FFI communication state variables
-                _tempX = agent.X;
-                _tempZ = agent.Z;
-                _tempOffset = agent.SpeedOffset;
-                
-                // Execute VM
-                agent.VM.RunFast();
+                _tempX = _agentsArray[i].X;
+                _tempZ = _agentsArray[i].Z;
+                _tempOffset = _agentsArray[i].SpeedOffset;
 
-                // Apply new coordinates calculated by the script
-                agent.X = _newX;
-                agent.Z = _newZ;
-            }
-            sw.Stop();
+                _sharedVM.RunFast(); // Re-uses the single VM, maintaining hot cache
 
-            // Apply transforms outside of the timed VM block
-            for (int i = 0; i < _agents.Count; i++)
-            {
-                _agents[i].Transform.position = new Vector3((float)_agents[i].X, 0, (float)_agents[i].Z);
+                _agentsArray[i].X = _newX;
+                _agentsArray[i].Z = _newZ;
             }
         }
         else if (mode == ExecutionMode.RaptorVM_PropertyMapped)
         {
-            for (int i = 0; i < _agents.Count; i++)
+            for (int i = 0; i < spawnCount; i++)
             {
-                var agent = _agents[i];
-                
-                // Write inputs directly to registers
-                _sharedVM.SetRegister(1, agent.X);
-                _sharedVM.SetRegister(2, agent.Z);
+                _sharedVM.SetRegister(1, _agentsArray[i].X);
+                _sharedVM.SetRegister(2, _agentsArray[i].Z);
                 _sharedVM.SetRegister(3, _currentTime);
-                _sharedVM.SetRegister(4, agent.SpeedOffset);
-                
-                // Execute on the shared VM
+                _sharedVM.SetRegister(4, _agentsArray[i].SpeedOffset);
+
                 _sharedVM.RunFast();
 
-                // Read outputs directly from registers
-                agent.X = _sharedVM.GetRegister(1);
-                agent.Z = _sharedVM.GetRegister(2);
-            }
-            sw.Stop();
-
-            // Apply transforms outside of the timed VM block
-            for (int i = 0; i < _agents.Count; i++)
-            {
-                _agents[i].Transform.position = new Vector3((float)_agents[i].X, 0, (float)_agents[i].Z);
+                _agentsArray[i].X = _sharedVM.GetRegister(1);
+                _agentsArray[i].Z = _sharedVM.GetRegister(2);
             }
         }
-        else
+        else // Native C#
         {
-            // Baseline Native C# equivalent logic
-            for (int i = 0; i < _agents.Count; i++)
+            for (int i = 0; i < spawnCount; i++)
             {
-                var agent = _agents[i];
-                double angle = _currentTime * 0.8 + agent.SpeedOffset;
-                double newX = Math.Cos(angle) * 15.0;
-                double newZ = Math.Sin(angle) * 15.0;
-                agent.X = newX;
-                agent.Z = newZ;
-            }
-            sw.Stop();
-
-            // Apply transforms outside of the timed C# block
-            for (int i = 0; i < _agents.Count; i++)
-            {
-                _agents[i].Transform.position = new Vector3((float)_agents[i].X, 0, (float)_agents[i].Z);
+                double angle = _currentTime * 0.8 + _agentsArray[i].SpeedOffset;
+                _agentsArray[i].X = Math.Cos(angle) * 15.0;
+                _agentsArray[i].Z = Math.Sin(angle) * 15.0;
             }
         }
-        
-        // Calculate total execution time in milliseconds
+
+        sw.Stop();
         _lastBatchExecutionTimeMs = (sw.ElapsedTicks / (double)Stopwatch.Frequency) * 1000.0;
-    }
 
-    private void UpdateRenderers()
-    {
-        for (int i = 0; i < _agents.Count; i++)
+        // ------------------------------------------
+        // ZERO-ALLOCATION GPU RENDERING
+        // ------------------------------------------
+        if (renderMeshes && cubeMesh != null && cubeMaterial != null)
         {
-            var mr = _agents[i].GameObject.GetComponent<MeshRenderer>();
-            if (mr != null && mr.enabled != renderMeshes)
+            int batchIndex = 0;
+            int elementIndex = 0;
+
+            // Generate GPU Matrices directly from the flat array
+            for (int i = 0; i < spawnCount; i++)
             {
-                mr.enabled = renderMeshes;
+                _matrixBatches[batchIndex][elementIndex] = Matrix4x4.Translate(
+                    new Vector3((float)_agentsArray[i].X, 0, (float)_agentsArray[i].Z)
+                );
+
+                elementIndex++;
+                if (elementIndex >= 1023)
+                {
+                    batchIndex++;
+                    elementIndex = 0;
+                }
+            }
+
+            // Blast batches to the GPU
+            for (int i = 0; i < _matrixBatches.Length; i++)
+            {
+                Graphics.DrawMeshInstanced(cubeMesh, 0, cubeMaterial, _matrixBatches[i]);
             }
         }
     }
@@ -310,56 +285,44 @@ enemy.z = math.sin(angle) * 15.0;
 
     private void OnGUI()
     {
-        // Render a premium, semi-transparent dashboard overlay
         GUI.Box(new Rect(10, 10, 330, 220), "Raptor VM Stress Test Benchmark");
-
         GUILayout.BeginArea(new Rect(20, 40, 310, 180));
 
         GUILayout.Label($"Active Instances: {spawnCount}");
         GUILayout.Label($"Execution Mode: <b>{mode}</b>");
         GUILayout.Label($"FPS: {_fps:F1}");
-        
+
         GUILayout.Space(5);
-        
-        GUILayout.Label($"Total Frame Batch Time: <b>{_lastBatchExecutionTimeMs:F3} ms</b>");
-        
+
+        GUILayout.Label($"Total Logic Frame Time: <b>{_lastBatchExecutionTimeMs:F3} ms</b>");
+
         double avgUsPerInstance = (_lastBatchExecutionTimeMs * 1000.0) / spawnCount;
-        GUILayout.Label($"Avg Time Per Script: <b>{avgUsPerInstance:F3} us (microseconds)</b>");
+        GUILayout.Label($"Avg Time Per Script: <b>{avgUsPerInstance:F3} us</b>");
 
         GUILayout.Space(10);
 
-        // Control buttons
-        string nextModeName = "";
-        ExecutionMode nextMode = ExecutionMode.RaptorVM_PropertyMapped;
-        if (mode == ExecutionMode.RaptorVM_PropertyMapped)
-        {
-            nextModeName = "Native C#";
-            nextMode = ExecutionMode.NativeCSharp;
-        }
-        else if (mode == ExecutionMode.NativeCSharp)
-        {
-            nextModeName = "RaptorVM (FFI-Heavy)";
-            nextMode = ExecutionMode.RaptorVM_FFI;
-        }
-        else if (mode == ExecutionMode.RaptorVM_FFI)
-        {
-            nextModeName = "RaptorVM (Property-Mapped)";
-            nextMode = ExecutionMode.RaptorVM_PropertyMapped;
-        }
-        if (GUILayout.Button($"Switch to {nextModeName}"))
-        {
-            mode = nextMode;
-        }
+        string nextModeName =
+            mode == ExecutionMode.RaptorVM_PropertyMapped ? "Native C#"
+            : mode == ExecutionMode.NativeCSharp ? "RaptorVM (FFI-Heavy)"
+            : "RaptorVM (Property-Mapped)";
 
+        ExecutionMode nextMode =
+            mode == ExecutionMode.RaptorVM_PropertyMapped ? ExecutionMode.NativeCSharp
+            : mode == ExecutionMode.NativeCSharp ? ExecutionMode.RaptorVM_FFI
+            : ExecutionMode.RaptorVM_PropertyMapped;
+
+        if (GUILayout.Button($"Switch to {nextModeName}"))
+            mode = nextMode;
         if (GUILayout.Button($"Toggle Mesh Rendering (Renderer: {(renderMeshes ? "ON" : "OFF")})"))
-        {
             renderMeshes = !renderMeshes;
-        }
 
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("1k Cubes")) spawnCount = 1000;
-        if (GUILayout.Button("5k Cubes")) spawnCount = 5000;
-        if (GUILayout.Button("10k Cubes")) spawnCount = 10000;
+        if (GUILayout.Button("10k Cubes"))
+            spawnCount = 10000;
+        if (GUILayout.Button("50k Cubes"))
+            spawnCount = 50000;
+        if (GUILayout.Button("100k Cubes"))
+            spawnCount = 100000;
         GUILayout.EndHorizontal();
 
         GUILayout.EndArea();

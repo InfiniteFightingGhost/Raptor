@@ -26,12 +26,6 @@ public unsafe struct VMState
     public uint* Ip;
     public byte* HeapPtr;
 
-    /// <summary>
-    /// The value that the registers are incremented by so that the method calls can have sandboxing +
-    /// zero instructions for moving around variables for parameters.
-    /// </summary>
-    public int BasePtr;
-
     ///<summary>
     ///Points to the head of the instrisically linked list of free blocks in the VM's heap.
     ///</summary>

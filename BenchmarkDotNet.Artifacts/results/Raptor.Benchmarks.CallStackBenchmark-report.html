@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Raptor.Benchmarks.CallStackBenchmark-20260713-172252</title>
+<title>Raptor.Benchmarks.CallStackBenchmark-20260716-165153</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -22,15 +22,16 @@ AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 <pre><code></code></pre>
 
 <table>
-<thead><tr><th>Method      </th><th>Mean </th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Allocated</th>
+<thead><tr><th>Method      </th><th>Mean       </th><th>Error   </th><th>StdDev  </th><th>Median     </th><th>Gen0</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>CallStack_Depth_10</td><td>871.68 &mu;s</td><td>5.095 &mu;s</td><td>4.766 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>CallStack_Depth_30</td><td>2,318.44 &mu;s</td><td>15.071 &mu;s</td><td>14.097 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>Ffi_InternalCall</td><td>83.96 &mu;s</td><td>1.661 &mu;s</td><td>3.318 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>Ffi_DirectBind</td><td>49.78 &mu;s</td><td>0.193 &mu;s</td><td>0.181 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>Ffi_TypedWrapper</td><td>61.52 &mu;s</td><td>0.329 &mu;s</td><td>0.308 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>Ffi_Fallback</td><td>850.82 &mu;s</td><td>16.915 &mu;s</td><td>16.613 &mu;s</td><td>171.8750</td><td>1440001 B</td>
-</tr><tr><td>Ffi_NoWorkDoneCall</td><td>49.56 &mu;s</td><td>0.207 &mu;s</td><td>0.173 &mu;s</td><td>-</td><td>-</td>
+</thead><tbody><tr><td>CallStack_Depth_10</td><td>842,554.8734 ns</td><td>8,144.2226 ns</td><td>7,618.1109 ns</td><td>838,644.3359 ns</td><td>-</td><td>-</td>
+</tr><tr><td>CallStack_Depth_30</td><td>2,350,237.2843 ns</td><td>17,555.6962 ns</td><td>15,562.6674 ns</td><td>2,348,619.4492 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Ffi_InternalCall</td><td>81,133.6978 ns</td><td>421.9917 ns</td><td>374.0847 ns</td><td>81,010.9195 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Ffi_DirectBind</td><td>51,737.7509 ns</td><td>364.3053 ns</td><td>322.9471 ns</td><td>51,716.6266 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Ffi_TypedWrapper</td><td>60,475.8086 ns</td><td>734.8589 ns</td><td>687.3875 ns</td><td>60,084.0997 ns</td><td>-</td><td>-</td>
+</tr><tr><td>Ffi_Fallback</td><td>720,294.5923 ns</td><td>9,519.7209 ns</td><td>8,904.7528 ns</td><td>719,430.8564 ns</td><td>171.8750</td><td>1440001 B</td>
+</tr><tr><td>Ffi_DirectOverhead</td><td>49,653.6458 ns</td><td>472.7186 ns</td><td>442.1813 ns</td><td>49,543.2073 ns</td><td>-</td><td>-</td>
+</tr><tr><td>NativeDelegate</td><td>0.0015 ns</td><td>0.0030 ns</td><td>0.0028 ns</td><td>0.0000 ns</td><td>-</td><td>-</td>
 </tr></tbody></table>
 </body>
 </html>

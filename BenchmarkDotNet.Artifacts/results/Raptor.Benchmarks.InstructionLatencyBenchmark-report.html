@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Raptor.Benchmarks.InstructionLatencyBenchmark-20260713-162856</title>
+<title>Raptor.Benchmarks.InstructionLatencyBenchmark-20260715-125107</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -16,27 +16,25 @@
 BenchmarkDotNet v0.14.0, Arch Linux
 AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.101
-  [Host]   : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
-  ShortRun : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  [Host]     : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  DefaultJob : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
 </code></pre>
-<pre><code>Job=ShortRun  IterationCount=3  LaunchCount=1  
-WarmupCount=3  
-</code></pre>
+<pre><code></code></pre>
 
 <table>
-<thead><tr><th>Method      </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Ratio</th><th>RatioSD</th><th>Allocated</th><th>Alloc Ratio</th>
+<thead><tr><th>Method      </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Median</th><th>Ratio</th><th>RatioSD</th><th>Allocated</th><th>Alloc Ratio</th>
 </tr>
-</thead><tbody><tr><td>Benchmark_Baseline</td><td>153.2 &mu;s</td><td>5.09 &mu;s</td><td>0.28 &mu;s</td><td>1.00</td><td>0.00</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Add</td><td>223.7 &mu;s</td><td>242.89 &mu;s</td><td>13.31 &mu;s</td><td>1.46</td><td>0.08</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Sub</td><td>230.9 &mu;s</td><td>11.82 &mu;s</td><td>0.65 &mu;s</td><td>1.51</td><td>0.00</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Mul</td><td>208.8 &mu;s</td><td>242.20 &mu;s</td><td>13.28 &mu;s</td><td>1.36</td><td>0.08</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Div</td><td>225.1 &mu;s</td><td>295.69 &mu;s</td><td>16.21 &mu;s</td><td>1.47</td><td>0.09</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Sqrt</td><td>210.4 &mu;s</td><td>313.91 &mu;s</td><td>17.21 &mu;s</td><td>1.37</td><td>0.10</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Fisr</td><td>427.2 &mu;s</td><td>30.04 &mu;s</td><td>1.65 &mu;s</td><td>2.79</td><td>0.01</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Rand</td><td>263.4 &mu;s</td><td>12.18 &mu;s</td><td>0.67 &mu;s</td><td>1.72</td><td>0.00</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Loadc</td><td>181.1 &mu;s</td><td>24.50 &mu;s</td><td>1.34 &mu;s</td><td>1.18</td><td>0.01</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Move</td><td>180.1 &mu;s</td><td>5.00 &mu;s</td><td>0.27 &mu;s</td><td>1.18</td><td>0.00</td><td>-</td><td>NA</td>
-</tr><tr><td>Benchmark_Jump</td><td>239.1 &mu;s</td><td>16.42 &mu;s</td><td>0.90 &mu;s</td><td>1.56</td><td>0.01</td><td>-</td><td>NA</td>
+</thead><tbody><tr><td>Benchmark_Baseline</td><td>155.3 &mu;s</td><td>1.11 &mu;s</td><td>1.04 &mu;s</td><td>155.0 &mu;s</td><td>1.00</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Add</td><td>236.2 &mu;s</td><td>4.71 &mu;s</td><td>11.38 &mu;s</td><td>242.3 &mu;s</td><td>1.52</td><td>0.07</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Sub</td><td>235.3 &mu;s</td><td>4.70 &mu;s</td><td>11.71 &mu;s</td><td>240.5 &mu;s</td><td>1.51</td><td>0.08</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Mul</td><td>235.3 &mu;s</td><td>4.70 &mu;s</td><td>12.13 &mu;s</td><td>242.4 &mu;s</td><td>1.51</td><td>0.08</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Div</td><td>251.7 &mu;s</td><td>4.98 &mu;s</td><td>8.72 &mu;s</td><td>254.4 &mu;s</td><td>1.62</td><td>0.06</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Sqrt</td><td>195.4 &mu;s</td><td>2.34 &mu;s</td><td>1.96 &mu;s</td><td>194.6 &mu;s</td><td>1.26</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Fisr</td><td>434.8 &mu;s</td><td>4.76 &mu;s</td><td>4.45 &mu;s</td><td>436.3 &mu;s</td><td>2.80</td><td>0.03</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Rand</td><td>266.6 &mu;s</td><td>0.95 &mu;s</td><td>0.84 &mu;s</td><td>266.3 &mu;s</td><td>1.72</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Loadc</td><td>192.4 &mu;s</td><td>1.23 &mu;s</td><td>1.15 &mu;s</td><td>192.2 &mu;s</td><td>1.24</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Move</td><td>192.3 &mu;s</td><td>0.81 &mu;s</td><td>0.72 &mu;s</td><td>192.3 &mu;s</td><td>1.24</td><td>0.01</td><td>-</td><td>NA</td>
+</tr><tr><td>Benchmark_Jump</td><td>237.5 &mu;s</td><td>0.79 &mu;s</td><td>0.74 &mu;s</td><td>237.6 &mu;s</td><td>1.53</td><td>0.01</td><td>-</td><td>NA</td>
 </tr></tbody></table>
 </body>
 </html>

@@ -20,8 +20,6 @@ public class Program
             Console.WriteLine("[Raptor Fast VM Benchmark Suite - Release Mode]");
             Console.WriteLine("=================================================");
 
-
-
             // 1. Instruction Latency
             Console.WriteLine("\n[Instruction Latency]");
             var latency = new InstructionLatencyBenchmark();
@@ -382,30 +380,6 @@ public class Program
 
             sw = Stopwatch.StartNew();
             for (int i = 0; i < 50; i++)
-                vmBench.Benchmark_FfiDirectBind();
-            sw.Stop();
-            Console.WriteLine($"FFI Direct Bind:      {sw.Elapsed.TotalMilliseconds / 50.0:F4} ms");
-
-            sw = Stopwatch.StartNew();
-            for (int i = 0; i < 50; i++)
-                vmBench.Benchmark_FfiTypedWrapper();
-            sw.Stop();
-            Console.WriteLine($"FFI Typed Wrapper:    {sw.Elapsed.TotalMilliseconds / 50.0:F4} ms");
-
-            sw = Stopwatch.StartNew();
-            for (int i = 0; i < 50; i++)
-                vmBench.Benchmark_InternalCall();
-            sw.Stop();
-            Console.WriteLine($"Internal Call:        {sw.Elapsed.TotalMilliseconds / 50.0:F4} ms");
-
-            sw = Stopwatch.StartNew();
-            for (int i = 0; i < 50; i++)
-                vmBench.Benchmark_FfiFallback();
-            sw.Stop();
-            Console.WriteLine($"FFI Fallback (Refl):  {sw.Elapsed.TotalMilliseconds / 50.0:F4} ms");
-
-            sw = Stopwatch.StartNew();
-            for (int i = 0; i < 50; i++)
                 vmBench.Benchmark_PhysicsMovement();
             sw.Stop();
             Console.WriteLine($"Physics Movement:     {sw.Elapsed.TotalMilliseconds / 50.0:F4} ms");
@@ -428,14 +402,22 @@ public class Program
 
     private static void ConsolidateReports()
     {
-        string artifactsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "../../../BenchmarkDotNet.Artifacts/results");
+        string artifactsDir = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "../../../BenchmarkDotNet.Artifacts/results"
+        );
         if (!Directory.Exists(artifactsDir))
         {
             // Try workspace root
-            artifactsDir = Path.Combine(Directory.GetCurrentDirectory(), "BenchmarkDotNet.Artifacts/results");
+            artifactsDir = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "BenchmarkDotNet.Artifacts/results"
+            );
             if (!Directory.Exists(artifactsDir))
             {
-                Console.WriteLine("[Raptor Consolidation Warning] BenchmarkDotNet.Artifacts/results directory not found. Skipping report merge.");
+                Console.WriteLine(
+                    "[Raptor Consolidation Warning] BenchmarkDotNet.Artifacts/results directory not found. Skipping report merge."
+                );
                 return;
             }
         }
@@ -461,12 +443,12 @@ public class Program
         foreach (var file in mdFiles.OrderBy(f => f))
         {
             string suiteName = Path.GetFileNameWithoutExtension(file)
-                                   .Replace("Raptor.Benchmarks.", "")
-                                   .Replace("-report-github", "");
-            
+                .Replace("Raptor.Benchmarks.", "")
+                .Replace("-report-github", "");
+
             mdOutput.AppendLine($"## {suiteName}");
             mdOutput.AppendLine();
-            
+
             var lines = File.ReadAllLines(file);
             // Skip header info (first 10 lines or lines before the table)
             bool tableStarted = false;
@@ -493,7 +475,8 @@ public class Program
         foreach (var file in csvFiles.OrderBy(f => f))
         {
             var lines = File.ReadAllLines(file);
-            if (lines.Length == 0) continue;
+            if (lines.Length == 0)
+                continue;
 
             if (!headerWritten)
             {
@@ -503,8 +486,8 @@ public class Program
             }
 
             string suiteName = Path.GetFileNameWithoutExtension(file)
-                                   .Replace("Raptor.Benchmarks.", "")
-                                   .Replace("-report", "");
+                .Replace("Raptor.Benchmarks.", "")
+                .Replace("-report", "");
 
             for (int i = 1; i < lines.Length; i++)
             {
@@ -518,17 +501,18 @@ public class Program
         File.WriteAllText(csvPath, csvOutput.ToString());
         Console.WriteLine($"Merged CSV saved to: {csvPath}");
 
-        // 3. Generate Beautiful HTML Dashboard
         GenerateHtmlDashboard(artifactsDir, htmlFiles);
     }
 
     private static void GenerateHtmlDashboard(string artifactsDir, string[] htmlFiles)
     {
         string csvPath = Path.Combine(artifactsDir, "Consolidated-report.csv");
-        if (!File.Exists(csvPath)) return;
+        if (!File.Exists(csvPath))
+            return;
 
         var lines = File.ReadAllLines(csvPath);
-        if (lines.Length <= 1) return;
+        if (lines.Length <= 1)
+            return;
 
         // Group rows by suite name
         var suites = new Dictionary<string, List<string[]>>();
@@ -537,7 +521,8 @@ public class Program
         for (int i = 1; i < lines.Length; i++)
         {
             var row = ParseCsvRow(lines[i]);
-            if (row.Length == 0) continue;
+            if (row.Length == 0)
+                continue;
             string suite = row[0];
             if (!suites.ContainsKey(suite))
             {
@@ -553,8 +538,12 @@ public class Program
         html.AppendLine("<head>");
         html.AppendLine("    <title>Raptor VM Benchmark Consolidated Dashboard</title>");
         html.AppendLine("    <meta charset=\"utf-8\" />");
-        html.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />");
-        html.AppendLine("    <link href=\"https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\" />");
+        html.AppendLine(
+            "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />"
+        );
+        html.AppendLine(
+            "    <link href=\"https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap\" rel=\"stylesheet\" />"
+        );
         html.AppendLine("    <style>");
         html.AppendLine("        :root {");
         html.AppendLine("            --bg: #0b0f19;");
@@ -587,7 +576,9 @@ public class Program
         html.AppendLine("        h1 {");
         html.AppendLine("            font-size: 2.5rem;");
         html.AppendLine("            font-weight: 700;");
-        html.AppendLine("            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);");
+        html.AppendLine(
+            "            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);"
+        );
         html.AppendLine("            -webkit-background-clip: text;");
         html.AppendLine("            -webkit-text-fill-color: transparent;");
         html.AppendLine("            margin-bottom: 8px;");
@@ -641,7 +632,9 @@ public class Program
         html.AppendLine("            border-collapse: collapse;");
         html.AppendLine("            text-align: left;");
         html.AppendLine("        }");
-        html.AppendLine("        th, td { padding: 14px 18px; border-bottom: 1px solid var(--border); }");
+        html.AppendLine(
+            "        th, td { padding: 14px 18px; border-bottom: 1px solid var(--border); }"
+        );
         html.AppendLine("        th {");
         html.AppendLine("            color: var(--text-muted);");
         html.AppendLine("            font-weight: 600;");
@@ -658,7 +651,9 @@ public class Program
         html.AppendLine("    <div class=\"container\">");
         html.AppendLine("        <header>");
         html.AppendLine("            <h1>Raptor VM Consolidated Dashboard</h1>");
-        html.AppendLine($"            <p class=\"meta\">Generated on {DateTime.Now:yyyy-MM-dd HH:mm:ss} | BenchmarkDotNet Test Suite</p>");
+        html.AppendLine(
+            $"            <p class=\"meta\">Generated on {DateTime.Now:yyyy-MM-dd HH:mm:ss} | BenchmarkDotNet Test Suite</p>"
+        );
         html.AppendLine("        </header>");
         html.AppendLine("        <div class=\"tabs\">");
 
@@ -667,7 +662,9 @@ public class Program
         foreach (var suite in suites.Keys)
         {
             string activeClass = idx == 0 ? " active" : "";
-            html.AppendLine($"            <button class=\"tab-btn{activeClass}\" onclick=\"showSuite('{suite}', this)\">{suite}</button>");
+            html.AppendLine(
+                $"            <button class=\"tab-btn{activeClass}\" onclick=\"showSuite('{suite}', this)\">{suite}</button>"
+            );
             idx++;
         }
         html.AppendLine("        </div>");
@@ -677,13 +674,15 @@ public class Program
         foreach (var pair in suites)
         {
             string activeClass = idx == 0 ? " active" : "";
-            html.AppendLine($"        <div id=\"suite-{pair.Key}\" class=\"suite-card{activeClass}\">");
+            html.AppendLine(
+                $"        <div id=\"suite-{pair.Key}\" class=\"suite-card{activeClass}\">"
+            );
             html.AppendLine($"            <h2>{pair.Key} Results</h2>");
             html.AppendLine("            <div class=\"table-wrapper\">");
             html.AppendLine("                <table>");
             html.AppendLine("                    <thead>");
             html.AppendLine("                        <tr>");
-            
+
             // th headers (skip the first "Suite" header)
             for (int h = 1; h < headers.Length; h++)
             {
@@ -692,7 +691,7 @@ public class Program
             html.AppendLine("                        </tr>");
             html.AppendLine("                    </thead>");
             html.AppendLine("                    <tbody>");
-            
+
             foreach (var row in pair.Value)
             {
                 html.AppendLine("                        <tr>");
@@ -722,7 +721,9 @@ public class Program
         html.AppendLine("            for (var i = 0; i < btns.length; i++) {");
         html.AppendLine("                btns[i].classList.remove('active');");
         html.AppendLine("            }");
-        html.AppendLine("            document.getElementById('suite-' + suiteId).classList.add('active');");
+        html.AppendLine(
+            "            document.getElementById('suite-' + suiteId).classList.add('active');"
+        );
         html.AppendLine("            btn.classList.add('active');");
         html.AppendLine("        }");
         html.AppendLine("    </script>");

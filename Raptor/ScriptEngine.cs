@@ -47,6 +47,16 @@ namespace Raptor
             {
                 RegisterHostMethod(name, index, callback);
             }
+            foreach (var pair in table.UnmanagedCallbacks)
+            {
+                unsafe
+                {
+                    _vm.RegisterHostMethod(
+                        pair.Key,
+                        (delegate* managed<ref VMState, void>)pair.Value
+                    );
+                }
+            }
         }
 
         /// <summary>
@@ -60,6 +70,22 @@ namespace Raptor
         )
         {
             _hostMethods.Add(name, (index, callback));
+            _vm.RegisterHostMethod(index, callback);
+        }
+
+        /// <summary>
+        /// Registers an unmanaged host FFI method function pointer that scripts can call by name.
+        /// Must be called before Compile() or Run() for the method to be available.
+        /// </summary>
+        public unsafe void RegisterHostMethod(
+            string name,
+            ushort index,
+            delegate* managed<ref VMState, void> callback
+        )
+        {
+            VirtualMachine.HostFFIDelegate managedWrapper = (ref VMState state) =>
+                callback(ref state);
+            _hostMethods.Add(name, (index, managedWrapper));
             _vm.RegisterHostMethod(index, callback);
         }
 

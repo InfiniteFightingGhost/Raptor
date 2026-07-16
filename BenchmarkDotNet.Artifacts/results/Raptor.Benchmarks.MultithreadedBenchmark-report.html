@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Raptor.Benchmarks.MultithreadedBenchmark-20260713-163104</title>
+<title>Raptor.Benchmarks.MultithreadedBenchmark-20260715-125922</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -16,19 +16,17 @@
 BenchmarkDotNet v0.14.0, Arch Linux
 AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.101
-  [Host]   : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
-  ShortRun : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  [Host]     : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  DefaultJob : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
 </code></pre>
-<pre><code>Job=ShortRun  IterationCount=3  LaunchCount=1  
-WarmupCount=3  
-</code></pre>
+<pre><code></code></pre>
 
 <table>
 <thead><tr><th>Method         </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Gen0</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>Multithreaded_Scale_1</td><td>184.5 &mu;s</td><td>3.31 &mu;s</td><td>0.18 &mu;s</td><td>-</td><td>-</td>
-</tr><tr><td>Multithreaded_Scale_4</td><td>212.9 &mu;s</td><td>44.89 &mu;s</td><td>2.46 &mu;s</td><td>0.2441</td><td>2386 B</td>
-</tr><tr><td>Multithreaded_Scale_8</td><td>324.1 &mu;s</td><td>65.30 &mu;s</td><td>3.58 &mu;s</td><td>-</td><td>3296 B</td>
+</thead><tbody><tr><td>Multithreaded_Scale_1</td><td>185.4 &mu;s</td><td>3.60 &mu;s</td><td>4.55 &mu;s</td><td>-</td><td>-</td>
+</tr><tr><td>Multithreaded_Scale_4</td><td>163.1 &mu;s</td><td>3.26 &mu;s</td><td>4.78 &mu;s</td><td>0.2441</td><td>2389 B</td>
+</tr><tr><td>Multithreaded_Scale_8</td><td>248.4 &mu;s</td><td>7.22 &mu;s</td><td>21.30 &mu;s</td><td>-</td><td>3288 B</td>
 </tr></tbody></table>
 </body>
 </html>

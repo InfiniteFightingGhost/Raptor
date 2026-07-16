@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Raptor;
 using Xunit;
+using static Raptor.VirtualMachine;
 
 namespace Raptor.Tests;
 
@@ -83,5 +84,72 @@ HALT
         ExecutionResult result = testVm.RunFast();
 
         Assert.Equal(VMStatus.Halted, result.Status);
+    }
+
+    internal static unsafe void UnmanagedFfiAdd(ref VMState state)
+    {
+        double a = state.RegPtr[0];
+        double b = state.RegPtr[1];
+        state.RegPtr[0] = a + b + 10.0;
+    }
+
+    [Fact]
+    public unsafe void UnmanagedFfiFunctionPointerTest()
+    {
+        VMChunk testChunk = new VMChunk();
+        Assembler testAss = new(testChunk);
+
+        testAss.RegisterHostMethod("unmanagedAdd", 12);
+
+        string testScript =
+            @"
+LOADC r1 15.0
+LOADC r2 25.0
+CALL unmanagedAdd() r1
+PRINT r1
+HALT
+";
+
+        VirtualMachine testVm = new VirtualMachine();
+
+        delegate* managed<ref VMState, void> fp = &UnmanagedFfiAdd;
+        testVm.RegisterHostMethod(12, fp);
+
+        testAss.Parse(testScript.Split("\n").ToList());
+        BytecodeVerifier.Verify(testChunk, 1024);
+        testVm.LoadProgram(testChunk);
+        ExecutionResult result = testVm.RunFast();
+
+        Assert.Equal(VMStatus.Halted, result.Status);
+        Assert.Equal(50.0, testVm.GetRegister(1));
+    }
+
+    [Fact]
+    public unsafe void ScriptEngineUnmanagedFfiTest()
+    {
+        var table = new FFIHostTable();
+        table.Register("unmanagedAdd", 12, (ref VMState state) => UnmanagedFfiAdd(ref state));
+
+        var vm = new VirtualMachine();
+        vm.RegisterHostTable(table);
+
+        var engine = new ScriptEngine();
+        engine.RegisterHostTable(table);
+
+        string testScript =
+            @"
+LOADC r1 50.0
+LOADC r2 30.0
+CALL unmanagedAdd() r1
+PRINT r1
+HALT
+";
+
+        var chunk = engine.Compile(testScript);
+        vm.LoadProgram(chunk);
+        var result = vm.RunFast();
+
+        Assert.Equal(VMStatus.Halted, result.Status);
+        Assert.Equal(90.0, vm.GetRegister(1));
     }
 }

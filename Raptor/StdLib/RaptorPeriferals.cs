@@ -1,17 +1,21 @@
+using System;
 using Raptor;
 using Raptor.Attributes;
 
-[RaptorModule("peri")]
-public static class RaptorPeriferals
+namespace Raptor.StdLib
 {
-    [RaptorMethod]
-    [RaptorDescription("Prints text on the console")]
-    [RaptorParam("number", "The number that will be printed to the console.")]
-    public static void Print(ref VMState state)
+    [RaptorModule("peri")]
+    public static class RaptorPeriferals
     {
-        unsafe
+        [RaptorMethod]
+        [RaptorDescription("Prints text on the console")]
+        [RaptorParam("number", "The number that will be printed to the console.")]
+        public static void Print(ref VMState state)
         {
-            Console.WriteLine(state.RegPtr[0]);
+            unsafe
+            {
+                Console.WriteLine(state.RegPtr[0]);
+            }
         }
     }
 }

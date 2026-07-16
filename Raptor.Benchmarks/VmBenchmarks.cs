@@ -14,10 +14,6 @@ public class VmBenchmarks
     private VMChunk _monteCarloChunk = null!;
     private VMChunk _perceptronChunk = null!;
     private VMChunk _rayTracerChunk = null!;
-    private VMChunk _ffiDirectChunk = null!;
-    private VMChunk _ffiTypedChunk = null!;
-    private VMChunk _ffiFallbackChunk = null!;
-    private VMChunk _internalCallChunk = null!;
     private VMChunk _physicsMovementChunk = null!;
     private VMChunk _combatDamageChunk = null!;
     private VirtualMachine _vm = null!;
@@ -34,13 +30,6 @@ public class VmBenchmarks
 
         // Setup FFI host table for benchmarks
         var table = new FFIHostTable();
-        table.Register("directAdd", 100, (ref VMState state) =>
-        {
-            unsafe
-            {
-                state.RegPtr[0] = state.RegPtr[0] + state.RegPtr[0];
-            }
-        });
         table.RegisterModule(typeof(FfiBenchmarkBindings));
         table.RegisterModule(typeof(FallbackBenchmarkBindings));
 
@@ -49,10 +38,6 @@ public class VmBenchmarks
         var engine = new ScriptEngine();
         engine.RegisterHostTable(table);
 
-        _ffiDirectChunk = engine.Compile(FfiDirectBindAsm);
-        _ffiTypedChunk = engine.Compile(FfiTypedWrapperAsm);
-        _ffiFallbackChunk = engine.Compile(FfiFallbackAsm);
-        _internalCallChunk = engine.Compile(InternalCallAsm);
         _physicsMovementChunk = engine.Compile(PhysicsMovementAsm);
         _combatDamageChunk = engine.Compile(CombatDamageAsm);
 
@@ -123,34 +108,6 @@ public class VmBenchmarks
     }
 
     [Benchmark]
-    public void Benchmark_FfiDirectBind()
-    {
-        _vm.LoadProgram(_ffiDirectChunk);
-        _vm.RunFast();
-    }
-
-    [Benchmark]
-    public void Benchmark_FfiTypedWrapper()
-    {
-        _vm.LoadProgram(_ffiTypedChunk);
-        _vm.RunFast();
-    }
-
-    [Benchmark]
-    public void Benchmark_InternalCall()
-    {
-        _vm.LoadProgram(_internalCallChunk);
-        _vm.RunFast();
-    }
-
-    [Benchmark]
-    public void Benchmark_FfiFallback()
-    {
-        _vm.LoadProgram(_ffiFallbackChunk);
-        _vm.RunFast();
-    }
-
-    [Benchmark]
     public void Benchmark_PhysicsMovement()
     {
         _vm.LoadProgram(_physicsMovementChunk);
@@ -182,6 +139,7 @@ loop:
     ADD counter counter 1
     LT 1 counter n
     JUMP loop
+PRINT result
 HALT";
 
     private const string MonteCarloAsm =
@@ -742,5 +700,6 @@ public static class FfiBenchmarkBindings
 public static class FallbackBenchmarkBindings
 {
     [RaptorMethod("sumFive", 200)]
-    public static double SumFive(double a, double b, double c, double d, double e) => a + b + c + d + e;
+    public static double SumFive(double a, double b, double c, double d, double e) =>
+        a + b + c + d + e;
 }

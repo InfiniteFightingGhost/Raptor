@@ -2,7 +2,7 @@
 <html lang='en'>
 <head>
 <meta charset='utf-8' />
-<title>Raptor.Benchmarks.MemoryBenchmark-20260713-163045</title>
+<title>Raptor.Benchmarks.MemoryBenchmark-20260715-125824</title>
 
 <style type="text/css">
 	table { border-collapse: collapse; display: block; width: 100%; overflow: auto; }
@@ -16,19 +16,17 @@
 BenchmarkDotNet v0.14.0, Arch Linux
 AMD Ryzen 7 260 w/ Radeon 780M Graphics, 1 CPU, 16 logical and 8 physical cores
 .NET SDK 10.0.101
-  [Host]   : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
-  ShortRun : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  [Host]     : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
+  DefaultJob : .NET 10.0.1 (10.0.125.57005), X64 RyuJIT AVX-512F+CD+BW+DQ+VL+VBMI
 </code></pre>
-<pre><code>Job=ShortRun  IterationCount=3  LaunchCount=1  
-WarmupCount=3  
-</code></pre>
+<pre><code></code></pre>
 
 <table>
 <thead><tr><th>Method            </th><th>Mean</th><th>Error</th><th>StdDev</th><th>Allocated</th>
 </tr>
-</thead><tbody><tr><td>Memory_ArrayAccess</td><td>66.08 &mu;s</td><td>1.779 &mu;s</td><td>0.098 &mu;s</td><td>-</td>
-</tr><tr><td>Memory_AllocDeallocClean</td><td>14.30 &mu;s</td><td>0.245 &mu;s</td><td>0.013 &mu;s</td><td>-</td>
-</tr><tr><td>Memory_AllocDeallocChurn</td><td>17.60 &mu;s</td><td>2.613 &mu;s</td><td>0.143 &mu;s</td><td>-</td>
+</thead><tbody><tr><td>Memory_ArrayAccess</td><td>56.18 &mu;s</td><td>0.185 &mu;s</td><td>0.164 &mu;s</td><td>-</td>
+</tr><tr><td>Memory_AllocDeallocClean</td><td>13.85 &mu;s</td><td>0.058 &mu;s</td><td>0.055 &mu;s</td><td>-</td>
+</tr><tr><td>Memory_AllocDeallocChurn</td><td>17.10 &mu;s</td><td>0.109 &mu;s</td><td>0.102 &mu;s</td><td>-</td>
 </tr></tbody></table>
 </body>
 </html>
