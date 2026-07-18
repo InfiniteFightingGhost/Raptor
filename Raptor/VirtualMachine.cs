@@ -977,7 +977,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state) // TODO: Make sure that FISR works even with doubles
+        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1153,7 +1153,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFisr(Instruction instruction, ref VMState state) // TODO: Make sure that FISR works even with doubles
+        public static unsafe bool ExecuteFisr(Instruction instruction, ref VMState state)
         {
             byte a = instruction.A;
             ushort b = instruction.B;

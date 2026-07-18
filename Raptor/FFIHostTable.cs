@@ -934,7 +934,6 @@ namespace Raptor
         /// Generates TypeScript declaration file (.d.ts) content mapping all FFI modules
         /// and methods, complete with JSDoc comments for autocomplete documentation.
         /// </summary>
-        // TODO: make this output json files instead
         public class MethodDefinition
         {
             public string Type { get; set; }

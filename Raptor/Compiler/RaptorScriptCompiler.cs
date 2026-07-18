@@ -1164,92 +1164,107 @@ namespace Raptor.Compiler
 
         private void EmitFor(ForNode forNode)
         {
-            int indexReg;
-            if (forNode.Initializer != null)
+            var current = _environment;
+            _environment = new Environment(current);
+            try
             {
-                if (forNode.Initializer is VarDeclNode varDeclNode)
+                int indexReg;
+                if (forNode.Initializer != null)
                 {
-                    EmitVarDecl(varDeclNode);
-                    _environment.TryGet(varDeclNode.Name, out int value);
-                    indexReg = value;
-                }
-                else if (forNode.Initializer is AssignmentNode assignmentNode)
-                {
-                    EmitAssignment(assignmentNode);
-                    _environment.TryGet(assignmentNode.TargetName, out int value);
-                    indexReg = value;
-                }
-                else
-                {
-                    throw new Exception(
-                        "For-loop initializer must be a variable declaration or assignment."
-                    );
-                }
-            }
-            else
-            {
-                indexReg = _regCounter++;
-                _sb.AppendLine($"LOADC r{indexReg} 0.0 ; Dummy index for empty init");
-            }
-
-            string limitStr = "1.0";
-            string compOp = "<";
-            if (forNode.Condition != null)
-            {
-                if (forNode.Condition is BinaryOpNode binOp && IsComparisonOp(binOp.Op))
-                {
-                    compOp = binOp.Op;
-                    limitStr = GetExpressionOperandString(binOp.Right);
-                }
-                else
-                {
-                    throw new Exception("For-loop condition must be a comparison (e.g., i < 10).");
-                }
-            }
-            else
-            {
-                // Hack: No condition means infinite loop. We do 0 < 1
-                _sb.AppendLine($"LOADC r{indexReg} 0.0");
-                limitStr = "1.0";
-                compOp = "<";
-            }
-
-            string stepStr = "0.0";
-            if (forNode.Increment != null)
-            {
-                if (
-                    forNode.Increment is AssignmentNode incAssign
-                    && incAssign.Value is BinaryOpNode incMath
-                )
-                {
-                    if (incMath.Op == "+")
+                    if (forNode.Initializer is VarDeclNode varDeclNode)
                     {
-                        stepStr = GetExpressionOperandString(incMath.Right);
+                        EmitVarDecl(varDeclNode);
+                        _environment.TryGet(varDeclNode.Name, out int value);
+                        indexReg = value;
                     }
-                    else if (incMath.Op == "-")
+                    else if (forNode.Initializer is AssignmentNode assignmentNode)
                     {
-                        // If the loop does i--, the step is negative.
-                        if (incMath.Right is NumberNode numNode)
+                        EmitAssignment(assignmentNode);
+                        _environment.TryGet(assignmentNode.TargetName, out int value);
+                        indexReg = value;
+                    }
+                    else
+                    {
+                        throw new Exception(
+                            "For-loop initializer must be a variable declaration or assignment."
+                        );
+                    }
+                }
+                else
+                {
+                    indexReg = _regCounter++;
+                    _sb.AppendLine($"LOADC r{indexReg} 0.0 ; Dummy index for empty init");
+                }
+
+                string limitStr = "1.0";
+                string compOp = "<";
+                if (forNode.Condition != null)
+                {
+                    if (forNode.Condition is BinaryOpNode binOp && IsComparisonOp(binOp.Op))
+                    {
+                        compOp = binOp.Op;
+                        limitStr = GetExpressionOperandString(binOp.Right);
+                    }
+                    else
+                    {
+                        throw new Exception(
+                            "For-loop condition must be a comparison (e.g., i < 10)."
+                        );
+                    }
+                }
+                else
+                {
+                    // Hack: No condition means infinite loop. We do 0 < 1
+                    _sb.AppendLine($"LOADC r{indexReg} 0.0");
+                    limitStr = "1.0";
+                    compOp = "<";
+                }
+
+                string stepStr = "0.0";
+                if (forNode.Increment != null)
+                {
+                    if (
+                        forNode.Increment is AssignmentNode incAssign
+                        && incAssign.Value is BinaryOpNode incMath
+                    )
+                    {
+                        if (incMath.Op == "+")
                         {
-                            stepStr = (-numNode.Value).ToString("F1");
-                        }
-                        else
-                        {
-                            // If it's a register (e.g. i -= stepSize), we need to negate it.
                             stepStr = GetExpressionOperandString(incMath.Right);
                         }
+                        else if (incMath.Op == "-")
+                        {
+                            // If the loop does i--, the step is negative.
+                            if (incMath.Right is NumberNode numNode)
+                            {
+                                stepStr = (-numNode.Value).ToString("F1");
+                            }
+                            else
+                            {
+                                // If it's a register (e.g. i -= stepSize), we need to negate it.
+                                stepStr = GetExpressionOperandString(incMath.Right);
+                            }
+                        }
                     }
                 }
+                int labelId = _labelCounter++;
+                string loopLabel = $"for_{labelId}";
+                string endLabel = $"for_end_{labelId}";
+                string exitOp = GetInverseOperator(compOp);
+                _sb.AppendLine($"{loopLabel}:");
+                _sb.AppendLine($"FOR r{indexReg} {limitStr} {stepStr} {exitOp} {endLabel}");
+                EmitBlock(forNode.Body);
+                _sb.AppendLine($"JUMP {loopLabel}");
+                _sb.AppendLine($"{endLabel}:");
             }
-            int labelId = _labelCounter++;
-            string loopLabel = $"for_{labelId}";
-            string endLabel = $"for_end_{labelId}";
-            string exitOp = GetInverseOperator(compOp);
-            _sb.AppendLine($"{loopLabel}:");
-            _sb.AppendLine($"FOR r{indexReg} {limitStr} {stepStr} {exitOp} {endLabel}");
-            EmitBlock(forNode.Body);
-            _sb.AppendLine($"JUMP {loopLabel}");
-            _sb.AppendLine($"{endLabel}:");
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                _environment = _environment.Enclosing;
+            }
         }
 
         private void EmitIndexAssignment(IndexAssignmentNode node)
