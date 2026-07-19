@@ -67,11 +67,26 @@ HALT
                 badPath,
                 new byte[]
                 {
-                    0xDE, 0xAD, 0xBE, 0xEF, // Bad magic
-                    0x01, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
-                    0x00, 0x00, 0x00, 0x00,
+                    0xDE,
+                    0xAD,
+                    0xBE,
+                    0xEF, // Bad magic
+                    0x01,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x00,
                 }
             );
 
@@ -161,12 +176,15 @@ HALT
         string rasmPath = Path.Combine(Path.GetTempPath(), "test_script.rasm");
         try
         {
-            File.WriteAllText(rasmPath, @"
+            File.WriteAllText(
+                rasmPath,
+                @"
 LOADC r1 10.0
 LOADC r2 5.0
 SUB r3 r1 r2
 HALT
-");
+"
+            );
             VMChunk chunk = engine.CompileFile(rasmPath);
             ExecutionResult result = engine.Execute(chunk);
             Assert.Equal(VMStatus.Halted, result.Status);
@@ -186,12 +204,15 @@ HALT
         string rasmPath = Path.Combine(Path.GetTempPath(), "test_run_script.rasm");
         try
         {
-            File.WriteAllText(rasmPath, @"
+            File.WriteAllText(
+                rasmPath,
+                @"
 LOADC r1 8.0
 LOADC r2 9.0
 MUL r3 r1 r2
 HALT
-");
+"
+            );
             ExecutionResult result = engine.RunFile(rasmPath);
             Assert.Equal(VMStatus.Halted, result.Status);
             Assert.Equal(72.0, result.RegistersSnapshot[3]);
@@ -210,12 +231,15 @@ HALT
         string rasmPath = Path.Combine(Path.GetTempPath(), "test_hotreload.rasm");
         try
         {
-            File.WriteAllText(rasmPath, @"
+            File.WriteAllText(
+                rasmPath,
+                @"
 LOADC r1 10.0
 HALT
-");
+"
+            );
             using ScriptWatcher watcher = new ScriptWatcher(engine, rasmPath);
-            
+
             // Execute initial version
             ExecutionResult result1 = engine.Execute(watcher.ActiveChunk);
             Assert.Equal(10.0, result1.RegistersSnapshot[1]);
@@ -225,15 +249,19 @@ HALT
             watcher.OnReloaded += (chunk) => reloadedFired = true;
 
             // Modify the script file
-            File.WriteAllText(rasmPath, @"
+            File.WriteAllText(
+                rasmPath,
+                @"
 LOADC r1 20.0
 HALT
-");
+"
+            );
 
             // Wait a brief moment for the file watcher to detect, compile, and reload
             for (int i = 0; i < 50; i++)
             {
-                if (reloadedFired) break;
+                if (reloadedFired)
+                    break;
                 System.Threading.Thread.Sleep(10);
             }
 
@@ -253,7 +281,8 @@ HALT
     [Fact]
     public void RaptorScriptCompilerTest()
     {
-        string raptorScript = @"
+        string raptorScript =
+            @"
 var x = 10.0;
 var y = 5.0;
 x += y;        // Desugars to x = x + y -> x = 15.0
@@ -266,14 +295,18 @@ if (x > 15.0) {
     result = 0.0;
 }
 ";
-        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, out var variables);
+        string rasmCode = Compiler.RaptorScriptCompiler.Compile(
+            raptorScript,
+            out var variables,
+            new Compiler.DiagnosticReporter()
+        );
 
         ScriptEngine engine = new ScriptEngine();
         VMChunk chunk = engine.Compile(rasmCode);
         ExecutionResult runResult = engine.Execute(chunk);
 
         Assert.Equal(VMStatus.Halted, runResult.Status);
-        
+
         // Look up the register for variable 'result' dynamically
         int resultReg = variables["result"];
         Assert.Equal(32.0, runResult.RegistersSnapshot[resultReg]);
@@ -282,21 +315,25 @@ if (x > 15.0) {
     [Fact]
     public void SourceMap_TranslateError_MapsRuntimeExceptionsCorrectly()
     {
-        string raptorScript = @"
+        string raptorScript =
+            @"
 var x = 10.0;
 var y = 0.0;
 var result = x / y; // Division by zero!
 ";
-        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript);
-        
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            raptorScript,
+            reporter: new Compiler.DiagnosticReporter()
+        );
+
         ScriptEngine engine = new ScriptEngine();
         VMChunk chunk = engine.Compile(rasmCode);
         ExecutionResult runResult = engine.Execute(chunk);
 
         Assert.Equal(VMStatus.DivisionByZero, runResult.Status);
-        
+
         string errorDetails = ScriptEngine.TranslateError(chunk, runResult.IpOffset, raptorScript);
-        
+
         Assert.Contains("Runtime error at line 4", errorDetails);
         Assert.Contains("var result = x / y;", errorDetails);
     }
@@ -304,7 +341,8 @@ var result = x / y; // Division by zero!
     [Fact]
     public void TestGameplayCompile()
     {
-        string raptorScript = @"
+        string raptorScript =
+            @"
 // Assets/Scripts/enemy_ai.rapt
 var targetDistance = enemy.getDistanceToPlayer();
 var state = enemy.getState(); // 0 = Idle, 1 = Chasing, 2 = Attacking
@@ -330,23 +368,29 @@ if (targetDistance < 5.0) {
     }
 }
 ";
-        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript);
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            raptorScript,
+            reporter: new Compiler.DiagnosticReporter()
+        );
         Assert.NotEmpty(rasm);
-        System.IO.File.WriteAllText("/home/andy/.gemini/antigravity/brain/ec45c6eb-d535-4e23-909e-6974cf17074d/scratch/compiled_gameplay.rasm", rasm);
-        
+        System.IO.File.WriteAllText(
+            "/home/andy/.gemini/antigravity/brain/ec45c6eb-d535-4e23-909e-6974cf17074d/scratch/compiled_gameplay.rasm",
+            rasm
+        );
+
         ScriptEngine engine = new ScriptEngine();
         // Register some dummy FFI methods so the assembler doesn't fail on missing names
         var table = new FFIHostTable();
-        table.Register("enemy.getDistanceToPlayer", 0, (ref VMState s) => {});
-        table.Register("enemy.getState", 1, (ref VMState s) => {});
-        table.Register("enemy.setState", 2, (ref VMState s) => {});
-        table.Register("enemy.getAttackCooldown", 3, (ref VMState s) => {});
-        table.Register("enemy.setAttackCooldown", 4, (ref VMState s) => {});
-        table.Register("enemy.attackPlayer", 5, (ref VMState s) => {});
-        table.Register("enemy.moveTowardsPlayer", 6, (ref VMState s) => {});
-        table.Register("enemy.patrol", 7, (ref VMState s) => {});
+        table.Register("enemy.getDistanceToPlayer", 0, (ref VMState s) => { });
+        table.Register("enemy.getState", 1, (ref VMState s) => { });
+        table.Register("enemy.setState", 2, (ref VMState s) => { });
+        table.Register("enemy.getAttackCooldown", 3, (ref VMState s) => { });
+        table.Register("enemy.setAttackCooldown", 4, (ref VMState s) => { });
+        table.Register("enemy.attackPlayer", 5, (ref VMState s) => { });
+        table.Register("enemy.moveTowardsPlayer", 6, (ref VMState s) => { });
+        table.Register("enemy.patrol", 7, (ref VMState s) => { });
         engine.RegisterHostTable(table);
-        
+
         VMChunk chunk = engine.Compile(rasm);
         Assert.NotEmpty(chunk.Instructions);
     }
@@ -354,7 +398,8 @@ if (targetDistance < 5.0) {
     [Fact]
     public void RaptorScriptCompiler_PropertyMappingTest()
     {
-        string raptorScript = @"
+        string raptorScript =
+            @"
 var val = enemy.x + enemy.y;
 enemy.z = val * 2.0;
 ";
@@ -362,10 +407,15 @@ enemy.z = val * 2.0;
         {
             { "enemy.x", 1 },
             { "enemy.y", 2 },
-            { "enemy.z", 3 }
+            { "enemy.z", 3 },
         };
 
-        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, out var variables, propertyMappings);
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            raptorScript,
+            out var variables,
+            new Compiler.DiagnosticReporter(),
+            propertyMappings
+        );
 
         ScriptEngine engine = new ScriptEngine();
         VMChunk chunk = engine.Compile(rasmCode);
@@ -373,10 +423,10 @@ enemy.z = val * 2.0;
         // Create VM state and set registers 1 and 2 manually from C#
         var vm = new VirtualMachine();
         vm.LoadProgram(chunk);
-        
+
         vm.SetRegister(1, 10.0); // enemy.x
         vm.SetRegister(2, 20.0); // enemy.y
-        
+
         vm.RunFast();
 
         // Read register 3 (enemy.z) directly from C#
@@ -386,5 +436,70 @@ enemy.z = val * 2.0;
         // Check that temp variable 'val' got allocated in a safe register (index >= 4)
         int valReg = variables["val"];
         Assert.True(valReg >= 4);
+    }
+
+    [Fact]
+    public void CompilerThrowsCompileExceptionOnSyntaxErrors()
+    {
+        string raptorScript = @"
+var x = 10.0;
+var y = ; // Syntax error
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        Assert.Throws<Compiler.CompileException>(() =>
+            Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter)
+        );
+        Assert.True(reporter.HasErrors);
+    }
+
+    [Fact]
+    public void CompilerRecoversFromMultipleUndefinedAndDoubleDeclarations()
+    {
+        string raptorScript = @"
+var x = 10.0;
+var x = 20.0; // Double declaration
+var y = z + w; // Undefined identifiers
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        Assert.Throws<Compiler.CompileException>(() =>
+            Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter)
+        );
+        
+        Assert.True(reporter.HasErrors);
+        // Verify multiple errors reported: E0019 (double declaration), E0018 (undefined z), E0018 (undefined w)
+        var codes = reporter.Diagnostics.Select(d => d.Code).ToList();
+        Assert.Contains("E0019", codes);
+        Assert.Contains("E0018", codes);
+        Assert.Equal(3, codes.Count);
+    }
+
+    [Fact]
+    public void CompilerThrowsEmitExceptionOnLoopValidationErrors()
+    {
+        string raptorScript = @"
+for (var i = 0.0; 10.0; i = i + 1.0) { // Condition is not a comparison
+    var x = i;
+}
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        Assert.Throws<Compiler.CompileException>(() =>
+            Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter)
+        );
+        Assert.True(reporter.HasErrors);
+        Assert.Contains("E0021", reporter.Diagnostics.Select(d => d.Code));
+    }
+
+    [Fact]
+    public void CompilerThrowsEmitExceptionOnFfiArgCountErrors()
+    {
+        string raptorScript = @"
+var a = alloc(1.0, 2.0); // alloc expects exactly 1 argument
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        Assert.Throws<Compiler.CompileException>(() =>
+            Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter)
+        );
+        Assert.True(reporter.HasErrors);
+        Assert.Contains("E0024", reporter.Diagnostics.Select(d => d.Code));
     }
 }

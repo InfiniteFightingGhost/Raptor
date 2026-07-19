@@ -163,7 +163,10 @@ var size = 128;
 var arr = alloc(size);
 var length = len(arr);
 ";
-        string asm = Compiler.RaptorScriptCompiler.Compile(testScript);
+        string asm = Compiler.RaptorScriptCompiler.Compile(
+            testScript,
+            reporter: new Compiler.DiagnosticReporter()
+        );
         var chunk = engine.Compile(asm);
         var vm = new VirtualMachine();
         vm.LoadProgram(chunk);

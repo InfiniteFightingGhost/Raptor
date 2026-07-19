@@ -16,7 +16,7 @@
         </radialGradient>
 
         <!-- Drop Shadow Filter for Logo -->
-        <filter id="dino-glow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id="dino-glow" x="-200%" y="-200%" width="500%" height="500%">
             <!-- Inner intense glow -->
             <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#3aedbc" flood-opacity="0.8" />
             <!-- Outer wide soft glow -->

@@ -40,13 +40,33 @@ public class RunCommand : Command<RunCommand.Settings>
     {
         if (!Path.Exists(settings.ScriptPath))
         {
-            AnsiConsole.WriteLine($"[red bold]File \"{settings.ScriptPath}\" not found[/]");
+            AnsiConsole.MarkupLine($"[red bold]File \"{Markup.Escape(settings.ScriptPath)}\" not found[/]");
             return 1;
         }
         if (!settings.RunWithoutBuilding)
         {
             string code = File.ReadAllText(settings.ScriptPath);
-            string asm = RaptorScriptCompiler.Compile(code);
+            var reporter = new DiagnosticReporter();
+            string asm = string.Empty;
+            try
+            {
+                asm = RaptorScriptCompiler.Compile(code, reporter: reporter);
+            }
+            catch (CompileException) { }
+            finally
+            {
+                if (reporter.HasErrors)
+                {
+                    string[] codeLines = code.Split('\n').ToArray();
+                    foreach (var error in reporter.Diagnostics)
+                    {
+                        PrintHelper.PrintDiagnostic(error, settings.ScriptPath, codeLines);
+                    }
+                }
+            }
+            if (reporter.HasErrors)
+                return 1;
+
             if (!Path.Exists("build" + Path.DirectorySeparatorChar))
             {
                 Directory.CreateDirectory("build");
@@ -64,10 +84,10 @@ public class RunCommand : Command<RunCommand.Settings>
             var result = _engine.Execute(compiledCode);
             if (result.ErrorMessage != null)
             {
-                AnsiConsole.WriteLine("[red bold]Error occured at raptor script[/]");
-                AnsiConsole.WriteLine($"[red bold]{result.ErrorMessage}[/]");
-                AnsiConsole.WriteLine(
-                    $"[red bold]{ScriptEngine.TranslateError(compiledCode, result.IpOffset, code)}[/]"
+                AnsiConsole.MarkupLine("[red bold]Error occured at raptor script[/]");
+                AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(result.ErrorMessage)}[/]");
+                AnsiConsole.MarkupLine(
+                    $"[red bold]{Markup.Escape(ScriptEngine.TranslateError(compiledCode, result.IpOffset, code))}[/]"
                 );
                 return 1;
             }
@@ -78,8 +98,8 @@ public class RunCommand : Command<RunCommand.Settings>
             buildPath = Path.ChangeExtension(buildPath, "rbc");
             if (!Path.Exists(buildPath))
             {
-                AnsiConsole.WriteLine($"[red bold]Build file not found.[/]");
-                AnsiConsole.WriteLine(
+                AnsiConsole.MarkupLine($"[red bold]Build file not found.[/]");
+                AnsiConsole.MarkupLine(
                     $"[red bold]Make sure to build first or use 'raptor run' without --no-building.[/]"
                 );
                 return 1;
@@ -92,13 +112,13 @@ public class RunCommand : Command<RunCommand.Settings>
             }
             catch (NullReferenceException ex)
             {
-                AnsiConsole.WriteLine($"[red bold]{ex.Message}[/]");
-                AnsiConsole.WriteLine($"[red bold]{ex.StackTrace}[/]");
+                AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(ex.Message)}[/]");
+                AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(ex.StackTrace ?? string.Empty)}[/]");
             }
             if (result.ErrorMessage != null)
             {
-                AnsiConsole.WriteLine("[red bold]Error occured at raptor script[/]");
-                AnsiConsole.WriteLine($"[red bold]{result.ErrorMessage}[/]");
+                AnsiConsole.MarkupLine("[red bold]Error occured at raptor script[/]");
+                AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(result.ErrorMessage)}[/]");
                 return 1;
             }
         }

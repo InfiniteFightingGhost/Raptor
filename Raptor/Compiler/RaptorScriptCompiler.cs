@@ -86,6 +86,8 @@ namespace Raptor.Compiler
     public abstract class ASTNode
     {
         public int Line { get; set; }
+        public int Column { get; set; }
+        public int Length { get; set; }
     }
 
     public class ProgramNode : ASTNode
@@ -263,10 +265,12 @@ namespace Raptor.Compiler
         private int _index;
         private int _line = 1;
         private int _column = 0;
+        private readonly DiagnosticReporter _reporter;
 
-        public Lexer(string source)
+        public Lexer(string source, DiagnosticReporter reporter)
         {
             _source = source;
+            _reporter = reporter;
         }
 
         public List<Token> ScanTokens()
@@ -306,7 +310,13 @@ namespace Raptor.Compiler
                     continue;
                 }
 
-                tokens.Add(ScanOperatorOrPunctuation());
+                Token? result = ScanOperatorOrPunctuation();
+                if (result != null)
+                    tokens.Add(result);
+                else
+                {
+                    LexerSynchronize();
+                }
             }
 
             tokens.Add(new Token(TokenType.EOF, "", _line, _column));
@@ -324,6 +334,22 @@ namespace Raptor.Compiler
         private char PeekNext() => _index + 1 >= _source.Length ? '\0' : _source[_index + 1];
 
         private bool IsAtEnd() => _index >= _source.Length;
+
+        private void LexerSynchronize()
+        {
+            while (!IsAtEnd())
+            {
+                char c = Peek();
+
+                // Stop skipping when we hit whitespace or statement punctuation
+                if (char.IsWhiteSpace(c) || c == ';' || c == ')' || c == '}' || c == ']')
+                {
+                    return;
+                }
+
+                Advance(); // Discard the bad character
+            }
+        }
 
         private Token ScanNumber()
         {
@@ -368,88 +394,105 @@ namespace Raptor.Compiler
             return new Token(type, val, _line, _column);
         }
 
-        private Token ScanOperatorOrPunctuation()
+        private Token? ScanOperatorOrPunctuation()
         {
             char c = Advance();
-            return c switch
+            try
             {
-                ';' => new Token(TokenType.Semicolon, ";", _line, _column),
-                '(' => new Token(TokenType.OpenParenthesis, "(", _line, _column),
-                ')' => new Token(TokenType.CloseParenthesis, ")", _line, _column),
-                '[' => new Token(TokenType.OpenBracket, "[", _line, _column),
-                ']' => new Token(TokenType.CloseBracket, "]", _line, _column),
-                '{' => new Token(TokenType.OpenBrace, "{", _line, _column),
-                '}' => new Token(TokenType.CloseBrace, "}", _line, _column),
-                ',' => new Token(TokenType.Comma, ",", _line, _column),
+                return c switch
+                {
+                    ';' => new Token(TokenType.Semicolon, ";", _line, _column),
+                    '(' => new Token(TokenType.OpenParenthesis, "(", _line, _column),
+                    ')' => new Token(TokenType.CloseParenthesis, ")", _line, _column),
+                    '[' => new Token(TokenType.OpenBracket, "[", _line, _column),
+                    ']' => new Token(TokenType.CloseBracket, "]", _line, _column),
+                    '{' => new Token(TokenType.OpenBrace, "{", _line, _column),
+                    '}' => new Token(TokenType.CloseBrace, "}", _line, _column),
+                    ',' => new Token(TokenType.Comma, ",", _line, _column),
 
-                '+' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.PlusEquals, "+="),
-                    '+' => ConsumeAndReturn(TokenType.PlusPlus, "++"),
-                    _ => new Token(TokenType.Plus, "+", _line, _column),
-                },
-                '-' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.MinusEquals, "-="),
-                    '-' => ConsumeAndReturn(TokenType.MinusMinus, "--"),
-                    _ => new Token(TokenType.Minus, "-", _line, _column),
-                },
-                '*' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.StarEquals, "*="),
-                    _ => new Token(TokenType.Star, "*", _line, _column),
-                },
-                '/' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.SlashEquals, "/="),
-                    _ => new Token(TokenType.Slash, "/", _line, _column),
-                },
-                '=' => Match('=')
-                    ? new Token(TokenType.Equal, "==", _line, _column)
-                    : new Token(TokenType.Assign, "=", _line, _column),
-                '!' => Match('=')
-                    ? new Token(TokenType.NotEqual, "!=", _line, _column)
-                    : throw new Exception(
-                        $"Unexpected char '!' at line {_line} at column {_column}"
+                    '+' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.PlusEquals, "+="),
+                        '+' => ConsumeAndReturn(TokenType.PlusPlus, "++"),
+                        _ => new Token(TokenType.Plus, "+", _line, _column),
+                    },
+                    '-' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.MinusEquals, "-="),
+                        '-' => ConsumeAndReturn(TokenType.MinusMinus, "--"),
+                        _ => new Token(TokenType.Minus, "-", _line, _column),
+                    },
+                    '*' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.StarEquals, "*="),
+                        _ => new Token(TokenType.Star, "*", _line, _column),
+                    },
+                    '/' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.SlashEquals, "/="),
+                        _ => new Token(TokenType.Slash, "/", _line, _column),
+                    },
+                    '=' => Match('=')
+                        ? new Token(TokenType.Equal, "==", _line, _column)
+                        : new Token(TokenType.Assign, "=", _line, _column),
+                    '!' => Peek() switch
+                    {
+                        '=' => new Token(TokenType.NotEqual, "!=", _line, _column),
+                        _ => throw new LexerException($"Unexpected char '!'"),
+                    },
+                    '<' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.LessEqual, "<="),
+                        '<' => ConsumeAndReturn(TokenType.LessLess, "<<"),
+                        _ => new Token(TokenType.Less, "<", _line, _column),
+                    },
+                    '>' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.GreaterEqual, ">="),
+                        '>' => ConsumeAndReturn(TokenType.GreaterGreater, ">>"),
+                        _ => new Token(TokenType.Greater, ">", _line, _column),
+                    },
+                    '%' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.PercentEquals, "%="),
+                        _ => new Token(TokenType.Percent, "%", _line, _column),
+                    },
+                    '&' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.AmpersandEquals, "&="),
+                        '&' => ConsumeAndReturn(TokenType.AmpersandAmpersand, "&&"),
+                        _ => new Token(TokenType.Ampersand, "&", _line, _column),
+                    },
+                    '|' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.PipeEquals, "|="),
+                        '|' => ConsumeAndReturn(TokenType.PipePipe, "||"),
+                        _ => new Token(TokenType.Pipe, "|", _line, _column),
+                    },
+                    '^' => Peek() switch
+                    {
+                        '=' => ConsumeAndReturn(TokenType.CaretEquals, "^="),
+                        _ => new Token(TokenType.Caret, "^", _line, _column),
+                    },
+                    _ => throw new LexerException(
+                        $"Unexpected character '{c}' at line {_line} at column {_column}"
                     ),
-                '<' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.LessEqual, "<="),
-                    '<' => ConsumeAndReturn(TokenType.LessLess, "<<"),
-                    _ => new Token(TokenType.Less, "<", _line, _column),
-                },
-                '>' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.GreaterEqual, ">="),
-                    '>' => ConsumeAndReturn(TokenType.GreaterGreater, ">>"),
-                    _ => new Token(TokenType.Greater, ">", _line, _column),
-                },
-                '%' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.PercentEquals, "%="),
-                    _ => new Token(TokenType.Percent, "%", _line, _column),
-                },
-                '&' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.AmpersandEquals, "&="),
-                    '&' => ConsumeAndReturn(TokenType.AmpersandAmpersand, "&&"),
-                    _ => new Token(TokenType.Ampersand, "&", _line, _column),
-                },
-                '|' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.PipeEquals, "|="),
-                    '|' => ConsumeAndReturn(TokenType.PipePipe, "||"),
-                    _ => new Token(TokenType.Pipe, "|", _line, _column),
-                },
-                '^' => Peek() switch
-                {
-                    '=' => ConsumeAndReturn(TokenType.CaretEquals, "^="),
-                    _ => new Token(TokenType.Caret, "^", _line, _column),
-                },
-                _ => throw new Exception(
-                    $"Unexpected character '{c}' at line {_line} at column {_column}"
-                ),
-            };
+                };
+            }
+            catch (LexerException ex)
+            {
+                _reporter.Report(
+                    new Diagnostic(
+                        "E00017",
+                        DiagnosticSeverity.Error,
+                        ex.Message,
+                        _line,
+                        _column,
+                        1
+                    )
+                );
+                return null;
+            }
         }
 
         private bool Match(char expected)
@@ -467,23 +510,78 @@ namespace Raptor.Compiler
         }
     }
 
+    [Serializable]
+    internal class LexerException : Exception
+    {
+        public LexerException() { }
+
+        public LexerException(string? message)
+            : base(message) { }
+
+        public LexerException(string? message, Exception? innerException)
+            : base(message, innerException) { }
+    }
+
     #endregion
 
     #region Parser
 
     public class Parser
     {
+        private class ParseException : Exception { }
+
         private readonly List<Token> _tokens;
         private int _current;
+        private readonly DiagnosticReporter _reporter;
 
-        public Parser(List<Token> tokens) => _tokens = tokens;
+        public Parser(List<Token> tokens, DiagnosticReporter reporter)
+        {
+            _tokens = tokens;
+            _reporter = reporter;
+        }
+
+        private void Synchronize()
+        {
+            // Consume the token that caused/detected the error first
+            Advance();
+
+            while (!IsAtEnd())
+            {
+                // Boundary 1: If the previous token was a semicolon,
+                // we are likely at the start of a new statement.
+                if (Previous().Type == TokenType.Semicolon)
+                    return;
+
+                // Boundary 2: If the next token is a keyword that starts a new statement,
+                // we can resume parsing safely here.
+                switch (Peek().Type)
+                {
+                    case TokenType.Var:
+                    case TokenType.If:
+                    case TokenType.While:
+                    case TokenType.For:
+                    case TokenType.Return:
+                        return;
+                }
+
+                // Otherwise, discard this token and keep looking
+                Advance();
+            }
+        }
 
         public ProgramNode Parse()
         {
             var prog = new ProgramNode();
             while (!IsAtEnd())
             {
-                prog.Statements.Add(ParseStatement());
+                try
+                {
+                    prog.Statements.Add(ParseStatement());
+                }
+                catch (ParseException)
+                {
+                    Synchronize();
+                }
             }
             return prog;
         }
@@ -508,7 +606,12 @@ namespace Raptor.Compiler
             Consume(TokenType.Assign, "Expected '=' in variable declaration.");
             ASTNode initializer = ParseExpression();
             Consume(TokenType.Semicolon, "Expected ';' after declaration.");
-            return new VarDeclNode(nameToken.Lexeme, initializer) { Line = nameToken.Line };
+            return new VarDeclNode(nameToken.Lexeme, initializer)
+            {
+                Line = nameToken.Line,
+                Column = nameToken.Column,
+                Length = nameToken.Lexeme.Length,
+            };
         }
 
         private ASTNode ParseIf()
@@ -526,7 +629,12 @@ namespace Raptor.Compiler
                 elseBlock = ParseBlock();
             }
 
-            return new IfNode(condition, thenBlock, elseBlock) { Line = ifToken.Line };
+            return new IfNode(condition, thenBlock, elseBlock)
+            {
+                Line = ifToken.Line,
+                Column = ifToken.Column,
+                Length = ifToken.Lexeme.Length,
+            };
         }
 
         private ASTNode ParseWhile()
@@ -537,7 +645,12 @@ namespace Raptor.Compiler
             Consume(TokenType.CloseParenthesis, "Expected ')' after condition.");
 
             List<ASTNode> body = ParseBlock();
-            return new WhileNode(condition, body) { Line = whileToken.Line };
+            return new WhileNode(condition, body)
+            {
+                Line = whileToken.Line,
+                Column = whileToken.Column,
+                Length = whileToken.Lexeme.Length,
+            };
         }
 
         private ASTNode ParseFor()
@@ -568,7 +681,12 @@ namespace Raptor.Compiler
             Consume(TokenType.CloseParenthesis, "Expected ')' after loop step.");
 
             List<ASTNode> body = ParseBlock();
-            return new ForNode(initializer, condition, increment, body) { Line = forToken.Line };
+            return new ForNode(initializer, condition, increment, body)
+            {
+                Line = forToken.Line,
+                Column = forToken.Column,
+                Length = forToken.Lexeme.Length,
+            };
         }
 
         private List<ASTNode> ParseBlock()
@@ -594,9 +712,17 @@ namespace Raptor.Compiler
                 return expr;
             }
 
-            throw new Exception(
-                $"Statement at line {Peek().Line} is not a valid assignment or function call."
+            _reporter.Report(
+                new Diagnostic(
+                    "E0023",
+                    DiagnosticSeverity.Error,
+                    $"Statement is not a valid assignment or function call.",
+                    Peek().Line,
+                    Peek().Column,
+                    Peek().Lexeme.Length
+                )
             );
+            throw new ParseException();
         }
 
         private ASTNode ParseExpression()
@@ -631,60 +757,145 @@ namespace Raptor.Compiler
                     switch (op.Type)
                     {
                         case TokenType.PlusEquals:
-                            value = new BinaryOpNode(id, "+", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "+", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.MinusEquals:
-                            value = new BinaryOpNode(id, "-", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "-", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.SlashEquals:
-                            value = new BinaryOpNode(id, "/", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "/", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.StarEquals:
-                            value = new BinaryOpNode(id, "*", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "*", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.PipeEquals:
-                            value = new BinaryOpNode(id, "|", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "|", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.CaretEquals:
-                            value = new BinaryOpNode(id, "^", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "^", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.AmpersandEquals:
-                            value = new BinaryOpNode(id, "&", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "&", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.PercentEquals:
-                            value = new BinaryOpNode(id, "%", value) { Line = op.Line };
+                            value = new BinaryOpNode(id, "%", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                     }
 
-                    return new AssignmentNode(id.Name, value) { Line = op.Line };
+                    return new AssignmentNode(id.Name, value)
+                    {
+                        Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
+                    };
                 }
                 else if (expr is IndexAccessNode indexAccess)
                 {
                     switch (op.Type)
                     {
                         case TokenType.PlusEquals:
-                            value = new BinaryOpNode(indexAccess, "+", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "+", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.MinusEquals:
-                            value = new BinaryOpNode(indexAccess, "-", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "-", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.SlashEquals:
-                            value = new BinaryOpNode(indexAccess, "/", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "/", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.StarEquals:
-                            value = new BinaryOpNode(indexAccess, "*", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "*", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.PipeEquals:
-                            value = new BinaryOpNode(indexAccess, "|", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "|", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.CaretEquals:
-                            value = new BinaryOpNode(indexAccess, "^", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "^", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.AmpersandEquals:
-                            value = new BinaryOpNode(indexAccess, "&", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "&", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                         case TokenType.PercentEquals:
-                            value = new BinaryOpNode(indexAccess, "%", value) { Line = op.Line };
+                            value = new BinaryOpNode(indexAccess, "%", value)
+                            {
+                                Line = op.Line,
+                                Column = op.Column,
+                                Length = op.Lexeme.Length,
+                            };
                             break;
                     }
 
@@ -695,10 +906,22 @@ namespace Raptor.Compiler
                     )
                     {
                         Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
                     };
                 }
 
-                throw new Exception($"Invalid assignment target at line {op.Line}.");
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0022",
+                        DiagnosticSeverity.Error,
+                        $"Invalid assignment target",
+                        op.Line,
+                        op.Column,
+                        op.Lexeme.Length
+                    )
+                );
+                throw new ParseException();
             }
 
             // Handle postfix increments: x++ or x--
@@ -715,12 +938,24 @@ namespace Raptor.Compiler
                     var value = new BinaryOpNode(id, mathOp, new NumberNode(1.0) { Line = op.Line })
                     {
                         Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
                     };
-                    return new AssignmentNode(id.Name, value) { Line = op.Line };
+                    return new AssignmentNode(id.Name, value)
+                    {
+                        Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
+                    };
                 }
                 else if (expr is IndexAccessNode indexAccess)
                 {
-                    var value = new BinaryOpNode(indexAccess, mathOp, one) { Line = op.Line };
+                    var value = new BinaryOpNode(indexAccess, mathOp, one)
+                    {
+                        Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
+                    };
                     return new IndexAssignmentNode(
                         indexAccess.ArrayExpr,
                         indexAccess.IndexExpr,
@@ -728,9 +963,21 @@ namespace Raptor.Compiler
                     )
                     {
                         Line = op.Line,
+                        Column = op.Column,
+                        Length = op.Lexeme.Length,
                     };
                 }
-                throw new Exception($"Invalid increment/decrement target at line {op.Line}.");
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0021",
+                        DiagnosticSeverity.Error,
+                        $"Invalid increment/decrement target",
+                        op.Line,
+                        op.Column,
+                        op.Lexeme.Length
+                    )
+                );
+                throw new ParseException();
             }
 
             return expr;
@@ -753,7 +1000,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseShift();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
 
             return expr;
@@ -766,7 +1018,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseLogicalAnd();
-                expr = new LogicalOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new LogicalOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -778,7 +1035,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseBitwiseOr();
-                expr = new LogicalOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new LogicalOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -790,7 +1052,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseBitwiseXor();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -802,7 +1069,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseBitwiseAnd();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -814,7 +1086,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseComparison();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -826,7 +1103,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseTerm();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
             return expr;
         }
@@ -839,7 +1121,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParseFactor();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
 
             return expr;
@@ -853,7 +1140,12 @@ namespace Raptor.Compiler
             {
                 Token op = Previous();
                 ASTNode right = ParsePrimary();
-                expr = new BinaryOpNode(expr, op.Lexeme, right) { Line = op.Line };
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
             }
 
             return expr;
@@ -864,15 +1156,30 @@ namespace Raptor.Compiler
             if (Match(TokenType.Number))
             {
                 Token numToken = Previous();
-                return new NumberNode(double.Parse(numToken.Lexeme)) { Line = numToken.Line };
+                return new NumberNode(double.Parse(numToken.Lexeme))
+                {
+                    Line = numToken.Line,
+                    Column = numToken.Column,
+                    Length = numToken.Lexeme.Length,
+                };
             }
             if (Match(TokenType.False))
             {
-                return new NumberNode(0) { Line = Previous().Line };
+                return new NumberNode(0)
+                {
+                    Line = Previous().Line,
+                    Column = Previous().Column,
+                    Length = Previous().Lexeme.Length,
+                };
             }
             if (Match(TokenType.True))
             {
-                return new NumberNode(1) { Line = Previous().Line };
+                return new NumberNode(1)
+                {
+                    Line = Previous().Line,
+                    Column = Previous().Column,
+                    Length = Previous().Lexeme.Length,
+                };
             }
 
             if (Match(TokenType.OpenBracket))
@@ -904,14 +1211,29 @@ namespace Raptor.Compiler
                         } while (Match(TokenType.Comma));
                     }
                     Consume(TokenType.CloseParenthesis, "Expected ')' after arguments.");
-                    return new CallNode(idToken.Lexeme, args) { Line = idToken.Line };
+                    return new CallNode(idToken.Lexeme, args)
+                    {
+                        Line = idToken.Line,
+                        Column = idToken.Column,
+                        Length = idToken.Lexeme.Length,
+                    };
                 }
-                ASTNode expr = new IdentifierNode(idToken.Lexeme) { Line = idToken.Line };
+                ASTNode expr = new IdentifierNode(idToken.Lexeme)
+                {
+                    Line = idToken.Line,
+                    Column = idToken.Column,
+                    Length = idToken.Lexeme.Length,
+                };
                 while (Match(TokenType.OpenBracket))
                 {
                     ASTNode indexExpr = ParseExpression();
                     Consume(TokenType.CloseBracket, "Expected ']' after array index.");
-                    expr = new IndexAccessNode(expr, indexExpr) { Line = idToken.Line };
+                    expr = new IndexAccessNode(expr, indexExpr)
+                    {
+                        Line = idToken.Line,
+                        Column = idToken.Column,
+                        Length = idToken.Lexeme.Length,
+                    };
                 }
                 return expr;
             }
@@ -923,9 +1245,17 @@ namespace Raptor.Compiler
                 Consume(TokenType.CloseParenthesis, "Expected ')' after expression.");
                 return expr;
             }
-            throw new Exception(
-                $"Expected expression at line {Peek().Line}, found '{Peek().Lexeme}'."
+            _reporter.Report(
+                new Diagnostic(
+                    "E0020",
+                    DiagnosticSeverity.Error,
+                    $"Expected expression",
+                    Peek().Line,
+                    Peek().Column,
+                    Peek().Lexeme.Length
+                )
             );
+            throw new ParseException();
         }
 
         #region Helper Methods
@@ -967,7 +1297,17 @@ namespace Raptor.Compiler
         {
             if (Check(type))
                 return Advance();
-            throw new Exception($"{message} (Line {Peek().Line})");
+            _reporter.Report(
+                new Diagnostic(
+                    "E0019",
+                    DiagnosticSeverity.Error,
+                    $"{message}",
+                    Peek().Line,
+                    Peek().Column,
+                    Peek().Lexeme.Length
+                )
+            );
+            throw new ParseException();
         }
 
         #endregion
@@ -996,10 +1336,6 @@ namespace Raptor.Compiler
 
             public void Define(string name, int registerIndex)
             {
-                if (_values.ContainsKey(name))
-                {
-                    throw new Exception($"Variable '{name}' is already declared in this scope.");
-                }
                 _values[name] = registerIndex;
             }
 
@@ -1027,8 +1363,13 @@ namespace Raptor.Compiler
         private readonly Dictionary<string, int> _propertyMappings = new();
         private int _regCounter = 1; // Start allocating registers from r1 (r0 acts as result accumulator)
         private int _labelCounter = 0;
+        private readonly DiagnosticReporter _reporter;
 
-        public Emitter(ProgramNode program, Dictionary<string, int>? propertyMappings = null)
+        public Emitter(
+            ProgramNode program,
+            DiagnosticReporter reporter,
+            Dictionary<string, int>? propertyMappings = null
+        )
         {
             _program = program;
             _environment = new Environment(null);
@@ -1043,6 +1384,7 @@ namespace Raptor.Compiler
                 }
                 _regCounter = maxPropertyReg + 1;
             }
+            _reporter = reporter;
         }
 
         public IReadOnlyDictionary<string, int> Globals => _globalEnvironment.Variables;
@@ -1094,14 +1436,35 @@ namespace Raptor.Compiler
                     EmitCall(call, 0); // Accumulate in r0 by default
                     break;
                 default:
-                    throw new Exception(
-                        $"Cannot emit node of type {node.GetType().Name} at root level."
+                    _reporter.Report(
+                        new Diagnostic(
+                            "E0023",
+                            DiagnosticSeverity.Error,
+                            $"Cannot emit node of type {node.GetType().Name} at root level.",
+                            node.Line,
+                            node.Column,
+                            node.Length
+                        )
                     );
+                    throw new EmitException();
             }
         }
 
         private void EmitVarDecl(VarDeclNode decl)
         {
+            if (_environment.Variables.ContainsKey(decl.Name))
+            {
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0019",
+                        DiagnosticSeverity.Error,
+                        $"Variable '{decl.Name}' is already declared in this scope.",
+                        decl.Line,
+                        decl.Column,
+                        decl.Length
+                    )
+                );
+            }
             int regIndex = _regCounter++;
             _environment.Define(decl.Name, regIndex);
 
@@ -1119,7 +1482,17 @@ namespace Raptor.Compiler
             }
             else if (!_environment.TryGet(assign.TargetName, out int varReg))
             {
-                throw new Exception($"Variable '{assign.TargetName}' is not declared.");
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0018",
+                        DiagnosticSeverity.Error,
+                        $"Variable '{assign.TargetName}' is not declared.",
+                        assign.Line,
+                        assign.Column,
+                        assign.Length
+                    )
+                );
+                throw new EmitException();
             }
             else
             {
@@ -1197,9 +1570,17 @@ namespace Raptor.Compiler
                     }
                     else
                     {
-                        throw new Exception(
-                            "For-loop initializer must be a variable declaration or assignment."
+                        _reporter.Report(
+                            new Diagnostic(
+                                "E0020",
+                                DiagnosticSeverity.Error,
+                                "For-loop initializer must be a variable declaration or assignment.",
+                                forNode.Line,
+                                forNode.Column,
+                                forNode.Length
+                            )
                         );
+                        throw new EmitException();
                     }
                 }
                 else
@@ -1219,9 +1600,17 @@ namespace Raptor.Compiler
                     }
                     else
                     {
-                        throw new Exception(
-                            "For-loop condition must be a comparison (e.g., i < 10)."
+                        _reporter.Report(
+                            new Diagnostic(
+                                "E0021",
+                                DiagnosticSeverity.Error,
+                                "For-loop condition must be a comparison (e.g., i < 10).",
+                                forNode.Line,
+                                forNode.Column,
+                                forNode.Length
+                            )
                         );
+                        throw new EmitException();
                     }
                 }
                 else
@@ -1268,10 +1657,6 @@ namespace Raptor.Compiler
                 EmitBlock(forNode.Body);
                 _sb.AppendLine($"JUMP {loopLabel}");
                 _sb.AppendLine($"{endLabel}:");
-            }
-            catch (Exception ex)
-            {
-                throw ex;
             }
             finally
             {
@@ -1347,7 +1732,7 @@ namespace Raptor.Compiler
                 ">=" => "<",
                 "==" => "!=",
                 "!=" => "==",
-                _ => throw new Exception($"Cannot invert unknown operator: {op}"),
+                _ => throw new EmitException($"Cannot invert unknown operator: {op}"),
             };
         }
 
@@ -1359,7 +1744,17 @@ namespace Raptor.Compiler
             {
                 if (_environment.TryGet(id.Name, out int reg))
                     return $"r{reg}";
-                throw new Exception($"Undefined identifier '{id.Name}'.");
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0018",
+                        DiagnosticSeverity.Error,
+                        $"Undefined identifier '{id.Name}'",
+                        id.Line,
+                        id.Column,
+                        id.Length
+                    )
+                );
+                return "r0";
             }
 
             int regIndex = EmitExpression(node);
@@ -1384,7 +1779,19 @@ namespace Raptor.Compiler
                     if (_propertyMappings.TryGetValue(id.Name, out int propReg))
                         return propReg;
                     if (!_environment.TryGet(id.Name, out int varReg))
-                        throw new Exception($"Undefined identifier '{id.Name}'.");
+                    {
+                        _reporter.Report(
+                            new Diagnostic(
+                                "E0018",
+                                DiagnosticSeverity.Error,
+                                $"Undefined identifier '{id.Name}'",
+                                id.Line,
+                                id.Column,
+                                id.Length
+                            )
+                        );
+                        return 0;
+                    }
                     return varReg;
 
                 case BinaryOpNode binary:
@@ -1394,9 +1801,19 @@ namespace Raptor.Compiler
                     if (call.MethodName == "alloc")
                     {
                         if (call.Arguments.Count != 1)
-                            throw new Exception(
-                                "alloc() expects exactly 1 argument (the array size)."
+                        {
+                            _reporter.Report(
+                                new Diagnostic(
+                                    "E0024",
+                                    DiagnosticSeverity.Error,
+                                    "alloc() expects exactly 1 argument (the array size).",
+                                    call.Line,
+                                    call.Column,
+                                    call.Length
+                                )
                             );
+                            throw new EmitException();
+                        }
                         int sizeReg = EmitExpression(call.Arguments[0]);
                         int destReg = _regCounter++;
                         _sb.AppendLine($"NEWARR r{destReg} r{sizeReg}");
@@ -1405,9 +1822,19 @@ namespace Raptor.Compiler
                     if (call.MethodName == "free")
                     {
                         if (call.Arguments.Count != 1)
-                            throw new Exception(
-                                "free() expects exactly 1 argument (the array to free)."
+                        {
+                            _reporter.Report(
+                                new Diagnostic(
+                                    "E0025",
+                                    DiagnosticSeverity.Error,
+                                    "free() expects exactly 1 argument (the array to free).",
+                                    call.Line,
+                                    call.Column,
+                                    call.Length
+                                )
                             );
+                            throw new EmitException();
+                        }
 
                         int freeArrReg = EmitExpression(call.Arguments[0]);
 
@@ -1418,9 +1845,19 @@ namespace Raptor.Compiler
                     if (call.MethodName == "len")
                     {
                         if (call.Arguments.Count != 1)
-                            throw new Exception(
-                                "len() expects exactly 1 argument (the array to check)."
+                        {
+                            _reporter.Report(
+                                new Diagnostic(
+                                    "E0026",
+                                    DiagnosticSeverity.Error,
+                                    "len() expects exactly 1 argument (the array to check).",
+                                    call.Line,
+                                    call.Column,
+                                    call.Length
+                                )
                             );
+                            throw new EmitException();
+                        }
                         int lenArrReg = EmitExpression(call.Arguments[0]);
                         int destReg = _regCounter++;
                         _sb.AppendLine($"LENARR r{destReg} r{lenArrReg}");
@@ -1465,9 +1902,17 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"{endLabel}:");
                     return logicalResultReg;
                 default:
-                    throw new Exception(
-                        $"Cannot emit expression node of type {node.GetType().Name}."
+                    _reporter.Report(
+                        new Diagnostic(
+                            "E0027",
+                            DiagnosticSeverity.Error,
+                            $"Cannot emit expression node of type {node.GetType().Name}.",
+                            node.Line,
+                            node.Column,
+                            node.Length
+                        )
                     );
+                    throw new EmitException();
             }
         }
 
@@ -1542,7 +1987,17 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"EQ r{resReg} r{resReg} r{zeroReg}");
                     return resReg;
                 default:
-                    throw new Exception($"Unsupported binary operator: {binary.Op}");
+                    _reporter.Report(
+                        new Diagnostic(
+                            "E0028",
+                            DiagnosticSeverity.Error,
+                            $"Unsupported binary operator: {binary.Op}",
+                            binary.Line,
+                            binary.Column,
+                            binary.Length
+                        )
+                    );
+                    throw new EmitException();
             }
 
             _sb.AppendLine($"{instruction} r{resReg} r{firstReg} r{secondReg}");
@@ -1592,6 +2047,18 @@ namespace Raptor.Compiler
         }
     }
 
+    [Serializable]
+    internal class EmitException : Exception
+    {
+        public EmitException() { }
+
+        public EmitException(string? message)
+            : base(message) { }
+
+        public EmitException(string? message, Exception? innerException)
+            : base(message, innerException) { }
+    }
+
     #endregion
 
     #region Compiler Entry Point
@@ -1600,35 +2067,68 @@ namespace Raptor.Compiler
     {
         public static string Compile(
             string sourceText,
+            DiagnosticReporter reporter,
             Dictionary<string, int>? propertyMappings = null,
             bool printAst = false
         )
         {
-            return Compile(sourceText, out _, propertyMappings, printAst);
+            return Compile(sourceText, out _, reporter, propertyMappings, printAst);
         }
 
         public static string Compile(
             string sourceText,
             out IReadOnlyDictionary<string, int> variables,
+            DiagnosticReporter reporter,
             Dictionary<string, int>? propertyMappings = null,
             bool printAst = false
         )
         {
-            var lexer = new Lexer(sourceText);
+            var lexer = new Lexer(sourceText, reporter);
             var tokens = lexer.ScanTokens();
-            var parser = new Parser(tokens);
+            if (reporter.HasErrors)
+            {
+                throw new CompileException("Syntax errors detected.");
+            }
+            var parser = new Parser(tokens, reporter);
             var program = parser.Parse();
+            if (reporter.HasErrors)
+            {
+                throw new CompileException("Syntax errors detected.");
+            }
             if (printAst)
             {
                 Console.WriteLine("=== Abstract syntax tree ===");
                 AstPrinter.Print(program);
                 Console.WriteLine("============================");
             }
-            var emitter = new Emitter(program, propertyMappings);
-            string code = emitter.Emit();
-            variables = emitter.Globals;
-            return code;
+            var emitter = new Emitter(program, reporter, propertyMappings);
+            try
+            {
+                string code = emitter.Emit();
+                if (reporter.HasErrors)
+                {
+                    throw new CompileException("Compilation errors detected.");
+                }
+                variables = emitter.Globals;
+                return code;
+            }
+            catch (EmitException)
+            {
+                throw new CompileException("Compilation errors detected.");
+            }
         }
+    }
+
+    [Serializable]
+    public class CompileException : Exception
+    {
+        public CompileException() { }
+
+        public CompileException(string? message)
+            : base(message) { }
+
+        public CompileException(string? message, Exception? innerException)
+            : base(message, innerException) { }
     }
 
     #endregion
