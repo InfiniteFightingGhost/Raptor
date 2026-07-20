@@ -13,7 +13,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Sin(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Sin(state.RegPtr[0]);
             }
         }
 
@@ -24,7 +24,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Cos(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Cos(state.RegPtr[0]);
             }
         }
 
@@ -35,7 +35,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Tan(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Tan(state.RegPtr[0]);
             }
         }
 
@@ -47,7 +47,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Pow(state.RegPtr[1], state.RegPtr[2]);
+                state.RegPtr[0] = Math.Pow(state.RegPtr[0], state.RegPtr[1]);
             }
         }
 
@@ -60,7 +60,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Floor(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Floor(state.RegPtr[0]);
             }
         }
 
@@ -73,7 +73,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Ceiling(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Ceiling(state.RegPtr[0]);
             }
         }
 
@@ -85,7 +85,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Min(state.RegPtr[1], state.RegPtr[2]);
+                state.RegPtr[0] = Math.Min(state.RegPtr[0], state.RegPtr[1]);
             }
         }
 
@@ -97,7 +97,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Max(state.RegPtr[1], state.RegPtr[2]);
+                state.RegPtr[0] = Math.Max(state.RegPtr[0], state.RegPtr[1]);
             }
         }
 
@@ -108,7 +108,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Sqrt(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Sqrt(state.RegPtr[0]);
             }
         }
 
@@ -119,7 +119,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Abs(state.RegPtr[1]);
+                state.RegPtr[0] = Math.Abs(state.RegPtr[0]);
             }
         }
 
@@ -133,7 +133,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Atan2(state.RegPtr[1], state.RegPtr[2]);
+                state.RegPtr[0] = Math.Atan2(state.RegPtr[0], state.RegPtr[1]);
             }
         }
 
@@ -146,7 +146,7 @@ namespace Raptor.StdLib
         {
             unsafe
             {
-                state.RegPtr[0] = Math.Clamp(state.RegPtr[1], state.RegPtr[2], state.RegPtr[3]);
+                state.RegPtr[0] = Math.Clamp(state.RegPtr[0], state.RegPtr[1], state.RegPtr[2]);
             }
         }
 
