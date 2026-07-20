@@ -201,7 +201,7 @@ HALT
     public void ScriptEngineRunFileTest()
     {
         ScriptEngine engine = new ScriptEngine();
-        string rasmPath = Path.Combine(Path.GetTempPath(), "test_run_script.rasm");
+        string rasmPath = Path.Combine(Path.GetTempPath(), $"test_run_script_{Guid.NewGuid():N}.rasm");
         try
         {
             File.WriteAllText(
@@ -228,7 +228,7 @@ HALT
     public void ScriptWatcherHotReloadTest()
     {
         ScriptEngine engine = new ScriptEngine();
-        string rasmPath = Path.Combine(Path.GetTempPath(), "test_hotreload.rasm");
+        string rasmPath = Path.Combine(Path.GetTempPath(), $"test_hotreload_{Guid.NewGuid():N}.rasm");
         try
         {
             File.WriteAllText(
@@ -258,7 +258,7 @@ HALT
             );
 
             // Wait a brief moment for the file watcher to detect, compile, and reload
-            for (int i = 0; i < 50; i++)
+            for (int i = 0; i < 100; i++)
             {
                 if (reloadedFired)
                     break;

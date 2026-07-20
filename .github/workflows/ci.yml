@@ -48,7 +48,7 @@ jobs:
       run: dotnet build Raptor.sln --configuration Release --no-restore
 
     - name: Run unit tests
-      run: dotnet test --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+      run: dotnet test Raptor.Tests/Raptor.Tests.csproj --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
 
     - name: Run fast benchmarks
       run: dotnet run --configuration Release --project Raptor.Benchmarks --no-build -- --fast
