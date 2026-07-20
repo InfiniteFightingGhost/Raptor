@@ -25,7 +25,7 @@ jobs:
       run: dotnet restore
     - name: Check code formatting
       if: matrix.os == 'ubuntu-latest'
-      run: dotnet format --verify-no-changes --verbosity diagnostic
+      run: dotnet format Raptor.sln --verify-no-changes --verbosity diagnostic
     - name: Run unit tests
       run: dotnet test --configuration Release --no-restore --verbosity normal
     - name: Run fast benchmarks
