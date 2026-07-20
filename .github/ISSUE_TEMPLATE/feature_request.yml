@@ -1,0 +1,33 @@
+name: Feature Request
+description: Suggest an idea or feature enhancement for Raptor.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: Have a proposal for Raptor VM, RaptorScript, or the CLI toolchain? Let us know!
+  - type: input
+    id: title
+    attributes:
+      label: Feature Title
+      description: A brief summary of the proposed feature.
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / Motivation
+      description: Is your feature request related to a problem or limitation? Please describe.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution or syntax/API design you'd like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you've considered.

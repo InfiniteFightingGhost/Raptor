@@ -11,7 +11,7 @@ namespace Raptor.Cli
         public class Settings : CommandSettings
         {
             [CommandArgument(0, "<FILE>")]
-            public string ScriptPath { get; set; }
+            public required string ScriptPath { get; set; }
 
             [CommandOption("-a|--omit-assembly")]
             [Description("Omit raptor assembly.")]

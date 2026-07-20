@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -11,6 +11,13 @@
     <PublishAot>true</PublishAot>
     <IsAotCompatible>true</IsAotCompatible>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <PackageId>Raptor.VM</PackageId>
+    <Version>1.0.0-alpha</Version>
+    <Authors>InfiniteFightingGhost</Authors>
+    <Description>Fast, zero-allocation register-based VM and scripting engine for .NET 10.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/InfiniteFightingGhost/Raptor</RepositoryUrl>
+    <PackageTags>vm;scripting;game-engine;compiler;bytecode;dotnet10</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

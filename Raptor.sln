@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raptor.Benchmarks", "Raptor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raptor.Tests", "Raptor.Tests\Raptor.Tests.csproj", "{D53513C8-1696-4C3C-8E07-2E795B9C06C0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Raptor.Cli", "Raptor.Cli\Raptor.Cli.csproj", "{8E44E7F1-74D3-426F-9974-A491E5934960}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{D53513C8-1696-4C3C-8E07-2E795B9C06C0}.Release|x64.Build.0 = Release|Any CPU
 		{D53513C8-1696-4C3C-8E07-2E795B9C06C0}.Release|x86.ActiveCfg = Release|Any CPU
 		{D53513C8-1696-4C3C-8E07-2E795B9C06C0}.Release|x86.Build.0 = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|x64.Build.0 = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Debug|x86.Build.0 = Debug|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|x64.ActiveCfg = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|x64.Build.0 = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|x86.ActiveCfg = Release|Any CPU
+		{8E44E7F1-74D3-426F-9974-A491E5934960}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

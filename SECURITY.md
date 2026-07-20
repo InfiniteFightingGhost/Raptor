@@ -1,0 +1,30 @@
+# Security Policy
+
+## Supported Versions
+
+Security updates and critical fixes are applied to the latest release on the `main` branch.
+
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.0.x   | :white_check_mark: |
+| < 1.0   | :x:                |
+
+---
+
+## Reporting a Vulnerability
+
+Because **Raptor** uses high-performance C# `unsafe` code, stack allocation, raw pointers, and pinned memory buffers to achieve zero-GC execution, safety bounds in the `BytecodeVerifier` are critical.
+
+If you discover a memory safety vulnerability, bytecode verification bypass, out-of-bounds execution exploit, or security issue, please do **NOT** open a public GitHub issue.
+
+### Security Disclosure Process
+
+1. **Private Email Reporting**: Email details of the vulnerability to the maintainers or report via GitHub Security Advisory.
+2. **Details to Include**:
+   - Description of the issue or bytecode exploit payload.
+   - Proof of concept script (`.rapt` or `.rasm`) demonstrating the vulnerability.
+   - Impact assessment (e.g. host memory read/write out of bounds).
+3. **Response Timeline**:
+   - We will acknowledge receipt of your report within 48 hours.
+   - We will provide a status update and estimated timeline for a patch within 5 business days.
+   - Once resolved, we will publish a security advisory and credit the reporter.

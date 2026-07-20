@@ -25,6 +25,29 @@
 
 By combining raw pointer arithmetic, stack-allocated registers, and live program reloading, Raptor runs scripts at **360 to 660+ MIPS** on standard consumer hardware. It is built specifically for **game engine scripting** where high execution speeds, low FFI latency, and zero garbage collection stutter are non-negotiable.
 
+## Quickstart: Embed Raptor in C#
+
+Add `Raptor.VM` to your project and execute scripts in a few lines of C#:
+
+```csharp
+using Raptor;
+using Raptor.StdLib;
+
+// 1. Initialize engine and register standard math FFI module
+var engine = new ScriptEngine();
+engine.RegisterModule<RaptorMath>();
+
+// 2. Compile high-level RaptorScript into an optimized VM chunk
+VMChunk chunk = engine.Compile(@"
+    var radius = 5.0;
+    var area = math.pi * math.pow(radius, 2.0);
+    peri.print(area);
+");
+
+// 3. Execute with zero GC allocations
+ExecutionResult result = engine.Execute(chunk);
+```
+
 ---
 
 ## The Raptor Scripting Pipeline
@@ -201,20 +224,21 @@ dotnet run -c Release --project Raptor.Cli -- docs
 
 ## Technical Directory
 
-Detailed architectural layouts are located in the [docs/](file:///home/andy/Projects/Raptor/docs/) and [examples/](file:///home/andy/Projects/Raptor/examples/) directories:
+Detailed architectural layouts are located in the [docs/](docs/) and [examples/](examples/) directories:
 
 ### Core Architecture & Memory
-- [Core Architecture & Calling Conventions](file:///home/andy/Projects/Raptor/docs/architecture.md): Calling conventions, sliding windows, and instruction bit-packing.
-- [Instruction Set Architecture (ISA) Reference](file:///home/andy/Projects/Raptor/docs/isa.md): A complete instruction table detailing operational codes and syntax.
-- [Assembler Pipeline & Constant Pool](file:///home/andy/Projects/Raptor/docs/assembler.md): Constant pool deduplication and the two-pass assembly process.
-- [Heap Memory Management & Custom Allocator](file:///home/andy/Projects/Raptor/docs/memory.md): Free list allocator details, neighbor coalescing, and safety bounds.
-- [Performance & Hardware-Level Optimizations](file:///home/andy/Projects/Raptor/docs/optimizations.md): Advanced explanations on pointer pinning, cache locality, and register unions.
+- [Core Architecture & Calling Conventions](docs/architecture.md): Calling conventions, sliding windows, and instruction bit-packing.
+- [Instruction Set Architecture (ISA) Reference](docs/isa.md): A complete instruction table detailing operational codes and syntax.
+- [Assembler Pipeline & Constant Pool](docs/assembler.md): Constant pool deduplication and the two-pass assembly process.
+- [Heap Memory Management & Custom Allocator](docs/memory.md): Free list allocator details, neighbor coalescing, and safety bounds.
+- [Performance & Hardware-Level Optimizations](docs/optimizations.md): Advanced explanations on pointer pinning, cache locality, and register unions.
+- [Performance & Benchmark Baselines](docs/benchmarks.md): Official version baseline history and instructions for regression testing.
 
 ### Example Assembly Workloads
-- [Recursive & Linear Fibonacci](file:///home/andy/Projects/Raptor/examples/fibonacci.md): Side-by-side analysis of recursion depth limits and flat arithmetic loops.
-- [Monte Carlo Pi Approximation](file:///home/andy/Projects/Raptor/examples/monte_carlo.md): Explores how a 4x loop unrolling optimization achieves a **25.6% speedup**.
-- [Perceptron Machine Learning Model](file:///home/andy/Projects/Raptor/examples/perceptron.md): Textual model training illustrating weight updates and FFI calling.
-- [3D Raytracer Visual Render](file:///home/andy/Projects/Raptor/examples/raytracer.md): Raytracer camera parameters, mathematical formulas, and PPM output formatting.
+- [Recursive & Linear Fibonacci](examples/fibonacci.md): Side-by-side analysis of recursion depth limits and flat arithmetic loops.
+- [Monte Carlo Pi Approximation](examples/monte_carlo.md): Explores how a 4x loop unrolling optimization achieves a **25.6% speedup**.
+- [Perceptron Machine Learning Model](examples/perceptron.md): Textual model training illustrating weight updates and FFI calling.
+- [3D Raytracer Visual Render](examples/raytracer.md): Raytracer camera parameters, mathematical formulas, and PPM output formatting.
 
 ### Directory Structure
 ```text
@@ -257,4 +281,4 @@ Upcoming features and planned additions to the Raptor ecosystem:
 ---
 
 ## License
-Raptor is released under the [MIT License](file:///home/andy/Projects/Raptor/LICENSE).
+Raptor is released under the [MIT License](LICENSE).

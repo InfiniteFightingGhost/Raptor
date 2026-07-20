@@ -12,7 +12,7 @@ public class RunCommand : Command<RunCommand.Settings>
     {
         [CommandArgument(0, "<FILE>")]
         [Description("The path of the script you wish to run.")]
-        public string ScriptPath { get; set; }
+        public required string ScriptPath { get; set; }
 
         [CommandOption("--no-build")]
         [Description("Run the raptor script without building it first.")]
@@ -40,7 +40,9 @@ public class RunCommand : Command<RunCommand.Settings>
     {
         if (!Path.Exists(settings.ScriptPath))
         {
-            AnsiConsole.MarkupLine($"[red bold]File \"{Markup.Escape(settings.ScriptPath)}\" not found[/]");
+            AnsiConsole.MarkupLine(
+                $"[red bold]File \"{Markup.Escape(settings.ScriptPath)}\" not found[/]"
+            );
             return 1;
         }
         if (!settings.RunWithoutBuilding)
@@ -113,7 +115,9 @@ public class RunCommand : Command<RunCommand.Settings>
             catch (NullReferenceException ex)
             {
                 AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(ex.Message)}[/]");
-                AnsiConsole.MarkupLine($"[red bold]{Markup.Escape(ex.StackTrace ?? string.Empty)}[/]");
+                AnsiConsole.MarkupLine(
+                    $"[red bold]{Markup.Escape(ex.StackTrace ?? string.Empty)}[/]"
+                );
             }
             if (result.ErrorMessage != null)
             {

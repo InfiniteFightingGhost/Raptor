@@ -6,19 +6,35 @@ obj/
 x64/
 x86/
 build/
+*.nupkg
+*.snupkg
 
-# IDE files
+# Benchmark & Test Artifacts
+BenchmarkDotNet.Artifacts/
+TestResults/
+**/TestResults/
+coverage.json
+*.cobertura.xml
+*.coverage
+
+# IDE & Editor files
 .vs/
 .idea/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
+*.swp
+*~
 
-# OS files
+# OS & Log files
 .DS_Store
 Thumbs.db
+*.log
 
-# Test coverage & metadata
-coverage.json
+# Scratch files
 icon_ideas.md
+todos.md
+test.rapt
+physics.rasm
+

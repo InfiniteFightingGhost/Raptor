@@ -63,7 +63,7 @@ For any 9-bit operand (fields `B` and `C` in `ABC` format, or `B` in `ABx` forma
 - If the encoded value is **greater than or equal to 256**, it references the global constant table:
   $$\text{Operand} = \text{Constants}[\text{Index} - 256]$$
 
-This logic is implemented in [VirtualMachine.cs](file:///home/andy/Projects/Raptor/Raptor/VirtualMachine.cs) as follows:
+This logic is implemented in [VirtualMachine.cs](../Raptor/VirtualMachine.cs) as follows:
 ```csharp
 double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
 ```
