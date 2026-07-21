@@ -1229,7 +1229,6 @@ namespace Raptor
         {
             byte pointerAddress = instruction.A;
             uint size = instruction.Bx;
-
             uint valSize = (uint)(
                 size < 256 ? Reg(state.RegPtr, size) : state.ConstPtr[size - 256]
             );

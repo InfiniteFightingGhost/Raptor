@@ -58,10 +58,8 @@ The VM uses fixed-width **32-bit instructions** represented by the `Instruction`
 To avoid separate instruction variants for register-register and register-constant operations (e.g., `ADD_RR` vs. `ADD_RC`), the VM utilizes a **Register/Constant (RC)** addressing mechanism.
 
 For any 9-bit operand (fields `B` and `C` in `ABC` format, or `B` in `ABx` format when used as an operand):
-- If the encoded value is **less than 256**, it references a register relative to the active stack frame pointer (`state.RegPtr`):
-  $$\text{Operand} = \text{Registers}[\text{Index}]$$
-- If the encoded value is **greater than or equal to 256**, it references the global constant table:
-  $$\text{Operand} = \text{Constants}[\text{Index} - 256]$$
+- If the encoded value is **less than 256**, it references register `Registers[Index]` relative to active frame pointer `state.RegPtr`.
+- If the encoded value is **greater than or equal to 256**, it references global constant `Constants[Index - 256]`.
 
 This logic is implemented in [VirtualMachine.cs](../Raptor/VirtualMachine.cs) as follows:
 ```csharp
@@ -73,7 +71,7 @@ This design maximizes code density, permitting up to 256 registers and 256 activ
 
 ## 3. Sliding Register Windows (Zero-Copy Method Calls)
 
-One of the VM's primary performance features is **sliding register windows**, which completely eliminates memory copies when passing arguments to methods.
+One of the VM's primary performance features is **sliding register windows**, which eliminates memory copies when passing arguments to methods.
 
 ### The Problem in Traditional VMs
 In stack-based VMs or standard register VMs, calling a function requires copying arguments from the parent frame onto a call stack, or copying them into parameters registers for the callee. This copying wastes CPU cycles.
@@ -86,7 +84,7 @@ When a method is called via `CALL A B`:
 - `B` is the index of the callee method in the method table.
 
 The VM pushes the current Program Counter index (calculated via `state.Ip - state.InstPtr`) and the current register pointer (`state.RegPtr`) onto the call stack, and then advances `state.RegPtr` directly to slide the window forward:
-$$\text{RegPtr}_{\text{callee}} = \text{RegPtr}_{\text{parent}} + A$$
+`RegPtr (callee) = RegPtr (parent) + A`
 
 ```csharp
 byte frameStart = instruction.A;
@@ -104,7 +102,7 @@ Because the callee's register frame begins exactly at `RegPtr_parent + A`, the p
 When returning via `RETURN A B` (returning values from callee's register range `[A, B]`):
 1. The return values are copied from the returning range `[A, B]` to the start of the callee's frame (`R0, R1, ...`).
 2. The VM pops the `StackFrame` off the stack and restores the parent's `RegPtr` and `Ip` (Instruction Pointer):
-   $$\text{RegPtr}_{\text{parent}} = \text{StackFrame.PreviousRegPtr}$$
+   `RegPtr (parent) = StackFrame.PreviousRegPtr`
 
 ```csharp
 [MethodImpl(MethodImplOptions.AggressiveInlining)]

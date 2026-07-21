@@ -157,6 +157,9 @@ namespace Raptor
                     case OpCode.FREEARR:
                         sb.AppendLine($"FREEARR r{inst.A}");
                         break;
+                    case OpCode.LENARR:
+                        sb.AppendLine($"LENARR r{inst.A} {GetValString(inst.B)}");
+                        break;
                     default:
                         sb.AppendLine($"UNKNOWN opcode {inst.Op} (value: {inst.Value})");
                         break;

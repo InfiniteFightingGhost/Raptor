@@ -84,7 +84,7 @@ public class RunCommand : Command<RunCommand.Settings>
             );
             File.WriteAllText(apiPath, _hostTable.GenerateAutocompleteDeclarations());
             string targetPath = Path.Combine("build", Path.GetFileName(settings.ScriptPath));
-            if (settings.OmitRaptorAssembly)
+            if (!settings.OmitRaptorAssembly)
                 File.WriteAllText(Path.ChangeExtension(targetPath, "rasm"), asm);
             VMChunk compiledCode = _engine.Compile(asm);
             RaptorBinary.Save(compiledCode, Path.ChangeExtension(targetPath, "rbc"));

@@ -88,3 +88,28 @@ If a program uses the same literal number multiple times (e.g. `0.0` or `1.0` in
 
 ---
 
+## 5. Source Maps (`#LINE` Directive)
+
+To support source-level debugging and accurate error reporting, the compiler emits `#LINE <number>` directives into generated assembly:
+- During **Pass 2**, `#LINE` directives are skipped for memory address calculation to preserve label index alignment.
+- During **Pass 3**, `#LINE` directives update the active source line mapping stored in `VMChunk.SourceMap`. When a runtime exception occurs, the VM translates the Instruction Pointer (`IP`) back to the exact source file line number.
+
+---
+
+## 6. Binary Bytecode Serialization (`.rbc` Format)
+
+Compiled `VMChunk` objects are serialized into binary `.rbc` files using `RaptorBinary.cs`:
+
+### Binary Layout (Little-Endian)
+
+1. **Header (20 bytes):**
+   - `[0..3]` **Magic Signature** (4 bytes): `0x52415054` (`"RAPT"` in ASCII).
+   - `[4]` **Version Major** (1 byte): `1`.
+   - `[5]` **Version Minor** (1 byte): `0`.
+   - `[6..7]` **Reserved** (2 bytes): `0x0000`.
+   - `[8..11]` **Constants Count** (4 bytes, `uint32`).
+   - `[12..15]` **Method Table Count** (4 bytes, `uint32`).
+   - `[16..19]` **Instructions Count** (4 bytes, `uint32`).
+2. **Constants Section:** `Constants Count` × 8 bytes (IEEE 754 `double`).
+3. **Method Table Section:** `Method Table Count` × 4 bytes (`uint32` entry point offsets).
+4. **Instructions Section:** `Instructions Count` × 4 bytes (`uint32` packed opcode words).

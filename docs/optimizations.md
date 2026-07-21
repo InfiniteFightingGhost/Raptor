@@ -80,7 +80,10 @@ y = *(double*)&i;                    // Interpret long back as double
 y = y * (threehalfs - (x2 * y * y)); // 1st Newton-Raphson iteration
 y = y * (threehalfs - (x2 * y * y)); // 2nd Newton-Raphson iteration (for precision)
 ```
-By performing a bit shift and subtracting from the double-precision magic number `0x5fe6eb50c7b537a9`, the VM obtains an initial guess accurate to 1.5%. Two iterations of Newton-Raphson refinement bring it to full double-precision accuracy, significantly faster than traditional division and square root.
+By performing a bit shift and subtracting from the double-precision magic number `0x5fe6eb50c7b537a9`, the VM obtains an initial guess accurate to 1.5%. Two iterations of Newton-Raphson refinement bring it to full double-precision accuracy.
+
+> [!NOTE]
+> *Implementation Note:* While modern CPUs feature dedicated hardware instructions for reciprocal square roots (e.g., `vsqrtpd` / `rsqrt`), software FISR provides a fallback software bit-manipulation algorithm within the VM opcode set.
 
 ---
 
@@ -131,13 +134,13 @@ This fuses three dispatches into **one single instruction cycle**, cutting loop 
 Standard output interpret functions like `Console.WriteLine` formatting `double` values directly to text generate heap allocation garbage (specifically C# string objects and formatting buffers). In a high-frequency execution environment (like a game scripting loop), output formatting garbage will quickly trigger GC collection spikes and frame rate drops.
 
 To achieve complete zero-allocation output:
-1. The virtual machine maintains a raw output buffer on the stack or pinned heap (`_outBuffer = new char[65536]`).
+1. The virtual machine maintains a raw output buffer on the stack or pinned heap (`_outBuffer = new char[256]`).
 2. The `VMState` struct holds pointers and metrics for this buffer:
    - `char* OutBufferPtr`: Pointer to the start of the output buffer.
-   - `int OutBufferCapacity`: Maximum character capacity of the buffer.
+   - `int OutBufferCapacity`: Maximum character capacity of the buffer (256 characters).
    - `int OutBufferOffset`: Current offset of written characters.
 3. Instruction handlers like `ExecutePrint`, `ExecutePrintA`, and `ExecutePrintS` write directly to this buffer using `valB.TryFormat(span, out int charsWritten)` which formats the doubles into characters in-place without generating any C# string objects.
-4. When the buffer is nearly full, or when the execution loop hits a `HALT` instruction, the buffer is flushed to standard output in a single batch operation using `Console.Out.Write(new ReadOnlySpan<char>(state.OutBufferPtr, state.OutBufferOffset))`, resetting the offset to `0`.
+4. When the buffer is nearly full (fewer than 48 characters remaining), or when the execution loop hits a `HALT` instruction, the buffer is flushed to standard output in a single batch operation using `Console.Out.Write(new ReadOnlySpan<char>(state.OutBufferPtr, state.OutBufferOffset))`, resetting the offset to `0`.
 
 This output buffer mechanism ensures that even print-heavy workloads generate exactly **zero bytes of garbage** on the C# managed heap during interpretation.
 

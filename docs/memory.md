@@ -1,20 +1,20 @@
 # Heap Memory Management & Custom Allocator
 
-The VM manages dynamic memory through a custom allocator running on a single continuous block of 16MB heap memory (`byte[] _heap`). Rather than delegating allocations to the C# GC, the VM manages blocks directly using an **intrinsically linked list of free blocks** and raw pointer arithmetic.
+The VM manages dynamic memory through a custom allocator running on a single continuous block of 512KB heap memory (`byte[] _heap`). Rather than delegating allocations to the C# GC, the VM manages blocks directly using an **intrinsically linked list of free blocks** and raw pointer arithmetic.
 
 ---
 
 ## 1. Heap Memory Layout
 
-The heap buffer begins with a size of 16MB. The memory allocator operates on two types of blocks inside this buffer: **Allocated Blocks** and **Free Blocks**.
+The heap buffer begins with a default size of 512KB (524,288 bytes). The memory allocator operates on two types of blocks inside this buffer: **Allocated Blocks** and **Free Blocks**.
 
 ### Allocated Block Layout
 When an array is allocated, the block consumed contains:
 - **Header (4 bytes):** Stores the size of the block's payload in bytes (represented as an unsigned 32-bit integer).
-- **Payload (`valSize` bytes):** The user data, accessed via array index offsets.
+- **Payload (`valSizeBytes` bytes):** The user data, accessed via array index offsets.
 ```text
 +-----------------------+---------------------------------------+
-|  Size (4 bytes, uint) |         Payload (valSize bytes)       |
+|  Size (4 bytes, uint) |       Payload (valSizeBytes bytes)    |
 +-----------------------+---------------------------------------+
 ^                       ^
 |                       |
@@ -35,21 +35,21 @@ freeBlockAddress
 ```
 
 The head of this list is stored in the VM state as `state.FreeBlockHeaderPointer`.
-At startup, the entire 16MB heap starts as a single free block at address `0`:
+At startup, the entire 512KB heap starts as a single free block at address `0`:
 - Offset `0`: `0xFFFFFFFF` (next pointer)
-- Offset `4`: `16,777,216` (size)
+- Offset `4`: `524,288` (size)
 - `state.FreeBlockHeaderPointer = 0`
 
 ---
 
 ## 2. Allocation Algorithm (`NEWARR`)
 
-The `NEWARR rDest size` instruction allocates a block of `size` raw bytes on the heap. 
+The `NEWARR rDest size` instruction allocates an array of `size` elements on the heap.
 
-> [!WARNING]
-> The VM does **not** scale the size parameter by the size of the elements automatically during allocation. It allocates exactly the number of bytes specified by `size`.
-> - For character arrays (accessed via `SETARRA` / `GETARRA` in 1-byte offsets), `size` equals the number of characters.
-> - For double-precision arrays (accessed via `SETARR` / `GETARR` in 8-byte offsets), the developer or compiler must specify the size in bytes, which is `elements * 8`. Failure to scale the allocation size will result in writes overlapping with subsequent free blocks or memory blocks, leading to heap corruption.
+> [!NOTE]
+> The VM automatically scales the `size` parameter by 8 bytes (`valSizeBytes = valSize * 8`) to allocate double-precision floating point elements, plus 4 header bytes.
+> - `NEWARR rA 10` allocates memory for 10 double elements (80 bytes payload + 4 header bytes).
+> - Arrays accessed via character opcodes (`SETARRA` / `GETARRA`) share the allocated byte payload block using 1-byte ASCII character offsets.
 
 ```text
                                Allocation Flow
