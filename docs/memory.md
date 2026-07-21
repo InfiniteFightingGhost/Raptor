@@ -2,6 +2,17 @@
 
 The VM manages dynamic memory through a custom allocator running on a single continuous block of 512KB heap memory (`byte[] _heap`). Rather than delegating allocations to the C# GC, the VM manages blocks directly using an **intrinsically linked list of free blocks** and raw pointer arithmetic.
 
+## Table of Contents
+- [1. Heap Memory Layout](#1-heap-memory-layout)
+  - [Allocated Block Layout](#allocated-block-layout)
+  - [Free Block Layout (Intrinsically Linked List)](#free-block-layout-intrinsically-linked-list)
+- [2. Allocation Algorithm (`NEWARR`)](#2-allocation-algorithm-newarr)
+  - [The Allocation Logic](#the-allocation-logic)
+- [3. Deallocation & Coalescing Algorithm (`FREEARR`)](#3-deallocation--coalescing-algorithm-freearr)
+  - [Step 1: Address Restoration](#step-1-address-restoration)
+  - [Step 2: Sorted Insertion](#step-2-sorted-insertion)
+  - [Step 3: Coalescing Neighbors](#step-3-coalescing-neighbors)
+
 ---
 
 ## 1. Heap Memory Layout

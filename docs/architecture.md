@@ -2,6 +2,22 @@
 
 This document specifies the virtual machine's register layout, instruction encoding, parameter-passing conventions, and call stack representation.
 
+## Table of Contents
+- [Bit-Packed Instruction Format](#bit-packed-instruction-format)
+  - [Bit Allocation Layouts](#bit-allocation-layouts)
+- [Register/Constant Addressing (RC Operand Resolution)](#registerconstant-addressing-rc-operand-resolution)
+- [Sliding Register Windows (Zero-Copy Method Calls)](#sliding-register-windows-zero-copy-method-calls)
+  - [The Problem in Traditional VMs](#the-problem-in-traditional-vms)
+  - [The Zero-Copy Solution](#the-zero-copy-solution)
+  - [Argument Passing](#argument-passing)
+  - [Returning Values](#returning-values)
+- [The Call Stack](#the-call-stack)
+  - [StackFrame Structure](#stackframe-structure)
+- [Bytecode Verification](#bytecode-verification)
+- [The Assembler Pipeline (Overview)](#the-assembler-pipeline-overview)
+
+---
+
 ## Bit-Packed Instruction Format
 
 The VM uses fixed-width **32-bit instructions** represented by the `Instruction` struct. These instructions are bit-packed into four main layouts to accommodate various operations: `ABC`, `ABx`, `AsBx`, and `sBx26`.

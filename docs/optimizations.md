@@ -2,6 +2,21 @@
 
 To execute at speeds exceeding 450 MIPS in a managed environment, the VM utilizes low-level optimizations that align closely with CPU instruction pipelines and cache hierarchies.
 
+## Table of Contents
+- [Managed Array Bounds Bypass via Pointers](#managed-array-bounds-bypass-via-pointers)
+  - [The Pointer Fix](#the-pointer-fix)
+- [Stack Allocation & L1 Cache Locality](#stack-allocation--l1-cache-locality)
+- [Switch Jump Table & Aggressive Inlining](#switch-jump-table--aggressive-inlining)
+- [Xorshift32 PRNG Optimization](#xorshift32-prng-optimization)
+- [Double-Precision Fast Inverse Square Root (FISR)](#double-precision-fast-inverse-square-root-fisr)
+- [The Compound `FOR` Super-Instruction](#the-compound-for-super-instruction)
+  - [The Problem with Loop Overhead](#the-problem-with-loop-overhead)
+  - [The Two-Word Instruction Solution](#the-two-word-instruction-solution)
+  - [Execution Flow](#execution-flow)
+- [Zero-GC Output Formatting (`OutBufferPtr`)](#zero-gc-output-formatting-outbufferptr)
+
+---
+
 ## Managed Array Bounds Bypass via Pointers
 
 In normal C#, array access like `instructions[pc]` forces the JIT compiler to insert boundary checks, which introduces conditional branches that pollute the CPU’s Branch Target Buffer (BTB) and cause instruction pipeline bubbles.
