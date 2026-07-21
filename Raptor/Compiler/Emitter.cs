@@ -644,67 +644,67 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"BINRSH r{resReg} r{leftReg} r{rightReg}");
                     return resReg;
                 case "<":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 1 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LT 1 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "<=":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 1 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LE 1 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case ">":
-                {
-                    // a > b -> b < a
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        // a > b -> b < a
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case ">=":
-                {
-                    // a >= b -> b <= a
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 1 r{rightReg} r{leftReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        // a >= b -> b <= a
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LE 1 r{rightReg} r{leftReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "==":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "!=":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 default:
                     _reporter.Report(
                         new Diagnostic(
