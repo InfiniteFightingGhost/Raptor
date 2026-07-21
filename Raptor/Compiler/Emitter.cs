@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Text;
+
 namespace Raptor.Compiler
 {
     public class Emitter
