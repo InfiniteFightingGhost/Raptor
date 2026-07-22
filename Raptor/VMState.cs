@@ -41,5 +41,10 @@ namespace Raptor
         public int OutBufferCapacity;
         public int OutBufferOffset;
         public bool HasError;
+
+        /// <summary>
+        /// How many instructions the VM can run before stopping.
+        /// </summary>
+        public ulong Gas;
     }
 }

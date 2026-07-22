@@ -19,11 +19,27 @@ namespace Raptor
         private uint[] _instructions = null!;
         private double[] _constants = null!;
         private uint[] _methods = null!;
-        private static readonly int _heapSize = 512 * 1024;
+        private int _heapSize;
         private uint _heapHeader = 0;
-        private byte[] _heap = new byte[_heapSize];
+        private byte[] _heap;
         private uint _rngState = 2463534215; // RNG seed
         private char[] _outBuffer = new char[256];
+        private ulong _gas;
+
+        public ulong GasLimit
+        {
+            get => _gas;
+            set => _gas = value;
+        }
+
+        public int HeapSize => _heapSize;
+
+        public VirtualMachine(ulong gasLimit = 1_000_000_000, int heapSize = 512 * 1024)
+        {
+            _gas = gasLimit;
+            _heapSize = heapSize;
+            _heap = new byte[_heapSize];
+        }
 
         private readonly Dictionary<ushort, HostFFIDelegate> _registeredHostMethods = new();
         private HostFFIDelegate[] _registeredHostMethodsArray = new HostFFIDelegate[1024];
@@ -246,6 +262,7 @@ namespace Raptor
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
                     HasError = false,
+                    Gas = _gas,
                 };
                 try
                 {
@@ -843,6 +860,13 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool ExecuteJump(Instruction instruction, ref VMState state)
         {
+            if (state.Gas <= 1)
+                throw new VMPanicException(
+                    VMStatus.GasExceeded,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "VM ran out of instruction gas before finishing"
+                );
+            state.Gas--;
             state.Ip += instruction.sBx26 - 1;
             return true;
         }
@@ -879,6 +903,13 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool ExecuteCall(Instruction instruction, ref VMState state)
         {
+            if (state.Gas <= 1)
+                throw new VMPanicException(
+                    VMStatus.GasExceeded,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "VM ran out of instruction gas before finishing"
+                );
+            state.Gas--;
             if (state.CallStackPtr >= state.CallStackLimit)
             {
                 throw new VMPanicException(
@@ -1184,6 +1215,13 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state)
         {
+            if (state.Gas <= 1)
+                throw new VMPanicException(
+                    VMStatus.GasExceeded,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "VM ran out of instruction gas before finishing"
+                );
+            state.Gas--;
             byte index = instruction.A;
             ushort max = instruction.B;
             ushort step = instruction.C;

@@ -36,6 +36,27 @@ HALT";
     }
 
     [Fact]
+    public void CustomGasLimitAndHeapSizeConfigurationWorks()
+    {
+        string infiniteLoop =
+            @"loop:
+                JUMP loop
+              HALT";
+        VMChunk chunk = new VMChunk();
+        Assembler ass = new(chunk);
+        ass.Parse(infiniteLoop.Split("\n").ToList());
+
+        // Create VM with low gas limit of 5 jumps
+        VirtualMachine machine = new VirtualMachine(gasLimit: 5, heapSize: 256 * 1024);
+        Assert.Equal(5u, machine.GasLimit);
+        Assert.Equal(256 * 1024, machine.HeapSize);
+
+        machine.LoadProgram(chunk);
+        var result = machine.RunFast();
+        Assert.Equal(VMStatus.GasExceeded, result.Status);
+    }
+
+    [Fact]
     public void RecursiveFibonacciRunSucceeds()
     {
         string recursiveFib =
