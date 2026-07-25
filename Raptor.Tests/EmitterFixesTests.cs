@@ -185,5 +185,101 @@ namespace Raptor.Tests
             Assert.Equal(VMStatus.Halted, result.Status);
             Assert.Equal(4.0, result.RegistersSnapshot[vars["i"]]);
         }
+
+        [Fact]
+        public void TestComparisonBinaryOpTargetRegCollision()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var x = 10;
+                x = x < 5;
+                var y = 10;
+                y = y == 10;
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(0.0, result.RegistersSnapshot[vars["x"]]);
+            Assert.Equal(1.0, result.RegistersSnapshot[vars["y"]]);
+        }
+
+        [Fact]
+        public void TestRegisterOverflowLimitCheck()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < 260; i++)
+            {
+                sb.AppendLine($"var a{i} = {i};");
+            }
+
+            var reporter = new DiagnosticReporter();
+            Assert.Throws<CompileException>(() =>
+            {
+                RaptorScriptCompiler.Compile(sb.ToString(), out _, reporter);
+            });
+            Assert.Contains(reporter.Diagnostics, d => d.Code == "E0027");
+        }
+
+        [Fact]
+        public void TestDescendingForLoopRegisterScope()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var count = 0;
+                for (var i = 10; i > 0; i = i - 1) {
+                    var local = 42;
+                    count = count + 1;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(10.0, result.RegistersSnapshot[vars["count"]]);
+        }
+
+        [Fact]
+        public void TestNullArrayReferencePanic()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var a = 0;
+                var val = a[0];
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.HostError, result.Status);
+            Assert.Contains("Null reference exception", result.ErrorMessage);
+        }
+
+        [Fact]
+        public void TestVarDeclInitializerEvaluationOrder()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var a = 100;
+                var res = 0;
+                var cond = 1;
+                if (cond > 0) {
+                    var a = a + 1;
+                    res = a;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(101.0, result.RegistersSnapshot[vars["res"]]);
+        }
     }
 }

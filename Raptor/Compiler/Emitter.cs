@@ -91,6 +91,25 @@ namespace Raptor.Compiler
             _regCounter = maxReg + 1;
         }
 
+        private int AllocateRegister(ASTNode? node = null)
+        {
+            if (_regCounter >= 256)
+            {
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0027",
+                        DiagnosticSeverity.Error,
+                        "Exceeded maximum supported virtual registers (256).",
+                        node?.Line ?? 0,
+                        node?.Column ?? 0,
+                        node?.Length ?? 0
+                    )
+                );
+                throw new EmitException();
+            }
+            return _regCounter++;
+        }
+
         public string Emit()
         {
             _sb.AppendLine("; --------------------------------------------------------------");
@@ -188,16 +207,17 @@ namespace Raptor.Compiler
                     )
                 );
             }
-            int regIndex = _regCounter++;
-            _environment.Define(decl.Name, regIndex);
+            int regIndex = AllocateRegister(decl);
 
             if (decl.Initializer is NumberNode number)
             {
+                _environment.Define(decl.Name, regIndex);
                 _sb.Append($"LOADC r{regIndex} {number.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} ");
                 _sb.AppendLine($"; var {decl.Name}");
                 return;
             }
             int valueReg = EmitExpression(decl.Initializer, regIndex);
+            _environment.Define(decl.Name, regIndex);
             if (valueReg != regIndex)
             {
                 _sb.AppendLine($"MOVE r{regIndex} r{valueReg}");
@@ -403,7 +423,7 @@ namespace Raptor.Compiler
                                 else
                                 {
                                     int stepReg = EmitExpression(incMath.Right);
-                                    int negStepReg = _regCounter++;
+                                    int negStepReg = AllocateRegister(forNode);
                                     _sb.AppendLine($"LOADC r{negStepReg} 0.0");
                                     _sb.AppendLine($"SUB r{negStepReg} r{negStepReg} r{stepReg}");
                                     stepStr = $"r{negStepReg}";
@@ -448,7 +468,8 @@ namespace Raptor.Compiler
                                 }
                                 else
                                 {
-                                    int rLim = _regCounter++;
+                                    int rLim = AllocateRegister(forNode);
+                                    _environment.Define($"__for_lim_{labelId}", rLim);
                                     _sb.AppendLine($"LOADC r{rLim} {limitStr}");
                                     _sb.AppendLine($"LT 1 r{rLim} r{indexReg}");
                                 }
@@ -460,7 +481,8 @@ namespace Raptor.Compiler
                                 }
                                 else
                                 {
-                                    int rLim = _regCounter++;
+                                    int rLim = AllocateRegister(forNode);
+                                    _environment.Define($"__for_lim_{labelId}", rLim);
                                     _sb.AppendLine($"LOADC r{rLim} {limitStr}");
                                     _sb.AppendLine($"LE 1 r{rLim} r{indexReg}");
                                 }
@@ -652,7 +674,7 @@ namespace Raptor.Compiler
             switch (node)
             {
                 case NumberNode num:
-                    int numReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    int numReg = (targetReg != null) ? (int)targetReg : AllocateRegister(num);
                     _sb.AppendLine($"LOADC r{numReg} {num.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}");
                     return numReg;
 
@@ -696,7 +718,7 @@ namespace Raptor.Compiler
                             throw new EmitException();
                         }
                         int sizeReg = EmitExpression(call.Arguments[0]);
-                        int destReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                        int destReg = (targetReg != null) ? (int)targetReg : AllocateRegister(call);
                         _sb.AppendLine($"NEWARR r{destReg} r{sizeReg}");
                         return destReg;
                     }
@@ -740,15 +762,15 @@ namespace Raptor.Compiler
                             throw new EmitException();
                         }
                         int lenArrReg = EmitExpression(call.Arguments[0]);
-                        int destReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                        int destReg = (targetReg != null) ? (int)targetReg : AllocateRegister(call);
                         _sb.AppendLine($"LENARR r{destReg} r{lenArrReg}");
                         return destReg;
                     }
-                    int returnReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    int returnReg = (targetReg != null) ? (int)targetReg : AllocateRegister(call);
                     EmitCall(call, returnReg);
                     return returnReg;
                 case ArrayLiteralNode arrLiteral:
-                    int arrReg = _regCounter++;
+                    int arrReg = AllocateRegister(arrLiteral);
                     _sb.AppendLine($"NEWARR r{arrReg} {arrLiteral.Elements.Count}");
                     for (int i = 0; i < arrLiteral.Elements.Count; i++)
                     {
@@ -766,13 +788,13 @@ namespace Raptor.Compiler
 
                     int accessIndexReg = EmitExpression(indexAccess.IndexExpr);
 
-                    int resultReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    int resultReg = (targetReg != null) ? (int)targetReg : AllocateRegister(indexAccess);
 
                     _sb.AppendLine($"GETARR r{resultReg} r{targetArrayReg} r{accessIndexReg}");
                     return resultReg;
                 case LogicalOpNode logicalNode:
                     int leftReg = EmitExpression(logicalNode.Left);
-                    int logicalResultReg = _regCounter++;
+                    int logicalResultReg = AllocateRegister(logicalNode);
                     _sb.AppendLine($"MOVE r{logicalResultReg} r{leftReg}");
 
                     string endLabel = $"logic_end{_labelCounter++}";
@@ -806,40 +828,52 @@ namespace Raptor.Compiler
         {
             int leftReg = EmitExpression(binary.Left);
             int rightReg = EmitExpression(binary.Right);
-            int resReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+
+            bool isComparison = IsComparisonOp(binary.Op);
+            bool hasCollision = targetReg != null && ((int)targetReg == leftReg || (int)targetReg == rightReg);
+
+            int resReg;
+            if (isComparison && hasCollision)
+            {
+                resReg = AllocateRegister(binary);
+            }
+            else
+            {
+                resReg = (targetReg != null) ? (int)targetReg : AllocateRegister(binary);
+            }
 
             switch (binary.Op)
             {
                 case "+":
                     _sb.AppendLine($"ADD r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "-":
                     _sb.AppendLine($"SUB r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "*":
                     _sb.AppendLine($"MUL r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "/":
                     _sb.AppendLine($"DIV r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "%":
                     _sb.AppendLine($"MOD r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "|":
                     _sb.AppendLine($"BINOR r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "&":
                     _sb.AppendLine($"BINAND r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "^":
                     _sb.AppendLine($"BINXOR r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "<<":
                     _sb.AppendLine($"BINLSH r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case ">>":
                     _sb.AppendLine($"BINRSH r{resReg} r{leftReg} r{rightReg}");
-                    return resReg;
+                    break;
                 case "<":
                     {
                         string skipLabel = $"cmp_skip{_labelCounter++}";
@@ -848,7 +882,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 case "<=":
                     {
@@ -858,7 +892,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 case ">":
                     {
@@ -869,7 +903,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 case ">=":
                     {
@@ -880,7 +914,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 case "==":
                     {
@@ -890,7 +924,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 case "!=":
                     {
@@ -900,7 +934,7 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
+                        break;
                     }
                 default:
                     _reporter.Report(
@@ -915,6 +949,13 @@ namespace Raptor.Compiler
                     );
                     throw new EmitException();
             }
+
+            if (targetReg != null && (int)targetReg != resReg)
+            {
+                _sb.AppendLine($"MOVE r{targetReg} r{resReg}");
+                return (int)targetReg;
+            }
+            return resReg;
         }
 
         private void EmitCall(CallNode call, int returnReg)

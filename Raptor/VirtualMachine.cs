@@ -1399,6 +1399,14 @@ namespace Raptor
             );
             double valValue = value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256];
             byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
+            if (destinationPtr == null)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Null reference exception: array pointer is null"
+                );
+            }
             *(double*)(destinationPtr + (valIndex) * 8) = valValue;
             return true;
         }
@@ -1416,6 +1424,14 @@ namespace Raptor
                 value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256]
             );
             byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
+            if (destinationPtr == null)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Null reference exception: array pointer is null"
+                );
+            }
             *(destinationPtr + valIndex) = valValue;
             return true;
         }
@@ -1426,6 +1442,14 @@ namespace Raptor
             byte destination = instruction.A;
             ushort register = instruction.B;
             byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, register);
+            if (addressPtr == null)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Null reference exception: array pointer is null"
+                );
+            }
             ushort c = instruction.C;
             uint valIndex = (uint)(c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256]);
 
@@ -1439,6 +1463,14 @@ namespace Raptor
             byte destination = instruction.A;
             ushort register = instruction.B;
             byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, register);
+            if (addressPtr == null)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Null reference exception: array pointer is null"
+                );
+            }
             ushort c = instruction.C;
             uint valIndex = (uint)(c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256]);
 
@@ -1515,7 +1547,16 @@ namespace Raptor
             byte a = instruction.A;
             ushort b = instruction.B;
             double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
-            uint sizeInBytes = *(uint*)((byte*)(ulong)valB - 4);
+            byte* ptr = (byte*)(ulong)valB;
+            if (ptr == null)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Null reference exception: array pointer is null"
+                );
+            }
+            uint sizeInBytes = *(uint*)(ptr - 4);
             Reg(state.RegPtr, a) = (double)((sizeInBytes - 4) / 8);
             return true;
         }
