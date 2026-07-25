@@ -167,8 +167,11 @@ namespace Raptor.Compiler
                 _sb.AppendLine($"; var {decl.Name}");
                 return;
             }
-            int valueReg = EmitExpression(decl.Initializer);
-            _sb.Append($"MOVE r{regIndex} r{valueReg} ");
+            int valueReg = EmitExpression(decl.Initializer, regIndex);
+            if (valueReg != regIndex)
+            {
+                _sb.AppendLine($"MOVE r{regIndex} r{valueReg}");
+            }
             _sb.AppendLine($"; var {decl.Name}");
         }
 
@@ -199,8 +202,11 @@ namespace Raptor.Compiler
             }
 
             _sb.AppendLine($"; {assign.TargetName} = <expr>");
-            int valueReg = EmitExpression(assign.Value);
-            _sb.AppendLine($"MOVE r{regIndex} r{valueReg}");
+            int valueReg = EmitExpression(assign.Value, regIndex);
+            if (valueReg != regIndex)
+            {
+                _sb.AppendLine($"MOVE r{regIndex} r{valueReg}");
+            }
         }
 
         private void EmitIf(IfNode ifNode)
@@ -462,7 +468,7 @@ namespace Raptor.Compiler
             return $"r{regIndex}";
         }
 
-        private int EmitExpression(ASTNode node)
+        private int EmitExpression(ASTNode node, int? targetReg = null)
         {
             if (node.Line > 0)
             {
@@ -472,7 +478,7 @@ namespace Raptor.Compiler
             switch (node)
             {
                 case NumberNode num:
-                    int numReg = _regCounter++;
+                    int numReg = (targetReg != null) ? (int)targetReg : _regCounter++;
                     _sb.AppendLine($"LOADC r{numReg} {num.Value.ToString("F1")}");
                     return numReg;
 
@@ -496,7 +502,7 @@ namespace Raptor.Compiler
                     return varReg;
 
                 case BinaryOpNode binary:
-                    return EmitBinaryOp(binary);
+                    return EmitBinaryOp(binary, targetReg);
 
                 case CallNode call:
                     if (call.MethodName == "alloc")
@@ -516,7 +522,7 @@ namespace Raptor.Compiler
                             throw new EmitException();
                         }
                         int sizeReg = EmitExpression(call.Arguments[0]);
-                        int destReg = _regCounter++;
+                        int destReg = (targetReg != null) ? (int)targetReg : _regCounter++;
                         _sb.AppendLine($"NEWARR r{destReg} r{sizeReg}");
                         return destReg;
                     }
@@ -560,15 +566,15 @@ namespace Raptor.Compiler
                             throw new EmitException();
                         }
                         int lenArrReg = EmitExpression(call.Arguments[0]);
-                        int destReg = _regCounter++;
+                        int destReg = (targetReg != null) ? (int)targetReg : _regCounter++;
                         _sb.AppendLine($"LENARR r{destReg} r{lenArrReg}");
                         return destReg;
                     }
-                    int returnReg = _regCounter++;
+                    int returnReg = (targetReg != null) ? (int)targetReg : _regCounter++;
                     EmitCall(call, returnReg);
                     return returnReg;
                 case ArrayLiteralNode arrLiteral:
-                    int arrReg = _regCounter++;
+                    int arrReg = (targetReg != null) ? (int)targetReg : _regCounter++;
                     _sb.AppendLine($"NEWARR r{arrReg} {arrLiteral.Elements.Count}");
                     for (int i = 0; i < arrLiteral.Elements.Count; i++)
                     {
@@ -581,7 +587,7 @@ namespace Raptor.Compiler
 
                     int accessIndexReg = EmitExpression(indexAccess.IndexExpr);
 
-                    int resultReg = _regCounter++;
+                    int resultReg = (targetReg != null) ? (int)targetReg : _regCounter++;
 
                     _sb.AppendLine($"GETARR r{resultReg} r{targetArrayReg} r{accessIndexReg}");
                     return resultReg;
@@ -589,17 +595,16 @@ namespace Raptor.Compiler
                     int logicalResultReg = EmitExpression(logicalNode.Left);
                     string endLabel = $"logic_end{_labelCounter++}";
                     int zeroRegLogical = _regCounter++;
-                    _sb.AppendLine($"LOADC r{zeroRegLogical} 0.0");
                     if (logicalNode.Op == "&&")
                     {
                         // Jump to endLabel if Left is falsey (r{logicalResultReg} == 0.0)
-                        _sb.AppendLine($"EQ 0 r{logicalResultReg} r{zeroRegLogical}");
+                        _sb.AppendLine($"EQ 0 r{logicalResultReg} 0");
                         _sb.AppendLine($"JUMP {endLabel}");
                     }
                     else if (logicalNode.Op == "||")
                     {
                         // Jump to endLabel if Left is truthy (r{logicalResultReg} != 0.0)
-                        _sb.AppendLine($"EQ 1 r{logicalResultReg} r{zeroRegLogical}");
+                        _sb.AppendLine($"EQ 1 r{logicalResultReg} 0");
                         _sb.AppendLine($"JUMP {endLabel}");
                     }
                     int rightSide = EmitExpression(logicalNode.Right);
@@ -611,11 +616,11 @@ namespace Raptor.Compiler
             throw new EmitException();
         }
 
-        private int EmitBinaryOp(BinaryOpNode binary)
+        private int EmitBinaryOp(BinaryOpNode binary, int? targetReg = null)
         {
             int leftReg = EmitExpression(binary.Left);
             int rightReg = EmitExpression(binary.Right);
-            int resReg = _regCounter++;
+            int resReg = (targetReg != null) ? (int)targetReg : _regCounter++;
 
             switch (binary.Op)
             {

@@ -16,7 +16,8 @@ namespace Raptor.Tests
             table.RegisterModule(typeof(RaptorMath));
             engine.RegisterHostTable(table);
 
-            string raptorScript = @"
+            string raptorScript =
+                @"
                 var radius = 5.0;
                 var area = math.pi() * math.pow(radius, 2.0);
             ";
@@ -33,11 +34,12 @@ namespace Raptor.Tests
         public void ScriptEngineRunRaptorScriptTest()
         {
             using var engine = new ScriptEngine();
-            string raptorScript = @"
+            string raptorScript =
+                @"
                 var x = 10;
                 var y = 20;
                 var z = x + y;
-            ";
+                ";
 
             ExecutionResult result = engine.RunRaptorScript(raptorScript);
             Assert.Equal(VMStatus.Halted, result.Status);
@@ -56,7 +58,8 @@ namespace Raptor.Tests
             Assert.Equal(VMStatus.Halted, scriptResult.Status);
 
             // Assembly auto-detection via engine.Compile
-            string rasmScript = @"
+            string rasmScript =
+                @"
                 LOADC r1 42.0
                 HALT
             ";
@@ -75,7 +78,8 @@ namespace Raptor.Tests
             table.RegisterModule(typeof(RaptorMath));
             engine.RegisterHostTable(table);
 
-            string script = @"
+            string script =
+                @"
                 var a = 1.0;
                 var b = 2.0;
                 var c = 3.0;
