@@ -688,7 +688,8 @@ namespace Raptor.Compiler
 
                 case UnaryOpNode unary:
                     int operandReg = EmitExpression(unary.Operand);
-                    int resReg = (targetReg != null) ? (int)targetReg : AllocateRegister(unary);
+                    bool hasNotCollision = unary.Op == "!" && targetReg != null && (int)targetReg == operandReg;
+                    int resReg = (targetReg != null && !hasNotCollision) ? (int)targetReg : AllocateRegister(unary);
                     if (unary.Op == "-")
                     {
                         _sb.AppendLine($"UNM r{resReg} r{operandReg}");
@@ -701,6 +702,11 @@ namespace Raptor.Compiler
                         _sb.AppendLine($"JUMP {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
+                    }
+                    if (targetReg != null && (int)targetReg != resReg)
+                    {
+                        _sb.AppendLine($"MOVE r{targetReg} r{resReg}");
+                        return (int)targetReg;
                     }
                     return resReg;
 
@@ -792,9 +798,15 @@ namespace Raptor.Compiler
 
                     int accessIndexReg = EmitExpression(indexAccess.IndexExpr);
 
-                    int resultReg = (targetReg != null) ? (int)targetReg : AllocateRegister(indexAccess);
+                    bool hasIndexCollision = targetReg != null && ((int)targetReg == targetArrayReg || (int)targetReg == accessIndexReg);
+                    int resultReg = (targetReg != null && !hasIndexCollision) ? (int)targetReg : AllocateRegister(indexAccess);
 
                     _sb.AppendLine($"GETARR r{resultReg} r{targetArrayReg} r{accessIndexReg}");
+                    if (targetReg != null && (int)targetReg != resultReg)
+                    {
+                        _sb.AppendLine($"MOVE r{targetReg} r{resultReg}");
+                        return (int)targetReg;
+                    }
                     return resultReg;
                 case LogicalOpNode logicalNode:
                     int leftReg = EmitExpression(logicalNode.Left);
