@@ -542,4 +542,91 @@ y = 20.0; // Undeclared variable assignment
         // r1 is var result
         Assert.Equal(3.0, res.RegistersSnapshot[1]);
     }
+
+    [Fact]
+    public void InvertedForLoopConditionTest()
+    {
+        string raptorScript = @"
+var sum = 0;
+for (var j = 0; 5 > j; j = j + 1) {
+    sum = sum + j;
+}
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter);
+        Assert.False(reporter.HasErrors);
+
+        ScriptEngine engine = new ScriptEngine();
+        VMChunk chunk = engine.Compile(rasmCode);
+        VirtualMachine vm = new VirtualMachine();
+        vm.LoadProgram(chunk);
+        ExecutionResult res = vm.RunFast();
+        Assert.Equal(VMStatus.Halted, res.Status);
+        // sum = 0 + 1 + 2 + 3 + 4 = 10
+        Assert.Equal(10.0, res.RegistersSnapshot[1]);
+    }
+
+    [Fact]
+    public void LeftHandStepForLoopTest()
+    {
+        string raptorScript = @"
+var sum = 0;
+for (var i = 1; i < 5; i = 1 + i) {
+    sum = sum + i;
+}
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter);
+        Assert.False(reporter.HasErrors);
+
+        ScriptEngine engine = new ScriptEngine();
+        VMChunk chunk = engine.Compile(rasmCode);
+        VirtualMachine vm = new VirtualMachine();
+        vm.LoadProgram(chunk);
+        ExecutionResult res = vm.RunFast();
+        Assert.Equal(VMStatus.Halted, res.Status);
+        // sum = 1 + 2 + 3 + 4 = 10
+        Assert.Equal(10.0, res.RegistersSnapshot[1]);
+    }
+
+    [Fact]
+    public void SignedRightShiftNegativeNumberTest()
+    {
+        string raptorScript = @"
+var folded = (0 - 4) >> 1;
+var val = 0 - 4;
+var runtime = val >> 1;
+";
+        var reporter = new Compiler.DiagnosticReporter();
+        string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter);
+        Assert.False(reporter.HasErrors);
+
+        ScriptEngine engine = new ScriptEngine();
+        VMChunk chunk = engine.Compile(rasmCode);
+        VirtualMachine vm = new VirtualMachine();
+        vm.LoadProgram(chunk);
+        ExecutionResult res = vm.RunFast();
+        Assert.Equal(VMStatus.Halted, res.Status);
+        Assert.Equal(-2.0, res.RegistersSnapshot[1]); // folded
+        Assert.Equal(-2.0, res.RegistersSnapshot[3]); // runtime
+    }
+
+    [Fact]
+    public void DoubleVarDeclInvariantFormattingTest()
+    {
+        var currentCulture = System.Threading.Thread.CurrentThread.CurrentCulture;
+        try
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("de-DE");
+            string raptorScript = @"var d = 0.5;";
+            var reporter = new Compiler.DiagnosticReporter();
+            string rasmCode = Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter);
+            Assert.False(reporter.HasErrors);
+            Assert.Contains("0.5", rasmCode);
+        }
+        finally
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = currentCulture;
+        }
+    }
 }

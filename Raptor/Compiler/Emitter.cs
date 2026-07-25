@@ -192,7 +192,7 @@ namespace Raptor.Compiler
 
             if (decl.Initializer is NumberNode number)
             {
-                _sb.Append($"LOADC r{regIndex} {number.Value} ");
+                _sb.Append($"LOADC r{regIndex} {number.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} ");
                 _sb.AppendLine($"; var {decl.Name}");
                 return;
             }
@@ -207,6 +207,7 @@ namespace Raptor.Compiler
         private void EmitAssignment(AssignmentNode assign)
         {
             int regIndex;
+            bool isDeclared = true;
             if (_propertyMappings.TryGetValue(assign.TargetName, out int propReg))
             {
                 regIndex = propReg;
@@ -223,12 +224,16 @@ namespace Raptor.Compiler
                         assign.Length
                     )
                 );
-                regIndex = 0; // Fallback register index to continue emitting and gather other errors
+                isDeclared = false;
+                regIndex = 0;
             }
             else
             {
                 regIndex = varReg;
             }
+
+            if (!isDeclared)
+                return;
 
             _sb.AppendLine($"; {assign.TargetName} = <expr>");
             int valueReg = EmitExpression(assign.Value, regIndex);
@@ -352,32 +357,57 @@ namespace Raptor.Compiler
 
                     if (indexReg != -1)
                     {
-                        compOp = binOp.Op;
-                        limitStr = GetExpressionOperandString(binOp.Right);
+                        bool isLeftIndex = binOp.Left is IdentifierNode idL && _environment.TryGet(idL.Name, out int rL) && rL == indexReg;
+                        bool isRightIndex = binOp.Right is IdentifierNode idR && _environment.TryGet(idR.Name, out int rR) && rR == indexReg;
 
-                        if (incMath.Op == "+")
+                        if (isLeftIndex)
                         {
-                            stepStr = GetExpressionOperandString(incMath.Right);
-                            canUseForOpCode = true;
+                            compOp = binOp.Op;
+                            limitStr = GetExpressionOperandString(binOp.Right);
                         }
-                        else if (incMath.Op == "-")
+                        else if (isRightIndex)
                         {
-                            if (incMath.Right is NumberNode numNode)
+                            compOp = GetSwappedOperator(binOp.Op);
+                            limitStr = GetExpressionOperandString(binOp.Left);
+                        }
+
+                        if (isLeftIndex || isRightIndex)
+                        {
+                            bool isIncLeftIndex = incMath.Left is IdentifierNode idIncL && _environment.TryGet(idIncL.Name, out int rIncL) && rIncL == indexReg;
+                            bool isIncRightIndex = incMath.Right is IdentifierNode idIncR && _environment.TryGet(idIncR.Name, out int rIncR) && rIncR == indexReg;
+
+                            if (incMath.Op == "+")
                             {
-                                stepStr = (-numNode.Value).ToString(
-                                    "F1",
-                                    System.Globalization.CultureInfo.InvariantCulture
-                                );
-                                canUseForOpCode = true;
+                                if (isIncLeftIndex)
+                                {
+                                    stepStr = GetExpressionOperandString(incMath.Right);
+                                    canUseForOpCode = true;
+                                }
+                                else if (isIncRightIndex)
+                                {
+                                    stepStr = GetExpressionOperandString(incMath.Left);
+                                    canUseForOpCode = true;
+                                }
                             }
-                            else
+                            else if (incMath.Op == "-" && isIncLeftIndex)
                             {
-                                int stepReg = EmitExpression(incMath.Right);
-                                int negStepReg = _regCounter++;
-                                _sb.AppendLine($"LOADC r{negStepReg} 0.0");
-                                _sb.AppendLine($"SUB r{negStepReg} r{negStepReg} r{stepReg}");
-                                stepStr = $"r{negStepReg}";
-                                canUseForOpCode = true;
+                                if (incMath.Right is NumberNode numNode)
+                                {
+                                    stepStr = (-numNode.Value).ToString(
+                                        "F1",
+                                        System.Globalization.CultureInfo.InvariantCulture
+                                    );
+                                    canUseForOpCode = true;
+                                }
+                                else
+                                {
+                                    int stepReg = EmitExpression(incMath.Right);
+                                    int negStepReg = _regCounter++;
+                                    _sb.AppendLine($"LOADC r{negStepReg} 0.0");
+                                    _sb.AppendLine($"SUB r{negStepReg} r{negStepReg} r{stepReg}");
+                                    stepStr = $"r{negStepReg}";
+                                    canUseForOpCode = true;
+                                }
                             }
                         }
                     }
@@ -507,6 +537,20 @@ namespace Raptor.Compiler
             };
         }
 
+        private string GetSwappedOperator(string op)
+        {
+            return op switch
+            {
+                "<" => ">",
+                "<=" => ">=",
+                ">" => "<",
+                ">=" => "<=",
+                "==" => "==",
+                "!=" => "!=",
+                _ => op,
+            };
+        }
+
         private string GetExpressionOperandString(ASTNode node)
         {
             if (node is NumberNode num)
@@ -543,7 +587,7 @@ namespace Raptor.Compiler
             {
                 case NumberNode num:
                     int numReg = (targetReg != null) ? (int)targetReg : _regCounter++;
-                    _sb.AppendLine($"LOADC r{numReg} {num.Value.ToString("F1")}");
+                    _sb.AppendLine($"LOADC r{numReg} {num.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}");
                     return numReg;
 
                 case IdentifierNode id:
@@ -721,67 +765,67 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"BINRSH r{resReg} r{leftReg} r{rightReg}");
                     return resReg;
                 case "<":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 0 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LT 0 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "<=":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 0 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LE 0 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case ">":
-                {
-                    // a > b -> b < a
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 0 r{rightReg} r{leftReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        // a > b -> b < a
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LT 0 r{rightReg} r{leftReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case ">=":
-                {
-                    // a >= b -> b <= a
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 0 r{rightReg} r{leftReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        // a >= b -> b <= a
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"LE 0 r{rightReg} r{leftReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "==":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 case "!=":
-                {
-                    string skipLabel = $"cmp_skip{_labelCounter++}";
-                    _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
-                    _sb.AppendLine($"JUMP {skipLabel}");
-                    _sb.AppendLine($"LOADC r{resReg} 0.0");
-                    _sb.AppendLine($"{skipLabel}:");
-                    return resReg;
-                }
+                    {
+                        string skipLabel = $"cmp_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                        return resReg;
+                    }
                 default:
                     _reporter.Report(
                         new Diagnostic(

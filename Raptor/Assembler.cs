@@ -182,7 +182,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destB3 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                destB3 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
                             }
 
                             ushort destC3;
@@ -192,7 +192,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destC3 = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
+                                destC3 = (ushort)(_chunk.SetConstant(ParseDouble(words[3])) + 256);
                             }
 
                             instruction = Instruction.CreateABC(
@@ -213,7 +213,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destB3 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                destB3 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
                             }
 
                             if (words[3].StartsWith("r"))
@@ -222,7 +222,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destC3 = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
+                                destC3 = (ushort)(_chunk.SetConstant(ParseDouble(words[3])) + 256);
                             }
                             instruction = Instruction.CreateABC(
                                 GetOpCode(words[0]),
@@ -241,7 +241,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
                             }
 
                             instruction = Instruction.CreateABx(OpCode.UNM, destA4, destB4);
@@ -291,7 +291,7 @@ namespace Raptor
                             }
                             else
                             {
-                                printA = (ushort)(_chunk.SetConstant(double.Parse(words[1])) + 256);
+                                printA = (ushort)(_chunk.SetConstant(ParseDouble(words[1])) + 256);
                             }
 
                             instruction = Instruction.CreateABC(OpCode.PRINT, 0, printA, 0);
@@ -308,7 +308,7 @@ namespace Raptor
                             }
                             else
                             {
-                                printA = (ushort)(_chunk.SetConstant(double.Parse(words[1])) + 256);
+                                printA = (ushort)(_chunk.SetConstant(ParseDouble(words[1])) + 256);
                             }
 
                             instruction = Instruction.CreateABC(OpCode.PRINTA, 0, printA, 0);
@@ -325,7 +325,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
                             }
                             instruction = Instruction.CreateABx(OpCode.SQRT, destA4, destB4);
                             break;
@@ -337,7 +337,7 @@ namespace Raptor
                             }
                             else
                             {
-                                destB4 = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
                             }
                             instruction = Instruction.CreateABx(OpCode.FISR, destA4, destB4);
                             break;
@@ -347,13 +347,13 @@ namespace Raptor
                             if (words[2].StartsWith("r"))
                                 rMax = ushort.Parse(words[2].TrimStart('r'));
                             else
-                                rMax = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                rMax = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
 
                             ushort rStep;
                             if (words[3].StartsWith("r"))
                                 rStep = ushort.Parse(words[3].TrimStart('r'));
                             else
-                                rStep = (ushort)(_chunk.SetConstant(double.Parse(words[3])) + 256);
+                                rStep = (ushort)(_chunk.SetConstant(ParseDouble(words[3])) + 256);
                             byte comp = 0;
                             switch (words[4])
                             {
@@ -409,7 +409,7 @@ namespace Raptor
                             if (words[2].StartsWith("r"))
                                 index = ushort.Parse(words[2].TrimStart('r'));
                             else
-                                index = (ushort)(_chunk.SetConstant(double.Parse(words[2])) + 256);
+                                index = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
 
                             ushort indexC = 0;
                             if (words.Length > 3)
@@ -418,7 +418,7 @@ namespace Raptor
                                     indexC = ushort.Parse(words[3].TrimStart('r'));
                                 else
                                     indexC = (ushort)(
-                                        _chunk.SetConstant(double.Parse(words[3])) + 256
+                                        _chunk.SetConstant(ParseDouble(words[3])) + 256
                                     );
                             }
 
@@ -489,10 +489,13 @@ namespace Raptor
             return OpCode.LOADC;
         }
 
+        private static double ParseDouble(string s) =>
+            double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+
         private uint ExecuteLoadC(string[] words)
         {
             var destA1 = byte.Parse(words[1].TrimStart('r'));
-            double constant = double.Parse(words[2]);
+            double constant = ParseDouble(words[2]);
 
             uint bx = _chunk.SetConstant(constant);
 

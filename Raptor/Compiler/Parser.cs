@@ -630,7 +630,7 @@ namespace Raptor.Compiler
             if (Match(TokenType.Number))
             {
                 Token numToken = Previous();
-                return new NumberNode(double.Parse(numToken.Lexeme))
+                return new NumberNode(double.Parse(numToken.Lexeme, System.Globalization.CultureInfo.InvariantCulture))
                 {
                     Line = numToken.Line,
                     Column = numToken.Column,
