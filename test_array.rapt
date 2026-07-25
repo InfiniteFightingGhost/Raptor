@@ -1,0 +1,6 @@
+var arr = [10, 20, 30];
+peri.print(arr[0]);
+arr[1] = 50;
+peri.print(arr[1]);
+peri.print(len(arr));
+free(arr);

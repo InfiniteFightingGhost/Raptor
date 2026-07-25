@@ -472,20 +472,26 @@ var y = z + w; // Undefined identifiers
     }
 
     [Fact]
-    public void CompilerThrowsEmitExceptionOnLoopValidationErrors()
+    public void CompilerHandlesNonComparisonLoopConditions()
     {
         string raptorScript =
             @"
-for (var i = 0.0; 10.0; i = i + 1.0) { // Condition is not a comparison
-    var x = i;
+var sum = 0.0;
+var running = 1.0;
+for (var i = 0.0; running && i < 5.0; i = i + 1.0) {
+    sum = sum + i;
+    if (i == 2.0) {
+        running = 0.0;
+    }
 }
 ";
-        var reporter = new Compiler.DiagnosticReporter();
-        Assert.Throws<Compiler.CompileException>(() =>
-            Raptor.Compiler.RaptorScriptCompiler.Compile(raptorScript, reporter: reporter)
-        );
-        Assert.True(reporter.HasErrors);
-        Assert.Contains("E0021", reporter.Diagnostics.Select(d => d.Code));
+        using var engine = new ScriptEngine();
+        string rasm = Compiler.RaptorScriptCompiler.Compile(raptorScript, out var vars, new Compiler.DiagnosticReporter());
+        VMChunk chunk = engine.Compile(rasm);
+        ExecutionResult result = engine.Execute(chunk);
+        Assert.Equal(VMStatus.Halted, result.Status);
+        // i=0 (sum=0), i=1 (sum=1), i=2 (sum=3, running set to 0.0). Loop terminates before i=3.
+        Assert.Equal(3.0, result.RegistersSnapshot[vars["sum"]]);
     }
 
     [Fact]

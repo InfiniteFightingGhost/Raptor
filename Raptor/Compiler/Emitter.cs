@@ -344,20 +344,6 @@ namespace Raptor.Compiler
                     }
                 }
 
-                if (forNode.Condition != null && !(forNode.Condition is BinaryOpNode cBin && IsComparisonOp(cBin.Op)))
-                {
-                    _reporter.Report(
-                        new Diagnostic(
-                            "E0021",
-                            DiagnosticSeverity.Error,
-                            "For-loop condition must be a comparison (e.g., i < 10).",
-                            forNode.Line,
-                            forNode.Column,
-                            forNode.Length
-                        )
-                    );
-                    throw new EmitException();
-                }
 
                 bool canUseForOpCode = false;
                 string compOp = "<";
