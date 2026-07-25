@@ -77,8 +77,18 @@ namespace Raptor.Compiler
 
         private void ResetRegCounterScope()
         {
-            if (_environment.Variables.Count != 0)
-                _regCounter = _environment.Variables.Max(pair => pair.Value) + 1;
+            int maxReg = 0;
+            var env = _environment;
+            while (env != null)
+            {
+                if (env.Variables.Count > 0)
+                    maxReg = Math.Max(maxReg, env.Variables.Values.Max());
+                env = env.Enclosing;
+            }
+            if (_propertyMappings.Count > 0)
+                maxReg = Math.Max(maxReg, _propertyMappings.Values.Max());
+
+            _regCounter = maxReg + 1;
         }
 
         public string Emit()
@@ -151,6 +161,19 @@ namespace Raptor.Compiler
 
         private void EmitVarDecl(VarDeclNode decl)
         {
+            if (_propertyMappings.ContainsKey(decl.Name))
+            {
+                _reporter.Report(
+                    new Diagnostic(
+                        "E0016",
+                        DiagnosticSeverity.Error,
+                        $"Variable '{decl.Name}' is already declared by host.",
+                        decl.Line,
+                        decl.Column,
+                        decl.Length
+                    )
+                );
+            }
             if (_environment.Variables.ContainsKey(decl.Name))
             {
                 _reporter.Report(
@@ -260,20 +283,24 @@ namespace Raptor.Compiler
             _environment = new Environment(current);
             try
             {
-                int indexReg;
+                int indexReg = -1;
                 if (forNode.Initializer != null)
                 {
                     if (forNode.Initializer is VarDeclNode varDeclNode)
                     {
                         EmitVarDecl(varDeclNode);
-                        _environment.TryGet(varDeclNode.Name, out int value);
-                        indexReg = value;
+                        if (_environment.TryGet(varDeclNode.Name, out int value))
+                        {
+                            indexReg = value;
+                        }
                     }
                     else if (forNode.Initializer is AssignmentNode assignmentNode)
                     {
                         EmitAssignment(assignmentNode);
-                        _environment.TryGet(assignmentNode.TargetName, out int value);
-                        indexReg = value;
+                        if (_environment.TryGet(assignmentNode.TargetName, out int value))
+                        {
+                            indexReg = value;
+                        }
                     }
                     else
                     {
@@ -290,80 +317,118 @@ namespace Raptor.Compiler
                         throw new EmitException();
                     }
                 }
-                else
+
+                if (forNode.Condition != null && !(forNode.Condition is BinaryOpNode cBin && IsComparisonOp(cBin.Op)))
                 {
-                    indexReg = _regCounter++;
-                    _sb.AppendLine($"LOADC r{indexReg} 0.0 ; Dummy index for empty init");
+                    _reporter.Report(
+                        new Diagnostic(
+                            "E0021",
+                            DiagnosticSeverity.Error,
+                            "For-loop condition must be a comparison (e.g., i < 10).",
+                            forNode.Line,
+                            forNode.Column,
+                            forNode.Length
+                        )
+                    );
+                    throw new EmitException();
                 }
 
-                string limitStr = "1.0";
+                bool canUseForOpCode = false;
                 string compOp = "<";
-                if (forNode.Condition != null)
+                string limitStr = "";
+                string stepStr = "1.0";
+
+                if (
+                    forNode.Condition is BinaryOpNode binOp
+                    && IsComparisonOp(binOp.Op)
+                    && forNode.Increment is AssignmentNode incAssign
+                    && incAssign.Value is BinaryOpNode incMath
+                )
                 {
-                    if (forNode.Condition is BinaryOpNode binOp && IsComparisonOp(binOp.Op))
+                    if (indexReg == -1)
+                    {
+                        _environment.TryGet(incAssign.TargetName, out indexReg);
+                    }
+
+                    if (indexReg != -1)
                     {
                         compOp = binOp.Op;
                         limitStr = GetExpressionOperandString(binOp.Right);
-                    }
-                    else
-                    {
-                        _reporter.Report(
-                            new Diagnostic(
-                                "E0021",
-                                DiagnosticSeverity.Error,
-                                "For-loop condition must be a comparison (e.g., i < 10).",
-                                forNode.Line,
-                                forNode.Column,
-                                forNode.Length
-                            )
-                        );
-                        throw new EmitException();
-                    }
-                }
-                else
-                {
-                    // Hack: No condition means infinite loop. We do 0 < 1
-                    _sb.AppendLine($"LOADC r{indexReg} 0.0");
-                    limitStr = "1.0";
-                    compOp = "<";
-                }
 
-                string stepStr = "0.0";
-                if (forNode.Increment != null)
-                {
-                    if (
-                        forNode.Increment is AssignmentNode incAssign
-                        && incAssign.Value is BinaryOpNode incMath
-                    )
-                    {
                         if (incMath.Op == "+")
                         {
                             stepStr = GetExpressionOperandString(incMath.Right);
+                            canUseForOpCode = true;
                         }
                         else if (incMath.Op == "-")
                         {
-                            // If the loop does i--, the step is negative.
                             if (incMath.Right is NumberNode numNode)
                             {
-                                stepStr = (-numNode.Value).ToString("F1");
+                                stepStr = (-numNode.Value).ToString(
+                                    "F1",
+                                    System.Globalization.CultureInfo.InvariantCulture
+                                );
+                                canUseForOpCode = true;
                             }
                             else
                             {
-                                // If it's a register (e.g. i -= stepSize), we need to negate it.
-                                stepStr = "-" + GetExpressionOperandString(incMath.Right);
+                                int stepReg = EmitExpression(incMath.Right);
+                                int negStepReg = _regCounter++;
+                                _sb.AppendLine($"LOADC r{negStepReg} 0.0");
+                                _sb.AppendLine($"SUB r{negStepReg} r{negStepReg} r{stepReg}");
+                                stepStr = $"r{negStepReg}";
+                                canUseForOpCode = true;
                             }
                         }
                     }
                 }
+
                 int labelId = _labelCounter++;
-                string loopLabel = $"for_{labelId}";
+                string bodyLabel = $"for_body_{labelId}";
                 string endLabel = $"for_end_{labelId}";
-                string exitOp = GetInverseOperator(compOp);
-                _sb.AppendLine($"{loopLabel}:");
-                _sb.AppendLine($"FOR r{indexReg} {limitStr} {stepStr} {exitOp} {endLabel}");
-                EmitBlock(forNode.Body);
-                _sb.AppendLine($"JUMP {loopLabel}");
-                _sb.AppendLine($"{endLabel}:");
+
+                if (canUseForOpCode)
+                {
+                    if (forNode.Condition != null)
+                    {
+                        EmitBranchCondition(forNode.Condition, endLabel);
+                    }
+
+                    _sb.AppendLine($"{bodyLabel}:");
+                    EmitBlock(forNode.Body);
+
+                    _sb.AppendLine($"FOR r{indexReg} {limitStr} {stepStr} {compOp} {bodyLabel}");
+                    _sb.AppendLine($"{endLabel}:");
+                }
+                else
+                {
+                    _sb.AppendLine($"{bodyLabel}:");
+                    if (forNode.Condition != null)
+                    {
+                        EmitBranchCondition(forNode.Condition, endLabel);
+                    }
+
+                    EmitBlock(forNode.Body);
+
+                    if (forNode.Increment != null)
+                    {
+                        if (forNode.Increment is AssignmentNode assignNode)
+                        {
+                            EmitAssignment(assignNode);
+                        }
+                        else if (forNode.Increment is VarDeclNode declNode)
+                        {
+                            EmitVarDecl(declNode);
+                        }
+                        else
+                        {
+                            EmitExpression(forNode.Increment);
+                        }
+                    }
+
+                    _sb.AppendLine($"JUMP {bodyLabel}");
+                    _sb.AppendLine($"{endLabel}:");
+                }
             }
             finally
             {
@@ -591,17 +656,20 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"GETARR r{resultReg} r{targetArrayReg} r{accessIndexReg}");
                     return resultReg;
                 case LogicalOpNode logicalNode:
-                    int logicalResultReg = EmitExpression(logicalNode.Left);
+                    int leftReg = EmitExpression(logicalNode.Left);
+                    int logicalResultReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    _sb.AppendLine($"MOVE r{logicalResultReg} r{leftReg}");
+
                     string endLabel = $"logic_end{_labelCounter++}";
                     if (logicalNode.Op == "&&")
                     {
-                        // Jump to endLabel if Left is falsey (r{logicalResultReg} == 0.0)
+                        // Jump to endLabel if Left is falsey
                         _sb.AppendLine($"EQ 0 r{logicalResultReg} 0");
                         _sb.AppendLine($"JUMP {endLabel}");
                     }
                     else if (logicalNode.Op == "||")
                     {
-                        // Jump to endLabel if Left is truthy (r{logicalResultReg} != 0.0)
+                        // Jump to endLabel if Left is truthy
                         _sb.AppendLine($"EQ 1 r{logicalResultReg} 0");
                         _sb.AppendLine($"JUMP {endLabel}");
                     }
@@ -656,7 +724,7 @@ namespace Raptor.Compiler
                 {
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"LT 0 r{leftReg} r{rightReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");
@@ -666,7 +734,7 @@ namespace Raptor.Compiler
                 {
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"LE 0 r{leftReg} r{rightReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");
@@ -677,7 +745,7 @@ namespace Raptor.Compiler
                     // a > b -> b < a
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
+                    _sb.AppendLine($"LT 0 r{rightReg} r{leftReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");
@@ -688,7 +756,7 @@ namespace Raptor.Compiler
                     // a >= b -> b <= a
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"LE 1 r{rightReg} r{leftReg}");
+                    _sb.AppendLine($"LE 0 r{rightReg} r{leftReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");
@@ -698,7 +766,7 @@ namespace Raptor.Compiler
                 {
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");
@@ -708,7 +776,7 @@ namespace Raptor.Compiler
                 {
                     string skipLabel = $"cmp_skip{_labelCounter++}";
                     _sb.AppendLine($"LOADC r{resReg} 1.0");
-                    _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
                     _sb.AppendLine($"JUMP {skipLabel}");
                     _sb.AppendLine($"LOADC r{resReg} 0.0");
                     _sb.AppendLine($"{skipLabel}:");

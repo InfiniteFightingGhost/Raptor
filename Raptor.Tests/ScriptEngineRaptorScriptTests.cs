@@ -112,5 +112,84 @@ namespace Raptor.Tests
             Assert.Equal(7.0, result.RegistersSnapshot[variables["clampResult"]]);
             Assert.Equal(1.0, result.RegistersSnapshot[variables["nestedResult"]]);
         }
+
+        [Fact]
+        public void ForLoopStartsAtZeroAndRunsExactIterations()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var sum = 0.0;
+                var count = 0.0;
+                for (var j = 0; j < 5; j = j + 1) {
+                    sum = sum + j;
+                    count = count + 1;
+                }
+            ";
+
+            string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+                script,
+                out var variables,
+                new Raptor.Compiler.DiagnosticReporter()
+            );
+
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+            Assert.Equal(VMStatus.Halted, result.Status);
+
+            // j = 0, 1, 2, 3, 4 -> count = 5, sum = 10
+            Assert.Equal(5.0, result.RegistersSnapshot[variables["count"]]);
+            Assert.Equal(10.0, result.RegistersSnapshot[variables["sum"]]);
+        }
+
+        [Fact]
+        public void ForLoopNoInitializerUpdatesExistingVariable()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var i = 0.0;
+                var iterations = 0.0;
+                for (; i < 3; i = i + 1) {
+                    iterations = iterations + 1.0;
+                }
+            ";
+
+            string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+                script,
+                out var variables,
+                new Raptor.Compiler.DiagnosticReporter()
+            );
+
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+            Assert.Equal(VMStatus.Halted, result.Status);
+
+            Assert.Equal(3.0, result.RegistersSnapshot[variables["iterations"]]);
+            Assert.Equal(3.0, result.RegistersSnapshot[variables["i"]]);
+        }
+
+        [Fact]
+        public void ForLoopDecrementingStepWorksCorrectly()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var sum = 0.0;
+                for (var i = 5; i > 0; i = i - 1) {
+                    sum = sum + i;
+                }
+            ";
+
+            string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+                script,
+                out var variables,
+                new Raptor.Compiler.DiagnosticReporter()
+            );
+
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+            Assert.Equal(VMStatus.Halted, result.Status);
+
+            // 5 + 4 + 3 + 2 + 1 = 15
+            Assert.Equal(15.0, result.RegistersSnapshot[variables["sum"]]);
+        }
     }
 }

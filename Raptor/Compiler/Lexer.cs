@@ -178,7 +178,7 @@ namespace Raptor.Compiler
                         : new Token(TokenType.Assign, "=", _line, _column),
                     '!' => Peek() switch
                     {
-                        '=' => new Token(TokenType.NotEqual, "!=", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.NotEqual, "!="),
                         _ => throw new LexerException($"Unexpected char '!'"),
                     },
                     '<' => Peek() switch
