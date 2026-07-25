@@ -161,6 +161,12 @@ namespace Raptor.Compiler
             int regIndex = _regCounter++;
             _environment.Define(decl.Name, regIndex);
 
+            if (decl.Initializer is NumberNode number)
+            {
+                _sb.Append($"LOADC r{regIndex} {number.Value} ");
+                _sb.AppendLine($"; var {decl.Name}");
+                return;
+            }
             int valueReg = EmitExpression(decl.Initializer);
             _sb.Append($"MOVE r{regIndex} r{valueReg} ");
             _sb.AppendLine($"; var {decl.Name}");
@@ -644,67 +650,67 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"BINRSH r{resReg} r{leftReg} r{rightReg}");
                     return resReg;
                 case "<":
-                    {
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LT 1 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"LT 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 case "<=":
-                    {
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LE 1 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"LE 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 case ">":
-                    {
-                        // a > b -> b < a
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    // a > b -> b < a
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 case ">=":
-                    {
-                        // a >= b -> b <= a
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LE 1 r{rightReg} r{leftReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    // a >= b -> b <= a
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"LE 1 r{rightReg} r{leftReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 case "==":
-                    {
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 case "!=":
-                    {
-                        string skipLabel = $"cmp_skip{_labelCounter++}";
-                        _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
-                        _sb.AppendLine($"LOADC r{resReg} 0.0");
-                        _sb.AppendLine($"{skipLabel}:");
-                        return resReg;
-                    }
+                {
+                    string skipLabel = $"cmp_skip{_labelCounter++}";
+                    _sb.AppendLine($"LOADC r{resReg} 1.0");
+                    _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
+                    _sb.AppendLine($"JUMP {skipLabel}");
+                    _sb.AppendLine($"LOADC r{resReg} 0.0");
+                    _sb.AppendLine($"{skipLabel}:");
+                    return resReg;
+                }
                 default:
                     _reporter.Report(
                         new Diagnostic(
@@ -722,13 +728,13 @@ namespace Raptor.Compiler
 
         private void EmitCall(CallNode call, int returnReg)
         {
-            int callBase = _regCounter;
-
             int[] argRegs = new int[call.Arguments.Count];
             for (int i = 0; i < call.Arguments.Count; i++)
             {
                 argRegs[i] = EmitExpression(call.Arguments[i]);
             }
+
+            int callBase = _regCounter;
 
             for (int i = 0; i < call.Arguments.Count; i++)
             {
@@ -736,6 +742,8 @@ namespace Raptor.Compiler
             }
 
             _sb.AppendLine($"CALL {call.MethodName}() r{callBase}");
+
+            _regCounter = callBase + Math.Max(1, call.Arguments.Count);
 
             if (returnReg != 0 && returnReg != callBase)
             {
