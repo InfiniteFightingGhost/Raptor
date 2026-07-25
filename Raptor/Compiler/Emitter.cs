@@ -226,11 +226,7 @@ namespace Raptor.Compiler
             if (ifNode.ElseBlock != null)
             {
                 _sb.AppendLine("; else block");
-                if (ifNode.ElseBlock != null)
-                {
-                    _sb.AppendLine("; else block");
-                    EmitBlock(ifNode.ElseBlock);
-                }
+                EmitBlock(ifNode.ElseBlock);
             }
 
             _sb.AppendLine($"{endLabel}:");
@@ -348,7 +344,7 @@ namespace Raptor.Compiler
                             else
                             {
                                 // If it's a register (e.g. i -= stepSize), we need to negate it.
-                                stepStr = GetExpressionOperandString(incMath.Right);
+                                stepStr = "-" + GetExpressionOperandString(incMath.Right);
                             }
                         }
                     }
@@ -365,9 +361,7 @@ namespace Raptor.Compiler
             }
             finally
             {
-                if (_environment.Enclosing == null)
-                    throw new Exception("How is this possible?");
-                _environment = _environment.Enclosing;
+                _environment = _environment.Enclosing!;
             }
         }
 
@@ -594,7 +588,6 @@ namespace Raptor.Compiler
                 case LogicalOpNode logicalNode:
                     int logicalResultReg = EmitExpression(logicalNode.Left);
                     string endLabel = $"logic_end{_labelCounter++}";
-                    int zeroRegLogical = _regCounter++;
                     if (logicalNode.Op == "&&")
                     {
                         // Jump to endLabel if Left is falsey (r{logicalResultReg} == 0.0)
