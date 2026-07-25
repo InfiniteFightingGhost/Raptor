@@ -168,10 +168,10 @@ namespace Raptor
                                 }
 
                                 byte comp = secondWord.A;
-                                if (comp > 3)
+                                if (comp > 5)
                                 {
                                     throw new VerificationException(
-                                        $"FOR loop at index {i} has invalid comparison code {comp} (must be 0, 1, 2, or 3)."
+                                        $"FOR loop at index {i} has invalid comparison code {comp} (must be 0, 1, 2, 3, 4, or 5)."
                                     );
                                 }
                             }

@@ -101,6 +101,7 @@ namespace Raptor.Compiler
             foreach (var statement in _program.Statements)
             {
                 EmitNode(statement);
+                ResetRegCounterScope();
             }
 
             _sb.AppendLine("HALT");
@@ -682,12 +683,17 @@ namespace Raptor.Compiler
                     EmitCall(call, returnReg);
                     return returnReg;
                 case ArrayLiteralNode arrLiteral:
-                    int arrReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    int arrReg = _regCounter++;
                     _sb.AppendLine($"NEWARR r{arrReg} {arrLiteral.Elements.Count}");
                     for (int i = 0; i < arrLiteral.Elements.Count; i++)
                     {
                         int elementReg = EmitExpression(arrLiteral.Elements[i]);
                         _sb.AppendLine($"SETARR r{arrReg} {i} r{elementReg}");
+                    }
+                    if (targetReg != null && (int)targetReg != arrReg)
+                    {
+                        _sb.AppendLine($"MOVE r{targetReg} r{arrReg}");
+                        return (int)targetReg;
                     }
                     return arrReg;
                 case IndexAccessNode indexAccess:
@@ -701,7 +707,7 @@ namespace Raptor.Compiler
                     return resultReg;
                 case LogicalOpNode logicalNode:
                     int leftReg = EmitExpression(logicalNode.Left);
-                    int logicalResultReg = (targetReg != null) ? (int)targetReg : _regCounter++;
+                    int logicalResultReg = _regCounter++;
                     _sb.AppendLine($"MOVE r{logicalResultReg} r{leftReg}");
 
                     string endLabel = $"logic_end{_labelCounter++}";
@@ -720,6 +726,11 @@ namespace Raptor.Compiler
                     int rightSide = EmitExpression(logicalNode.Right);
                     _sb.AppendLine($"MOVE r{logicalResultReg} r{rightSide}");
                     _sb.AppendLine($"{endLabel}:");
+                    if (targetReg != null && (int)targetReg != logicalResultReg)
+                    {
+                        _sb.AppendLine($"MOVE r{targetReg} r{logicalResultReg}");
+                        return (int)targetReg;
+                    }
                     return logicalResultReg;
             }
 

@@ -369,6 +369,12 @@ namespace Raptor
                                 case ">=":
                                     comp = 3;
                                     break;
+                                case "==":
+                                    comp = 4;
+                                    break;
+                                case "!=":
+                                    comp = 5;
+                                    break;
                             }
                             int jumpOffset = (int)(labels[words[5]] - pc);
                             instruction = Instruction.CreateABC(OpCode.FOR, rIndex, rMax, rStep);

@@ -1248,6 +1248,12 @@ namespace Raptor
                 case 3:
                     conditionMet = (valIndex >= valMax);
                     break;
+                case 4:
+                    conditionMet = (valIndex == valMax);
+                    break;
+                case 5:
+                    conditionMet = (valIndex != valMax);
+                    break;
             }
             if (conditionMet)
             {
