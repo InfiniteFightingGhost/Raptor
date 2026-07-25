@@ -420,9 +420,59 @@ namespace Raptor.Compiler
 
                 if (canUseForOpCode)
                 {
+                    if (limitStr.StartsWith("r"))
+                    {
+                        int limitReg = int.Parse(limitStr.TrimStart('r'));
+                        _environment.Define($"__for_limit_{labelId}", limitReg);
+                    }
+                    if (stepStr.StartsWith("r"))
+                    {
+                        int stepReg = int.Parse(stepStr.TrimStart('r'));
+                        _environment.Define($"__for_step_{labelId}", stepReg);
+                    }
+
                     if (forNode.Condition != null)
                     {
-                        EmitBranchCondition(forNode.Condition, endLabel);
+                        switch (compOp)
+                        {
+                            case "<":
+                                _sb.AppendLine($"LT 1 r{indexReg} {limitStr}");
+                                break;
+                            case "<=":
+                                _sb.AppendLine($"LE 1 r{indexReg} {limitStr}");
+                                break;
+                            case ">":
+                                if (limitStr.StartsWith("r"))
+                                {
+                                    _sb.AppendLine($"LT 1 {limitStr} r{indexReg}");
+                                }
+                                else
+                                {
+                                    int rLim = _regCounter++;
+                                    _sb.AppendLine($"LOADC r{rLim} {limitStr}");
+                                    _sb.AppendLine($"LT 1 r{rLim} r{indexReg}");
+                                }
+                                break;
+                            case ">=":
+                                if (limitStr.StartsWith("r"))
+                                {
+                                    _sb.AppendLine($"LE 1 {limitStr} r{indexReg}");
+                                }
+                                else
+                                {
+                                    int rLim = _regCounter++;
+                                    _sb.AppendLine($"LOADC r{rLim} {limitStr}");
+                                    _sb.AppendLine($"LE 1 r{rLim} r{indexReg}");
+                                }
+                                break;
+                            case "==":
+                                _sb.AppendLine($"EQ 1 r{indexReg} {limitStr}");
+                                break;
+                            case "!=":
+                                _sb.AppendLine($"EQ 0 r{indexReg} {limitStr}");
+                                break;
+                        }
+                        _sb.AppendLine($"JUMP {endLabel}");
                     }
 
                     _sb.AppendLine($"{bodyLabel}:");
@@ -482,30 +532,45 @@ namespace Raptor.Compiler
             if (cond is BinaryOpNode bin && IsComparisonOp(bin.Op))
             {
                 int leftReg = EmitExpression(bin.Left);
+                string rightStr = GetExpressionOperandString(bin.Right);
                 switch (bin.Op)
                 {
                     case "<":
-                        _sb.AppendLine($"LT 1 r{leftReg} {GetExpressionOperandString(bin.Right)}");
+                        _sb.AppendLine($"LT 1 r{leftReg} {rightStr}");
                         break;
                     case "<=":
-                        _sb.AppendLine($"LE 1 r{leftReg} {GetExpressionOperandString(bin.Right)}");
+                        _sb.AppendLine($"LE 1 r{leftReg} {rightStr}");
                         break;
                     case ">":
                         // a > b -> b < a
                         // Note: Left operand of LT must be a register, so evaluate Right if it's a constant
-                        int rightReg = EmitExpression(bin.Right);
-                        _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
+                        if (rightStr.StartsWith("r"))
+                        {
+                            _sb.AppendLine($"LT 1 {rightStr} r{leftReg}");
+                        }
+                        else
+                        {
+                            int rightReg = EmitExpression(bin.Right);
+                            _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
+                        }
                         break;
                     case ">=":
                         // a >= b -> b <= a
-                        int rightRegGe = EmitExpression(bin.Right);
-                        _sb.AppendLine($"LE 1 r{rightRegGe} r{leftReg}");
+                        if (rightStr.StartsWith("r"))
+                        {
+                            _sb.AppendLine($"LE 1 {rightStr} r{leftReg}");
+                        }
+                        else
+                        {
+                            int rightRegGe = EmitExpression(bin.Right);
+                            _sb.AppendLine($"LE 1 r{rightRegGe} r{leftReg}");
+                        }
                         break;
                     case "==":
-                        _sb.AppendLine($"EQ 1 r{leftReg} {GetExpressionOperandString(bin.Right)}");
+                        _sb.AppendLine($"EQ 1 r{leftReg} {rightStr}");
                         break;
                     case "!=":
-                        _sb.AppendLine($"EQ 0 r{leftReg} {GetExpressionOperandString(bin.Right)}");
+                        _sb.AppendLine($"EQ 0 r{leftReg} {rightStr}");
                         break;
                 }
             }

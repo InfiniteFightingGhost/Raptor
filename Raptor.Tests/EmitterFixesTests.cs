@@ -123,5 +123,67 @@ namespace Raptor.Tests
             Assert.Equal(VMStatus.Halted, result.Status);
             Assert.Equal(15.0, result.RegistersSnapshot[vars["res"]]);
         }
+
+        [Fact]
+        public void TestIfConditionWithExpressionRhs()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var x = 1;
+                var y = 5;
+                var res = 0;
+                if (x < y + 1) {
+                    res = 42;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(42.0, result.RegistersSnapshot[vars["res"]]);
+        }
+
+        [Fact]
+        public void TestForLoopWithExpressionLimit()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var sum = 0;
+                var limit = 3;
+                for (var i = 0; i < limit + 2; i = i + 1) {
+                    var dummy = 10 + 20;
+                    sum = sum + i;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(10.0, result.RegistersSnapshot[vars["sum"]]); // 0 + 1 + 2 + 3 + 4 = 10
+        }
+
+        [Fact]
+        public void TestWhileConditionWithExpressionRhs()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var i = 0;
+                var max = 5;
+                while (i < max - 1) {
+                    i = i + 1;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(4.0, result.RegistersSnapshot[vars["i"]]);
+        }
     }
 }
