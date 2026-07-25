@@ -148,7 +148,7 @@ namespace Raptor.Compiler
             }
             Consume(TokenType.Semicolon, "Expected ';' after loop condition.");
             ASTNode? increment = null;
-            if (!Check(TokenType.Semicolon))
+            if (!Check(TokenType.CloseParenthesis))
             {
                 increment = ParseExpression();
             }
@@ -608,12 +608,12 @@ namespace Raptor.Compiler
 
         private ASTNode ParseFactor()
         {
-            ASTNode expr = ParsePrimary();
+            ASTNode expr = ParseUnary();
 
             while (Match(TokenType.Star, TokenType.Slash, TokenType.Percent))
             {
                 Token op = Previous();
-                ASTNode right = ParsePrimary();
+                ASTNode right = ParseUnary();
                 expr = new BinaryOpNode(expr, op.Lexeme, right)
                 {
                     Line = op.Line,
@@ -623,6 +623,23 @@ namespace Raptor.Compiler
             }
 
             return expr;
+        }
+
+        private ASTNode ParseUnary()
+        {
+            if (Match(TokenType.Minus, TokenType.Bang))
+            {
+                Token op = Previous();
+                ASTNode operand = ParseUnary();
+                return new UnaryOpNode(op.Lexeme, operand)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
+            }
+
+            return ParsePrimary();
         }
 
         private ASTNode ParsePrimary()

@@ -700,6 +700,24 @@ namespace Raptor.Compiler
                 case BinaryOpNode binary:
                     return EmitBinaryOp(binary, targetReg);
 
+                case UnaryOpNode unary:
+                    int operandReg = EmitExpression(unary.Operand);
+                    int resReg = (targetReg != null) ? (int)targetReg : AllocateRegister(unary);
+                    if (unary.Op == "-")
+                    {
+                        _sb.AppendLine($"UNM r{resReg} r{operandReg}");
+                    }
+                    else if (unary.Op == "!")
+                    {
+                        string skipLabel = $"not_skip{_labelCounter++}";
+                        _sb.AppendLine($"LOADC r{resReg} 1.0");
+                        _sb.AppendLine($"EQ 0 r{operandReg} 0.0");
+                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"LOADC r{resReg} 0.0");
+                        _sb.AppendLine($"{skipLabel}:");
+                    }
+                    return resReg;
+
                 case CallNode call:
                     if (call.MethodName == "alloc")
                     {

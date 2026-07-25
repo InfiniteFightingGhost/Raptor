@@ -179,7 +179,7 @@ namespace Raptor.Compiler
                     '!' => Peek() switch
                     {
                         '=' => ConsumeAndReturn(TokenType.NotEqual, "!="),
-                        _ => throw new LexerException($"Unexpected char '!'"),
+                        _ => new Token(TokenType.Bang, "!", _line, _column),
                     },
                     '<' => Peek() switch
                     {

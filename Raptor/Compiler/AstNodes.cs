@@ -172,4 +172,16 @@ namespace Raptor.Compiler
         public ASTNode IndexExpr { get; }
         public ASTNode Value { get; }
     }
+
+    public class UnaryOpNode : ASTNode
+    {
+        public string Op { get; }
+        public ASTNode Operand { get; }
+
+        public UnaryOpNode(string op, ASTNode operand)
+        {
+            Op = op;
+            Operand = operand;
+        }
+    }
 }

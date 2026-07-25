@@ -281,5 +281,66 @@ namespace Raptor.Tests
             Assert.Equal(VMStatus.Halted, result.Status);
             Assert.Equal(101.0, result.RegistersSnapshot[vars["res"]]);
         }
+
+        [Fact]
+        public void TestForLoopWithoutIncrement()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var i = 0;
+                var sum = 0;
+                for (; i < 5;) {
+                    sum = sum + i;
+                    i = i + 1;
+                }
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(10.0, result.RegistersSnapshot[vars["sum"]]);
+            Assert.Equal(5.0, result.RegistersSnapshot[vars["i"]]);
+        }
+
+        [Fact]
+        public void TestUnaryMinusExpression()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var x = 42;
+                var negX = -x;
+                var negLiteral = -100;
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(-42.0, result.RegistersSnapshot[vars["negX"]]);
+            Assert.Equal(-100.0, result.RegistersSnapshot[vars["negLiteral"]]);
+        }
+
+        [Fact]
+        public void TestUnaryNotExpression()
+        {
+            using var engine = new ScriptEngine();
+            string script = @"
+                var a = 0;
+                var notA = !a;
+                var notNotA = !notA;
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(1.0, result.RegistersSnapshot[vars["notA"]]);
+            Assert.Equal(0.0, result.RegistersSnapshot[vars["notNotA"]]);
+        }
     }
 }
+

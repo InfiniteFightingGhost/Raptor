@@ -30,6 +30,7 @@ namespace Raptor.Compiler
         MinusMinus,
         Equal,
         NotEqual,
+        Bang,
         Less,
         LessEqual,
         Greater,
