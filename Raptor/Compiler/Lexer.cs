@@ -112,8 +112,7 @@ namespace Raptor.Compiler
         private Token ScanIdentifierOrKeyword()
         {
             int start = _index;
-            // Allow dots inside identifiers for namespaces, e.g. math.clamp
-            while (char.IsLetterOrDigit(Peek()) || Peek() == '_' || Peek() == '.')
+            while (char.IsLetterOrDigit(Peek()) || Peek() == '_')
             {
                 Advance();
             }
@@ -150,6 +149,7 @@ namespace Raptor.Compiler
                     '{' => new Token(TokenType.OpenBrace, "{", _line, _column),
                     '}' => new Token(TokenType.CloseBrace, "}", _line, _column),
                     ',' => new Token(TokenType.Comma, ",", _line, _column),
+                    '.' => new Token(TokenType.Dot, ".", _line, _column),
 
                     '+' => Peek() switch
                     {

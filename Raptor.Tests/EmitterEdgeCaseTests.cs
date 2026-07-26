@@ -158,5 +158,26 @@ namespace Raptor.Tests
             // 3 + 2 + 1 = 6
             Assert.Equal(6.0, result.RegistersSnapshot[vars["sum"]]);
         }
+
+        [Fact]
+        public void TestSpacedDotMemberAndMethodAccess()
+        {
+            using var engine = new ScriptEngine();
+            var table = new FFIHostTable();
+            table.RegisterModule(typeof(Raptor.StdLib.RaptorPeripherals));
+            engine.RegisterHostTable(table);
+
+            string script = @"
+                var val = 100.0;
+                peri . print ( val ) ;
+            ";
+
+            string rasm = RaptorScriptCompiler.Compile(script, out var vars, new DiagnosticReporter());
+            VMChunk chunk = engine.Compile(rasm);
+            ExecutionResult result = engine.Execute(chunk);
+
+            Assert.Equal(VMStatus.Halted, result.Status);
+            Assert.Equal(100.0, result.RegistersSnapshot[vars["val"]]);
+        }
     }
 }

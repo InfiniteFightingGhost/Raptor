@@ -695,6 +695,13 @@ namespace Raptor.Compiler
             if (Match(TokenType.Identifier))
             {
                 Token idToken = Previous();
+                string name = idToken.Lexeme;
+
+                while (Match(TokenType.Dot))
+                {
+                    Token memberToken = Consume(TokenType.Identifier, "Expected identifier after '.'.");
+                    name = $"{name}.{memberToken.Lexeme}";
+                }
 
                 // Check if it's a function call: identifier(args...)
                 if (Match(TokenType.OpenParenthesis))
@@ -708,18 +715,18 @@ namespace Raptor.Compiler
                         } while (Match(TokenType.Comma));
                     }
                     Consume(TokenType.CloseParenthesis, "Expected ')' after arguments.");
-                    return new CallNode(idToken.Lexeme, args)
+                    return new CallNode(name, args)
                     {
                         Line = idToken.Line,
                         Column = idToken.Column,
-                        Length = idToken.Lexeme.Length,
+                        Length = name.Length,
                     };
                 }
-                ASTNode expr = new IdentifierNode(idToken.Lexeme)
+                ASTNode expr = new IdentifierNode(name)
                 {
                     Line = idToken.Line,
                     Column = idToken.Column,
-                    Length = idToken.Lexeme.Length,
+                    Length = name.Length,
                 };
                 while (Match(TokenType.OpenBracket))
                 {
@@ -729,7 +736,7 @@ namespace Raptor.Compiler
                     {
                         Line = idToken.Line,
                         Column = idToken.Column,
-                        Length = idToken.Lexeme.Length,
+                        Length = name.Length,
                     };
                 }
                 return expr;

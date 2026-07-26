@@ -57,6 +57,7 @@ namespace Raptor.Compiler
         OpenBracket,
         CloseBracket,
         Comma,
+        Dot,
 
         EOF,
     }
