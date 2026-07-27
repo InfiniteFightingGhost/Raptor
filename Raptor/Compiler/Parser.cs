@@ -457,7 +457,26 @@ namespace Raptor.Compiler
             return expr;
         }
 
-        private ASTNode ParseComparison()
+        private ASTNode ParseEquality()
+        {
+            ASTNode expr = ParseRelational();
+
+            while (Match(TokenType.Equal, TokenType.NotEqual))
+            {
+                Token op = Previous();
+                ASTNode right = ParseRelational();
+                expr = new BinaryOpNode(expr, op.Lexeme, right)
+                {
+                    Line = op.Line,
+                    Column = op.Column,
+                    Length = op.Lexeme.Length,
+                };
+            }
+
+            return expr;
+        }
+
+        private ASTNode ParseRelational()
         {
             ASTNode expr = ParseShift();
 
@@ -466,9 +485,7 @@ namespace Raptor.Compiler
                     TokenType.Less,
                     TokenType.LessEqual,
                     TokenType.Greater,
-                    TokenType.GreaterEqual,
-                    TokenType.Equal,
-                    TokenType.NotEqual
+                    TokenType.GreaterEqual
                 )
             )
             {
@@ -555,11 +572,11 @@ namespace Raptor.Compiler
 
         private ASTNode ParseBitwiseAnd()
         {
-            ASTNode expr = ParseComparison();
+            ASTNode expr = ParseEquality();
             while (Match(TokenType.Ampersand))
             {
                 Token op = Previous();
-                ASTNode right = ParseComparison();
+                ASTNode right = ParseEquality();
                 expr = new BinaryOpNode(expr, op.Lexeme, right)
                 {
                     Line = op.Line,

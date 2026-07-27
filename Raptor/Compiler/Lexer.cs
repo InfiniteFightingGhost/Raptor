@@ -94,6 +94,7 @@ namespace Raptor.Compiler
 
         private Token ScanNumber()
         {
+            int startColumn = _column + 1;
             int start = _index;
             while (char.IsDigit(Peek()))
                 Advance();
@@ -106,11 +107,12 @@ namespace Raptor.Compiler
             }
 
             string val = _source[start.._index];
-            return new Token(TokenType.Number, val, _line, _column);
+            return new Token(TokenType.Number, val, _line, startColumn);
         }
 
         private Token ScanIdentifierOrKeyword()
         {
+            int startColumn = _column + 1;
             int start = _index;
             while (char.IsLetterOrDigit(Peek()) || Peek() == '_')
             {
@@ -131,92 +133,93 @@ namespace Raptor.Compiler
                 _ => TokenType.Identifier,
             };
 
-            return new Token(type, val, _line, _column);
+            return new Token(type, val, _line, startColumn);
         }
 
         private Token? ScanOperatorOrPunctuation()
         {
+            int startColumn = _column + 1;
             char c = Advance();
             try
             {
                 return c switch
                 {
-                    ';' => new Token(TokenType.Semicolon, ";", _line, _column),
-                    '(' => new Token(TokenType.OpenParenthesis, "(", _line, _column),
-                    ')' => new Token(TokenType.CloseParenthesis, ")", _line, _column),
-                    '[' => new Token(TokenType.OpenBracket, "[", _line, _column),
-                    ']' => new Token(TokenType.CloseBracket, "]", _line, _column),
-                    '{' => new Token(TokenType.OpenBrace, "{", _line, _column),
-                    '}' => new Token(TokenType.CloseBrace, "}", _line, _column),
-                    ',' => new Token(TokenType.Comma, ",", _line, _column),
-                    '.' => new Token(TokenType.Dot, ".", _line, _column),
+                    ';' => new Token(TokenType.Semicolon, ";", _line, startColumn),
+                    '(' => new Token(TokenType.OpenParenthesis, "(", _line, startColumn),
+                    ')' => new Token(TokenType.CloseParenthesis, ")", _line, startColumn),
+                    '[' => new Token(TokenType.OpenBracket, "[", _line, startColumn),
+                    ']' => new Token(TokenType.CloseBracket, "]", _line, startColumn),
+                    '{' => new Token(TokenType.OpenBrace, "{", _line, startColumn),
+                    '}' => new Token(TokenType.CloseBrace, "}", _line, startColumn),
+                    ',' => new Token(TokenType.Comma, ",", _line, startColumn),
+                    '.' => new Token(TokenType.Dot, ".", _line, startColumn),
 
                     '+' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.PlusEquals, "+="),
-                        '+' => ConsumeAndReturn(TokenType.PlusPlus, "++"),
-                        _ => new Token(TokenType.Plus, "+", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.PlusEquals, "+=", startColumn),
+                        '+' => ConsumeAndReturn(TokenType.PlusPlus, "++", startColumn),
+                        _ => new Token(TokenType.Plus, "+", _line, startColumn),
                     },
                     '-' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.MinusEquals, "-="),
-                        '-' => ConsumeAndReturn(TokenType.MinusMinus, "--"),
-                        _ => new Token(TokenType.Minus, "-", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.MinusEquals, "-=", startColumn),
+                        '-' => ConsumeAndReturn(TokenType.MinusMinus, "--", startColumn),
+                        _ => new Token(TokenType.Minus, "-", _line, startColumn),
                     },
                     '*' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.StarEquals, "*="),
-                        _ => new Token(TokenType.Star, "*", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.StarEquals, "*=", startColumn),
+                        _ => new Token(TokenType.Star, "*", _line, startColumn),
                     },
                     '/' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.SlashEquals, "/="),
-                        _ => new Token(TokenType.Slash, "/", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.SlashEquals, "/=", startColumn),
+                        _ => new Token(TokenType.Slash, "/", _line, startColumn),
                     },
                     '=' => Match('=')
-                        ? new Token(TokenType.Equal, "==", _line, _column)
-                        : new Token(TokenType.Assign, "=", _line, _column),
+                        ? new Token(TokenType.Equal, "==", _line, startColumn)
+                        : new Token(TokenType.Assign, "=", _line, startColumn),
                     '!' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.NotEqual, "!="),
-                        _ => new Token(TokenType.Bang, "!", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.NotEqual, "!=", startColumn),
+                        _ => new Token(TokenType.Bang, "!", _line, startColumn),
                     },
                     '<' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.LessEqual, "<="),
-                        '<' => ConsumeAndReturn(TokenType.LessLess, "<<"),
-                        _ => new Token(TokenType.Less, "<", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.LessEqual, "<=", startColumn),
+                        '<' => ConsumeAndReturn(TokenType.LessLess, "<<", startColumn),
+                        _ => new Token(TokenType.Less, "<", _line, startColumn),
                     },
                     '>' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.GreaterEqual, ">="),
-                        '>' => ConsumeAndReturn(TokenType.GreaterGreater, ">>"),
-                        _ => new Token(TokenType.Greater, ">", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.GreaterEqual, ">=", startColumn),
+                        '>' => ConsumeAndReturn(TokenType.GreaterGreater, ">>", startColumn),
+                        _ => new Token(TokenType.Greater, ">", _line, startColumn),
                     },
                     '%' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.PercentEquals, "%="),
-                        _ => new Token(TokenType.Percent, "%", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.PercentEquals, "%=", startColumn),
+                        _ => new Token(TokenType.Percent, "%", _line, startColumn),
                     },
                     '&' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.AmpersandEquals, "&="),
-                        '&' => ConsumeAndReturn(TokenType.AmpersandAmpersand, "&&"),
-                        _ => new Token(TokenType.Ampersand, "&", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.AmpersandEquals, "&=", startColumn),
+                        '&' => ConsumeAndReturn(TokenType.AmpersandAmpersand, "&&", startColumn),
+                        _ => new Token(TokenType.Ampersand, "&", _line, startColumn),
                     },
                     '|' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.PipeEquals, "|="),
-                        '|' => ConsumeAndReturn(TokenType.PipePipe, "||"),
-                        _ => new Token(TokenType.Pipe, "|", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.PipeEquals, "|=", startColumn),
+                        '|' => ConsumeAndReturn(TokenType.PipePipe, "||", startColumn),
+                        _ => new Token(TokenType.Pipe, "|", _line, startColumn),
                     },
                     '^' => Peek() switch
                     {
-                        '=' => ConsumeAndReturn(TokenType.CaretEquals, "^="),
-                        _ => new Token(TokenType.Caret, "^", _line, _column),
+                        '=' => ConsumeAndReturn(TokenType.CaretEquals, "^=", startColumn),
+                        _ => new Token(TokenType.Caret, "^", _line, startColumn),
                     },
                     _ => throw new LexerException(
-                        $"Unexpected character '{c}' at line {_line} at column {_column}"
+                        $"Unexpected character '{c}' at line {_line} at column {startColumn}"
                     ),
                 };
             }
@@ -228,7 +231,7 @@ namespace Raptor.Compiler
                         DiagnosticSeverity.Error,
                         ex.Message,
                         _line,
-                        _column,
+                        startColumn,
                         1
                     )
                 );
@@ -241,13 +244,14 @@ namespace Raptor.Compiler
             if (IsAtEnd() || _source[_index] != expected)
                 return false;
             _index++;
+            _column++;
             return true;
         }
 
-        private Token ConsumeAndReturn(TokenType type, string value)
+        private Token ConsumeAndReturn(TokenType type, string value, int startColumn)
         {
             Advance(); // Consume the peeked character
-            return new Token(type, value, _line, _column);
+            return new Token(type, value, _line, startColumn);
         }
     }
 

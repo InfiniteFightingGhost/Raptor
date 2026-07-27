@@ -294,15 +294,8 @@ namespace Raptor
             var fastPath = TryCreateFastPathDelegate(method, instance, parameters, returnType);
             if (fastPath != null)
             {
-                System.Console.WriteLine(
-                    $"[Raptor FFI Debug] Method '{method.Name}' successfully bound to zero-allocation FAST-PATH delegate."
-                );
                 return fastPath;
             }
-
-            System.Console.Error.WriteLine(
-                $"[Raptor FFI Debug] Method '{method.Name}' fell back to slow REFLECTION path."
-            );
 
             // Separate ref VMState parameters from register-mapped parameters
             bool hasStateParam = false;

@@ -50,7 +50,7 @@ namespace Raptor.Compiler
                     "!=" => (numLeft.Value != numRight.Value) ? 1 : 0,
                     _ => double.NaN,
                 };
-                if (!double.IsNaN(result))
+                if (!double.IsNaN(result) && !double.IsInfinity(result))
                 {
                     return new NumberNode(result)
                     {
@@ -60,11 +60,11 @@ namespace Raptor.Compiler
                     };
                 }
             }
-            // Algebraic Identites (e.g., x * 1.0 -> x, x + 0.0 -> x)
+            // Algebraic Identities (e.g., x * 1.0 -> x, x + 0.0 -> x)
             if (binNode.Op == "*" && right is NumberNode { Value: 1.0 })
                 return left;
 
-            if (binNode.Op == "*" && right is NumberNode { Value: 0.0 })
+            if (binNode.Op == "*" && right is NumberNode { Value: 0.0 } && (left is IdentifierNode || left is NumberNode))
                 return new NumberNode(0)
                 {
                     Line = left.Line,
@@ -108,13 +108,12 @@ namespace Raptor.Compiler
             var thenBlock = OptimizeStatements(ifNode.ThenBlock);
             var elseBlock = ifNode.ElseBlock != null ? OptimizeStatements(ifNode.ElseBlock) : null;
 
-            if (condition is NumberNode { Value: 0.0 })
+            if (condition is NumberNode numCond)
             {
-                return elseBlock ?? Enumerable.Empty<ASTNode>();
-            }
-            else if (condition is NumberNode { Value: 1.0 })
-            {
-                return thenBlock;
+                if (numCond.Value == 0.0)
+                    return elseBlock ?? Enumerable.Empty<ASTNode>();
+                else
+                    return thenBlock;
             }
             var optimizedIf = new IfNode(condition, thenBlock, elseBlock)
             {

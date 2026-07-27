@@ -141,7 +141,7 @@ namespace Raptor
                                         3 => ">=",
                                         _ => "?",
                                     };
-                                    int target = (pc + 1) + nextInst.sBx16;
+                                    int target = (pc + 2) + nextInst.sBx16;
                                     sb.AppendLine(
                                         $"FOR r{rIndex} {rMax} {rStep} {compStr} {target:D4}"
                                     );

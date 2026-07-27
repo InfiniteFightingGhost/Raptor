@@ -376,7 +376,7 @@ namespace Raptor
                                     comp = 5;
                                     break;
                             }
-                            int jumpOffset = (int)(labels[words[5]] - pc);
+                            int jumpOffset = (int)(labels[words[5]] - (pc + 2));
                             instruction = Instruction.CreateABC(OpCode.FOR, rIndex, rMax, rStep);
                             if (currentRaptLine > 0)
                             {
