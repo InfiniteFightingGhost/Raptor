@@ -12,8 +12,10 @@ namespace Raptor.Compiler
 
             // The variables defined *only* in this specific scope
             private readonly Dictionary<string, int> _values = new();
+            private readonly List<int> _pinnedRegisters = new();
 
             public IReadOnlyDictionary<string, int> Variables => _values;
+            public IReadOnlyList<int> PinnedRegisters => _pinnedRegisters;
 
             public Environment(Environment? enclosing)
             {
@@ -23,6 +25,14 @@ namespace Raptor.Compiler
             public void Define(string name, int registerIndex)
             {
                 _values[name] = registerIndex;
+            }
+
+            public void PinRegister(int registerIndex)
+            {
+                if (!_pinnedRegisters.Contains(registerIndex))
+                {
+                    _pinnedRegisters.Add(registerIndex);
+                }
             }
 
             public bool TryGet(string name, out int registerIndex)
@@ -83,6 +93,8 @@ namespace Raptor.Compiler
             {
                 if (env.Variables.Count > 0)
                     maxReg = Math.Max(maxReg, env.Variables.Values.Max());
+                if (env.PinnedRegisters.Count > 0)
+                    maxReg = Math.Max(maxReg, env.PinnedRegisters.Max());
                 env = env.Enclosing;
             }
             if (_propertyMappings.Count > 0)
@@ -272,6 +284,7 @@ namespace Raptor.Compiler
 
             _sb.AppendLine("; if condition");
             EmitBranchCondition(ifNode.Condition, elseLabel);
+            ResetRegCounterScope();
 
             _sb.AppendLine("; then block");
             EmitBlock(ifNode.ThenBlock);
@@ -296,6 +309,7 @@ namespace Raptor.Compiler
             _sb.AppendLine($"{loopLabel}:");
             _sb.AppendLine("; while condition");
             EmitBranchCondition(whileNode.Condition, endLabel);
+            ResetRegCounterScope();
 
             _sb.AppendLine("; while body");
             EmitBlock(whileNode.Body);
@@ -429,12 +443,12 @@ namespace Raptor.Compiler
                     if (limitStr.StartsWith("r"))
                     {
                         int limitReg = int.Parse(limitStr.TrimStart('r'));
-                        _environment.Define($"__for_limit_{labelId}", limitReg);
+                        _environment.PinRegister(limitReg);
                     }
                     if (stepStr.StartsWith("r"))
                     {
                         int stepReg = int.Parse(stepStr.TrimStart('r'));
-                        _environment.Define($"__for_step_{labelId}", stepReg);
+                        _environment.PinRegister(stepReg);
                     }
 
                     if (forNode.Condition != null)
@@ -448,30 +462,10 @@ namespace Raptor.Compiler
                                 _sb.AppendLine($"LE 1 r{indexReg} {limitStr}");
                                 break;
                             case ">":
-                                if (limitStr.StartsWith("r"))
-                                {
-                                    _sb.AppendLine($"LT 1 {limitStr} r{indexReg}");
-                                }
-                                else
-                                {
-                                    int rLim = AllocateRegister(forNode);
-                                    _environment.Define($"__for_lim_{labelId}", rLim);
-                                    _sb.AppendLine($"LOADC r{rLim} {limitStr}");
-                                    _sb.AppendLine($"LT 1 r{rLim} r{indexReg}");
-                                }
+                                _sb.AppendLine($"LT 1 {limitStr} r{indexReg}");
                                 break;
                             case ">=":
-                                if (limitStr.StartsWith("r"))
-                                {
-                                    _sb.AppendLine($"LE 1 {limitStr} r{indexReg}");
-                                }
-                                else
-                                {
-                                    int rLim = AllocateRegister(forNode);
-                                    _environment.Define($"__for_lim_{labelId}", rLim);
-                                    _sb.AppendLine($"LOADC r{rLim} {limitStr}");
-                                    _sb.AppendLine($"LE 1 r{rLim} r{indexReg}");
-                                }
+                                _sb.AppendLine($"LE 1 {limitStr} r{indexReg}");
                                 break;
                             case "==":
                                 _sb.AppendLine($"EQ 1 r{indexReg} {limitStr}");
@@ -551,28 +545,11 @@ namespace Raptor.Compiler
                         break;
                     case ">":
                         // a > b -> b < a
-                        // Note: Left operand of LT must be a register, so evaluate Right if it's a constant
-                        if (rightStr.StartsWith("r"))
-                        {
-                            _sb.AppendLine($"LT 1 {rightStr} r{leftReg}");
-                        }
-                        else
-                        {
-                            int rightReg = EmitExpression(bin.Right);
-                            _sb.AppendLine($"LT 1 r{rightReg} r{leftReg}");
-                        }
+                        _sb.AppendLine($"LT 1 {rightStr} r{leftReg}");
                         break;
                     case ">=":
                         // a >= b -> b <= a
-                        if (rightStr.StartsWith("r"))
-                        {
-                            _sb.AppendLine($"LE 1 {rightStr} r{leftReg}");
-                        }
-                        else
-                        {
-                            int rightRegGe = EmitExpression(bin.Right);
-                            _sb.AppendLine($"LE 1 r{rightRegGe} r{leftReg}");
-                        }
+                        _sb.AppendLine($"LE 1 {rightStr} r{leftReg}");
                         break;
                     case "==":
                         _sb.AppendLine($"EQ 1 r{leftReg} {rightStr}");
@@ -991,11 +968,14 @@ namespace Raptor.Compiler
 
             _sb.AppendLine($"CALL {call.MethodName}() r{callBase}");
 
-            _regCounter = callBase + Math.Max(1, call.Arguments.Count);
-
             if (returnReg != 0 && returnReg != callBase)
             {
                 _sb.AppendLine($"MOVE r{returnReg} r{callBase}");
+                _regCounter = Math.Max(callBase, returnReg + 1);
+            }
+            else
+            {
+                _regCounter = callBase + (returnReg != 0 ? 1 : 0);
             }
         }
 

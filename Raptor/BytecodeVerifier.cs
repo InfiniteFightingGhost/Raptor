@@ -153,7 +153,7 @@ namespace Raptor
                         case OpCode.FOR:
                             {
                                 Instruction secondWord = new Instruction(chunk.Instructions[i + 1]);
-                                int target = i + secondWord.sBx16;
+                                int target = (i + 2) + secondWord.sBx16;
                                 if (target < 0 || target >= length)
                                 {
                                     throw new VerificationException(

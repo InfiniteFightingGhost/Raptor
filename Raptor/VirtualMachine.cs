@@ -1022,6 +1022,14 @@ namespace Raptor
             double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            if (valC == 0.0)
+            {
+                throw new VMPanicException(
+                    VMStatus.DivisionByZero,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "Modulo by zero"
+                );
+            }
             Reg(state.RegPtr, a) = valB % valC;
             return true;
         }
@@ -1258,7 +1266,7 @@ namespace Raptor
             if (conditionMet)
             {
                 int jumpOffset = secondInst.sBx16;
-                state.Ip += jumpOffset - 2;
+                state.Ip += jumpOffset;
             }
             return true;
         }
@@ -1394,9 +1402,7 @@ namespace Raptor
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            uint valIndex = (uint)(
-                index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256]
-            );
+            double rawIndex = index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256];
             double valValue = value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256];
             byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
             if (destinationPtr == null)
@@ -1407,6 +1413,17 @@ namespace Raptor
                     "Null reference exception: array pointer is null"
                 );
             }
+            uint totalBytes = *(uint*)(destinationPtr - 4);
+            uint arrayLen = totalBytes >= 4 ? (totalBytes - 4) / 8 : 0;
+            if (rawIndex < 0 || rawIndex >= arrayLen)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
+                );
+            }
+            uint valIndex = (uint)rawIndex;
             *(double*)(destinationPtr + (valIndex) * 8) = valValue;
             return true;
         }
@@ -1417,12 +1434,8 @@ namespace Raptor
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            uint valIndex = (uint)(
-                index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256]
-            );
-            byte valValue = (byte)(
-                value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256]
-            );
+            double rawIndex = index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256];
+            double valValue = value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256];
             byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
             if (destinationPtr == null)
             {
@@ -1432,7 +1445,18 @@ namespace Raptor
                     "Null reference exception: array pointer is null"
                 );
             }
-            *(destinationPtr + valIndex) = valValue;
+            uint totalBytes = *(uint*)(destinationPtr - 4);
+            uint arrayLen = totalBytes >= 4 ? totalBytes - 4 : 0;
+            if (rawIndex < 0 || rawIndex >= arrayLen)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
+                );
+            }
+            uint valIndex = (uint)rawIndex;
+            *(destinationPtr + valIndex) = (byte)valValue;
             return true;
         }
 
@@ -1451,7 +1475,18 @@ namespace Raptor
                 );
             }
             ushort c = instruction.C;
-            uint valIndex = (uint)(c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256]);
+            double rawIndex = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            uint totalBytes = *(uint*)(addressPtr - 4);
+            uint arrayLen = totalBytes >= 4 ? (totalBytes - 4) / 8 : 0;
+            if (rawIndex < 0 || rawIndex >= arrayLen)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
+                );
+            }
+            uint valIndex = (uint)rawIndex;
 
             Reg(state.RegPtr, destination) = *(double*)(addressPtr + (valIndex * 8));
             return true;
@@ -1472,7 +1507,18 @@ namespace Raptor
                 );
             }
             ushort c = instruction.C;
-            uint valIndex = (uint)(c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256]);
+            double rawIndex = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            uint totalBytes = *(uint*)(addressPtr - 4);
+            uint arrayLen = totalBytes >= 4 ? totalBytes - 4 : 0;
+            if (rawIndex < 0 || rawIndex >= arrayLen)
+            {
+                throw new VMPanicException(
+                    VMStatus.HostError,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
+                );
+            }
+            uint valIndex = (uint)rawIndex;
 
             Reg(state.RegPtr, destination) = *(addressPtr + valIndex);
             return true;

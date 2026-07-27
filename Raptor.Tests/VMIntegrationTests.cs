@@ -662,7 +662,7 @@ b_not_high:
 
     ADD rx rx step
     ADD i i 1
-    LT 1 i width
+    LT 0 i width
     JUMP x_loop
 
     SUB ry ry step
@@ -703,9 +703,60 @@ no_hit:
         VMChunk chunk = new VMChunk();
         Assembler ass = new(chunk);
         ass.Parse(rayTracer.Split("\n").ToList());
-        VirtualMachine machine = new VirtualMachine();
+        VirtualMachine machine = new VirtualMachine(1_000_000_000);
         machine.LoadProgram(chunk);
         var result = machine.RunFast();
         Assert.Equal(VMStatus.Halted, result.Status);
     }
+
+    [Fact]
+    public void TestArrayOutOfBoundsReturnsHostError()
+    {
+        using var engine = new ScriptEngine();
+        string script = @"
+            var arr = alloc(2);
+            arr[5] = 42;
+        ";
+
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        VMChunk chunk = engine.Compile(rasm);
+        ExecutionResult result = engine.Execute(chunk);
+
+        Assert.Equal(VMStatus.HostError, result.Status);
+        Assert.Contains("out of bounds", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void TestModuloByZeroReturnsDivisionByZeroError()
+    {
+        using var engine = new ScriptEngine();
+        string script = @"
+            var a = 10 % 0;
+        ";
+
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        VMChunk chunk = engine.Compile(rasm);
+        ExecutionResult result = engine.Execute(chunk);
+
+        Assert.Equal(VMStatus.DivisionByZero, result.Status);
+        Assert.Contains("Modulo by zero", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void TestNullArrayReferencePanic()
+    {
+        using var engine = new ScriptEngine();
+        string script = @"
+            var a = 0;
+            var val = a[0];
+        ";
+
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        VMChunk chunk = engine.Compile(rasm);
+        ExecutionResult result = engine.Execute(chunk);
+
+        Assert.Equal(VMStatus.HostError, result.Status);
+        Assert.Contains("Null reference exception", result.ErrorMessage);
+    }
 }
+

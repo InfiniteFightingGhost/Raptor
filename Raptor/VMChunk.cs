@@ -29,6 +29,10 @@ namespace Raptor
                     return (uint)i;
                 }
             }
+            if (currUsedConstantsIndex >= 256)
+            {
+                throw new InvalidOperationException("Exceeded maximum supported constants pool size (256).");
+            }
             Constants[currUsedConstantsIndex] = value;
             return currUsedConstantsIndex++;
         }

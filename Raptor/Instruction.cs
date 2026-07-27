@@ -53,7 +53,7 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Instruction CreateABC(OpCode op, byte a, ushort b, ushort c)
         {
-            uint val = (uint)op | ((uint)a << AShift) | ((uint)b << BShift) | ((uint)c << CShift);
+            uint val = (uint)op | (((uint)a & AMask) << AShift) | (((uint)b & BMask) << BShift) | (((uint)c & CMask) << CShift);
             return new Instruction(val);
         }
 
