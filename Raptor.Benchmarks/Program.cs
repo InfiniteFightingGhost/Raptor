@@ -330,24 +330,27 @@ public class Program
             Console.WriteLine("\n[Multithreaded Scaling]");
             var mt = new MultithreadedBenchmark();
             mt.Setup();
+
             sw = Stopwatch.StartNew();
+            mt.VmCount = 1;
             for (int i = 0; i < 200; i++)
-                mt.Multithreaded_Scale_1();
+                mt.MultiVmScaling();
             sw.Stop();
             Console.WriteLine($"1 VM instance:  {sw.Elapsed.TotalMilliseconds / 200.0:F4} ms");
 
             sw = Stopwatch.StartNew();
+            mt.VmCount = 4;
             for (int i = 0; i < 200; i++)
-                mt.Multithreaded_Scale_4();
+                mt.MultiVmScaling();
             sw.Stop();
             Console.WriteLine($"4 VM instances: {sw.Elapsed.TotalMilliseconds / 200.0:F4} ms");
 
             sw = Stopwatch.StartNew();
+            mt.VmCount = 8;
             for (int i = 0; i < 200; i++)
-                mt.Multithreaded_Scale_8();
+                mt.MultiVmScaling();
             sw.Stop();
             Console.WriteLine($"8 VM instances: {sw.Elapsed.TotalMilliseconds / 200.0:F4} ms");
-
             // 10. VM Consolidated Benchmarks (Original VmBenchmarks suite)
             Console.WriteLine("\n[VM Consolidated Benchmarks]");
             var vmBench = new VmBenchmarks();
@@ -577,11 +580,11 @@ public class Program
                 typeof(MoonSharpComparisonBenchmark),
                 typeof(JintComparisonBenchmark),
                 typeof(NLuaComparisonBenchmark)
-            }).Run(cleanArgs);
+            }).Run(cleanArgs, RaptorBenchmarkConfig.Create());
             return;
         }
 
-        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+        BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, RaptorBenchmarkConfig.Create());
 
         // After benchmarks finish, run post-processing consolidation!
         ConsolidateReports();

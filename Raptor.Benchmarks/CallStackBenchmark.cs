@@ -212,9 +212,6 @@ public class CallStackBenchmark
         _vm.RunFast();
     }
 
-    [Benchmark]
-    public void NativeDelegate() { }
-
     [RaptorModule]
     public static class FfiBenchmarkBindings
     {

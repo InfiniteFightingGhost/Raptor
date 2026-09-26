@@ -57,25 +57,19 @@ public class MultithreadedBenchmark
         }
     }
 
-    [Benchmark(Baseline = true)]
-    public void Multithreaded_Scale_1()
-    {
-        _vms[0].RunFast();
-    }
+    [Params(1, 2, 4, 8)]
+    public int VmCount { get; set; }
 
     [Benchmark]
-    public void Multithreaded_Scale_4()
+    public void MultiVmScaling()
     {
-        Parallel.For(0, 4, i =>
+        if (VmCount == 1)
         {
-            _vms[i].RunFast();
-        });
-    }
+            _vms[0].RunFast();
+            return;
+        }
 
-    [Benchmark]
-    public void Multithreaded_Scale_8()
-    {
-        Parallel.For(0, 8, i =>
+        Parallel.For(0, VmCount, i =>
         {
             _vms[i].RunFast();
         });
