@@ -139,6 +139,8 @@ namespace Raptor
                                         1 => ">",
                                         2 => "<=",
                                         3 => ">=",
+                                        4 => "==",
+                                        5 => "!=",
                                         _ => "?",
                                     };
                                     int target = (pc + 2) + nextInst.sBx16;
@@ -156,6 +158,9 @@ namespace Raptor
                         break;
                     case OpCode.FREEARR:
                         sb.AppendLine($"FREEARR r{inst.A}");
+                        break;
+                    case OpCode.NEWARR:
+                        sb.AppendLine($"NEWARR r{inst.A} r{inst.B}");
                         break;
                     case OpCode.LENARR:
                         sb.AppendLine($"LENARR r{inst.A} {GetValString(inst.B)}");

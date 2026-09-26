@@ -192,6 +192,8 @@ namespace Raptor
             _constants = chunk.Constants;
             _methods = chunk.MethodTable;
 
+            // TODO: understand why tf this piece of commented piece of code actually doesn't change unit test coverage
+            //  and everything still works, when it shouldn't
             foreach (var pair in _registeredHostMethods)
             {
                 if ((_methods[pair.Key] & 0x80000000) == 0)
@@ -261,7 +263,6 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
-                    HasError = false,
                     Gas = _gas,
                 };
                 try
@@ -444,7 +445,6 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
-                    HasError = false,
                 };
                 try
                 {
@@ -635,7 +635,6 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
-                    HasError = false,
                 };
                 var stopwatch = Stopwatch.StartNew();
                 try
@@ -1141,35 +1140,6 @@ namespace Raptor
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecutePrintS(Instruction instruction, ref VMState state)
-        {
-            uint b = (uint)instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
-
-            if (state.OutBufferCapacity - state.OutBufferOffset < 48)
-            {
-                FlushOutput(ref state);
-            }
-
-            Span<char> span = new Span<char>(
-                state.OutBufferPtr + state.OutBufferOffset,
-                state.OutBufferCapacity - state.OutBufferOffset
-            );
-            if (
-                valB.TryFormat(
-                    span,
-                    out int charsWritten,
-                    default,
-                    System.Globalization.CultureInfo.InvariantCulture
-                )
-            )
-            {
-                state.OutBufferOffset += charsWritten;
-            }
-            return true;
-        }
-
         public static unsafe bool ExecuteHalt(Instruction instruction, ref VMState state)
         {
             FlushOutput(ref state);
@@ -1280,7 +1250,7 @@ namespace Raptor
         public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state)
         {
             byte pointerAddress = instruction.A;
-            uint size = instruction.Bx;
+            uint size = instruction.B;
             uint valSize = (uint)(
                 size < 256 ? Reg(state.RegPtr, size) : state.ConstPtr[size - 256]
             );

@@ -29,6 +29,7 @@ HALT
 
         Assert.Contains("LOADC r1 10", disassembly);
         Assert.Contains("ADD r3 r1 r2", disassembly);
+        Console.WriteLine(disassembly);
         Assert.Contains("FOR r4 100 1 < 0006", disassembly);
     }
 }

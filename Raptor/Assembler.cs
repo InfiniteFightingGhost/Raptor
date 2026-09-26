@@ -140,7 +140,6 @@ namespace Raptor
                     currentRaptLine = int.Parse(item.Split()[1]);
                     continue;
                 }
-                Console.Error.WriteLine($"ASM Inst {pc}: {item}");
                 var words = item.Split();
                 uint instruction = 0;
                 try
