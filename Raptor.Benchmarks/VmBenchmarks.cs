@@ -79,7 +79,7 @@ public class VmBenchmarks
             _rayTracerChunk.Constants[camZIndex] = 3.5;
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Benchmark_Fibonacci()
     {
         _vm.LoadProgram(_fibChunk);

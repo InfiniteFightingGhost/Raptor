@@ -55,7 +55,7 @@ public class VerifierBenchmark
         return engine.Compile(sb.ToString());
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Verifier_Scale_100()
     {
         BytecodeVerifier.Verify(_chunk100, 16 * 1024 * 1024);

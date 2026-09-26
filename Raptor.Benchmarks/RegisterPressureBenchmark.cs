@@ -93,7 +93,7 @@ public class RegisterPressureBenchmark
         _reg128Chunk = engine.Compile(sb128.ToString());
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Registers_Pressure_4()
     {
         _vm.LoadProgram(_reg4Chunk);

@@ -261,7 +261,7 @@ public class GameplayBenchmark
             HALT");
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Gameplay_EcsUpdate()
     {
         _vm.LoadProgram(_ecsUpdateChunk);

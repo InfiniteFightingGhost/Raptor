@@ -73,7 +73,7 @@ public class LifecycleBenchmark
         _vm.LoadProgram(_physicsChunk);
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Lifecycle_Execute()
     {
         // Execute the isolated pre-loaded bytecode program

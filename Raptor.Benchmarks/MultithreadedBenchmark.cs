@@ -57,7 +57,7 @@ public class MultithreadedBenchmark
         }
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Multithreaded_Scale_1()
     {
         _vms[0].RunFast();

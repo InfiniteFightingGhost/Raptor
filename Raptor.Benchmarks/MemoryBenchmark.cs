@@ -79,7 +79,7 @@ public class MemoryBenchmark
             HALT");
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Memory_ArrayAccess()
     {
         _vm.LoadProgram(_arrayAccessChunk);

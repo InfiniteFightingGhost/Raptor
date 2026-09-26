@@ -205,7 +205,7 @@ public class CallStackBenchmark
         _vm.RunFast();
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public void Ffi_DirectOverhead()
     {
         _vm.LoadProgram(_ffiDirectOverhead);
