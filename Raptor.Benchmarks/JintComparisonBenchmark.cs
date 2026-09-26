@@ -3,10 +3,12 @@ using BenchmarkDotNet.Attributes;
 using Jint;
 using Jint.Native;
 using Raptor;
+using Raptor.Attributes;
 
 namespace Raptor.Benchmarks;
 
 [MemoryDiagnoser]
+[RaptorModule]
 public class JintComparisonBenchmark
 {
     private VirtualMachine _raptorVm = null!;
@@ -26,6 +28,8 @@ public class JintComparisonBenchmark
     private const int ArraySize = 100;
     private const int EcsCount = 1000;
 
+    // Registered with Raptor too, so both engines call the same two-argument function.
+    [RaptorMethod("hostAdd", 1)]
     public static double HostAdd(double a, double b) => a + b;
 
     [GlobalSetup]
@@ -35,22 +39,23 @@ public class JintComparisonBenchmark
         _raptorVm = new VirtualMachine();
         _raptorEngine = new ScriptEngine();
 
+        // Register the same two-double host function the other engines call, so the
+        // FFI comparison is like-for-like (both accumulate hostAdd(i, 1.0)).
         var ffiTable = new FFIHostTable();
-        ffiTable.Register("hostAdd", 1, (ref VMState state) =>
-        {
-            unsafe
-            {
-                state.RegPtr[0] = state.RegPtr[0] + 1.0;
-            }
-        });
+        ffiTable.RegisterModule(typeof(JintComparisonBenchmark));
         _raptorEngine.RegisterHostTable(ffiTable);
 
         _raptorFFI = _raptorEngine.Compile($@"
             DEFINE count {FfiIterations}
-            DEFINE i r0
+            DEFINE i r1
+            DEFINE acc r2
             LOADC i 0
+            LOADC acc 0
             loop:
-                CALL hostAdd() r0
+                MOVE r3 i
+                LOADC r4 1.0
+                CALL hostAdd() r3
+                ADD acc acc r3
                 FOR i count 1 < loop
             HALT");
 
