@@ -386,6 +386,15 @@ namespace Raptor
                             case OpCode.LENARR:
                                 ExecuteLenArray(instruction, ref state);
                                 break;
+                            case OpCode.JLT:
+                                ExecuteJlt(instruction, ref state);
+                                break;
+                            case OpCode.JLE:
+                                ExecuteJle(instruction, ref state);
+                                break;
+                            case OpCode.JEQ:
+                                ExecuteJeq(instruction, ref state);
+                                break;
                         }
                     }
                 }
@@ -571,6 +580,15 @@ namespace Raptor
                                 break;
                             case OpCode.LENARR:
                                 ExecuteLenArray(instruction, ref state);
+                                break;
+                            case OpCode.JLT:
+                                ExecuteJlt(instruction, ref state);
+                                break;
+                            case OpCode.JLE:
+                                ExecuteJle(instruction, ref state);
+                                break;
+                            case OpCode.JEQ:
+                                ExecuteJeq(instruction, ref state);
                                 break;
                         }
                     }
@@ -764,6 +782,15 @@ namespace Raptor
                                 break;
                             case OpCode.LENARR:
                                 ExecuteLenArray(instruction, ref state);
+                                break;
+                            case OpCode.JLT:
+                                ExecuteJlt(instruction, ref state);
+                                break;
+                            case OpCode.JLE:
+                                ExecuteJle(instruction, ref state);
+                                break;
+                            case OpCode.JEQ:
+                                ExecuteJeq(instruction, ref state);
                                 break;
                         }
                     }
@@ -1082,6 +1109,60 @@ namespace Raptor
             {
                 state.Ip++;
             }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void ExecuteFusedBranch(
+            bool comparison,
+            byte expected,
+            ref VMState state
+        )
+        {
+            if (state.Gas <= 1)
+                throw new VMPanicException(
+                    VMStatus.GasExceeded,
+                    (int)(state.Ip - state.InstPtr - 1),
+                    "VM ran out of instruction gas before finishing"
+                );
+            state.Gas--;
+            Instruction payload = new Instruction(*state.Ip++);
+            if (comparison != (expected != 0))
+            {
+                state.Ip += payload.sBx26;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state)
+        {
+            ushort b = instruction.B;
+            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            ushort c = instruction.C;
+            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            ExecuteFusedBranch(valB < valC, instruction.A, ref state);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state)
+        {
+            ushort b = instruction.B;
+            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            ushort c = instruction.C;
+            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            ExecuteFusedBranch(valB <= valC, instruction.A, ref state);
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state)
+        {
+            ushort b = instruction.B;
+            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            ushort c = instruction.C;
+            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            ExecuteFusedBranch(valB == valC, instruction.A, ref state);
             return true;
         }
 

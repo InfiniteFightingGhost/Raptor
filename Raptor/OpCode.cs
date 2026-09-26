@@ -45,5 +45,8 @@ namespace Raptor
         BINLSH, // 32
         BINRSH, // 33
         LENARR, // 34
+        JLT, // 35
+        JLE, // 36
+        JEQ, // 37
     }
 }

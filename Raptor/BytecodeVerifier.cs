@@ -28,39 +28,44 @@ namespace Raptor
 
             int length = chunk.Instructions.Length;
             bool[] validStarts = ArrayPool<bool>.Shared.Rent(length);
-            bool[] isForPayload = ArrayPool<bool>.Shared.Rent(length);
+            bool[] isPayload = ArrayPool<bool>.Shared.Rent(length);
             Array.Clear(validStarts, 0, validStarts.Length);
-            Array.Clear(isForPayload, 0, isForPayload.Length);
+            Array.Clear(isPayload, 0, isPayload.Length);
 
-            // Pass 1: Scan instruction boundaries and identify FOR loops
+            // Pass 1: Scan instruction boundaries and identify two-word compound instructions
             try
             {
                 for (int i = 0; i < length; i++)
                 {
                     Instruction inst = new Instruction(chunk.Instructions[i]);
-                    validStarts[i] = !isForPayload[i];
+                    validStarts[i] = !isPayload[i];
 
-                    if (inst.Op == OpCode.FOR)
+                    bool isCompound =
+                        inst.Op == OpCode.FOR
+                        || inst.Op == OpCode.JLT
+                        || inst.Op == OpCode.JLE
+                        || inst.Op == OpCode.JEQ;
+                    if (isCompound)
                     {
-                        if (isForPayload[i])
+                        if (isPayload[i])
                         {
                             throw new VerificationException(
-                                $"Instruction at index {i} cannot be a FOR opcode because it is inside the payload of a preceding FOR instruction."
+                                $"Instruction at index {i} cannot be a compound {inst.Op} opcode because it is inside the payload of a preceding compound instruction."
                             );
                         }
                         if (i + 1 >= length)
                         {
                             throw new VerificationException(
-                                $"Incomplete FOR loop instruction at the end of the program (index {i})."
+                                $"Incomplete {inst.Op} instruction at the end of the program (index {i})."
                             );
                         }
 
-                        isForPayload[i + 1] = true;
+                        isPayload[i + 1] = true;
                         Instruction secondWord = new Instruction(chunk.Instructions[i + 1]);
-                        if (secondWord.Op != OpCode.FOR)
+                        if (secondWord.Op != inst.Op)
                         {
                             throw new VerificationException(
-                                $"Invalid compound FOR instruction structure at index {i + 1}. Second word opcode must be FOR."
+                                $"Invalid compound {inst.Op} instruction structure at index {i + 1}. Second word opcode must be {inst.Op}."
                             );
                         }
 
@@ -70,9 +75,9 @@ namespace Raptor
                 // Pass 2: Verify each instruction's operands, jumps, methods, and memory sizes
                 for (int i = 0; i < length; i++)
                 {
-                    if (isForPayload[i])
+                    if (isPayload[i])
                     {
-                        continue; // Skip the second word of FOR as it is validated with the first
+                        continue; // Skip the second word of a compound instruction as it is validated with the first
                     }
 
                     Instruction inst = new Instruction(chunk.Instructions[i]);
@@ -97,6 +102,9 @@ namespace Raptor
                         case OpCode.BINXOR:
                         case OpCode.BINLSH:
                         case OpCode.BINRSH:
+                        case OpCode.JLT:
+                        case OpCode.JLE:
+                        case OpCode.JEQ:
                             VerifyRcOperand(inst.B, chunk.Constants.Length, i, "B", op);
                             VerifyRcOperand(inst.C, chunk.Constants.Length, i, "C", op);
                             break;
@@ -206,6 +214,27 @@ namespace Raptor
                             }
                             break;
 
+                        case OpCode.JLT:
+                        case OpCode.JLE:
+                        case OpCode.JEQ:
+                            {
+                                Instruction payload = new Instruction(chunk.Instructions[i + 1]);
+                                int target = (i + 2) + payload.sBx26;
+                                if (target < 0 || target >= length)
+                                {
+                                    throw new VerificationException(
+                                        $"Fused branch at index {i} ({op}) jumps out of bounds to target index {target}."
+                                    );
+                                }
+                                if (!validStarts[target])
+                                {
+                                    throw new VerificationException(
+                                        $"Fused branch at index {i} ({op}) jumps to invalid instruction start at index {target}."
+                                    );
+                                }
+                            }
+                            break;
+
                         case OpCode.CALL:
                             {
                                 ushort methodIndex = inst.B;
@@ -266,7 +295,7 @@ namespace Raptor
 
                 // Pass 3: Verify the last instruction is a valid terminal instruction
                 int lastInstIndex = length - 1;
-                while (lastInstIndex >= 0 && isForPayload[lastInstIndex])
+                while (lastInstIndex >= 0 && isPayload[lastInstIndex])
                 {
                     lastInstIndex--;
                 }
@@ -296,7 +325,7 @@ namespace Raptor
             }
             finally
             {
-                ArrayPool<bool>.Shared.Return(isForPayload);
+                ArrayPool<bool>.Shared.Return(isPayload);
                 ArrayPool<bool>.Shared.Return(validStarts);
             }
         }

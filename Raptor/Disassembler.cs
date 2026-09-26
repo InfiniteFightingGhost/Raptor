@@ -95,6 +95,25 @@ namespace Raptor
                             $"{inst.Op} {inst.A} {GetValString(inst.B)} {GetValString(inst.C)}"
                         );
                         break;
+                    case OpCode.JLT:
+                    case OpCode.JLE:
+                    case OpCode.JEQ:
+                        {
+                            if (pc + 1 < instructions.Length)
+                            {
+                                Instruction payload = new Instruction(instructions[pc + 1]);
+                                int target = (pc + 2) + payload.sBx26;
+                                sb.AppendLine(
+                                    $"{inst.Op} {inst.A} {GetValString(inst.B)} {GetValString(inst.C)} {target:D4}"
+                                );
+                                pc++;
+                                break;
+                            }
+                            sb.AppendLine(
+                                $"{inst.Op} {inst.A} {GetValString(inst.B)} {GetValString(inst.C)} (incomplete)"
+                            );
+                        }
+                        break;
                     case OpCode.HALT:
                         sb.AppendLine("HALT");
                         break;

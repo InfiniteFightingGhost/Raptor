@@ -538,24 +538,24 @@ namespace Raptor.Compiler
                 switch (bin.Op)
                 {
                     case "<":
-                        _sb.AppendLine($"LT 1 r{leftReg} {rightStr}");
+                        _sb.AppendLine($"JLT 1 r{leftReg} {rightStr} {jumpLabel}");
                         break;
                     case "<=":
-                        _sb.AppendLine($"LE 1 r{leftReg} {rightStr}");
+                        _sb.AppendLine($"JLE 1 r{leftReg} {rightStr} {jumpLabel}");
                         break;
                     case ">":
                         // a > b -> b < a
-                        _sb.AppendLine($"LT 1 {rightStr} r{leftReg}");
+                        _sb.AppendLine($"JLT 1 {rightStr} r{leftReg} {jumpLabel}");
                         break;
                     case ">=":
                         // a >= b -> b <= a
-                        _sb.AppendLine($"LE 1 {rightStr} r{leftReg}");
+                        _sb.AppendLine($"JLE 1 {rightStr} r{leftReg} {jumpLabel}");
                         break;
                     case "==":
-                        _sb.AppendLine($"EQ 1 r{leftReg} {rightStr}");
+                        _sb.AppendLine($"JEQ 1 r{leftReg} {rightStr} {jumpLabel}");
                         break;
                     case "!=":
-                        _sb.AppendLine($"EQ 0 r{leftReg} {rightStr}");
+                        _sb.AppendLine($"JEQ 0 r{leftReg} {rightStr} {jumpLabel}");
                         break;
                 }
             }
@@ -563,10 +563,8 @@ namespace Raptor.Compiler
             {
                 // Fallback: evaluate expression and jump if false (equal to 0.0)
                 int condReg = EmitExpression(cond);
-                _sb.AppendLine($"EQ 0 r{condReg} 0.0");
+                _sb.AppendLine($"JEQ 0 r{condReg} 0.0 {jumpLabel}");
             }
-
-            _sb.AppendLine($"JUMP {jumpLabel}");
         }
 
         private bool IsComparisonOp(string op)
@@ -794,14 +792,12 @@ namespace Raptor.Compiler
                     if (logicalNode.Op == "&&")
                     {
                         // Jump to endLabel if Left is falsey
-                        _sb.AppendLine($"EQ 0 r{logicalResultReg} 0");
-                        _sb.AppendLine($"JUMP {endLabel}");
+                        _sb.AppendLine($"JEQ 0 r{logicalResultReg} 0 {endLabel}");
                     }
                     else if (logicalNode.Op == "||")
                     {
                         // Jump to endLabel if Left is truthy
-                        _sb.AppendLine($"EQ 1 r{logicalResultReg} 0");
-                        _sb.AppendLine($"JUMP {endLabel}");
+                        _sb.AppendLine($"JEQ 1 r{logicalResultReg} 0 {endLabel}");
                     }
                     int rightSide = EmitExpression(logicalNode.Right);
                     _sb.AppendLine($"MOVE r{logicalResultReg} r{rightSide}");
@@ -871,8 +867,7 @@ namespace Raptor.Compiler
                     {
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LT 0 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JLT 0 r{leftReg} r{rightReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;
@@ -881,8 +876,7 @@ namespace Raptor.Compiler
                     {
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LE 0 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JLE 0 r{leftReg} r{rightReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;
@@ -892,8 +886,7 @@ namespace Raptor.Compiler
                         // a > b -> b < a
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LT 0 r{rightReg} r{leftReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JLT 0 r{rightReg} r{leftReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;
@@ -903,8 +896,7 @@ namespace Raptor.Compiler
                         // a >= b -> b <= a
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"LE 0 r{rightReg} r{leftReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JLE 0 r{rightReg} r{leftReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;
@@ -913,8 +905,7 @@ namespace Raptor.Compiler
                     {
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"EQ 0 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JEQ 0 r{leftReg} r{rightReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;
@@ -923,8 +914,7 @@ namespace Raptor.Compiler
                     {
                         string skipLabel = $"cmp_skip{_labelCounter++}";
                         _sb.AppendLine($"LOADC r{resReg} 1.0");
-                        _sb.AppendLine($"EQ 1 r{leftReg} r{rightReg}");
-                        _sb.AppendLine($"JUMP {skipLabel}");
+                        _sb.AppendLine($"JEQ 1 r{leftReg} r{rightReg} {skipLabel}");
                         _sb.AppendLine($"LOADC r{resReg} 0.0");
                         _sb.AppendLine($"{skipLabel}:");
                         break;

@@ -122,7 +122,12 @@ namespace Raptor
                 {
                     continue;
                 }
-                else if (lines[i].StartsWith("FOR "))
+                else if (
+                    lines[i].StartsWith("FOR ")
+                    || lines[i].StartsWith("JLT ")
+                    || lines[i].StartsWith("JLE ")
+                    || lines[i].StartsWith("JEQ ")
+                )
                     memoryAddress += 2;
                 else
                     memoryAddress++;
@@ -229,6 +234,34 @@ namespace Raptor
                                 destB3,
                                 destC3
                             );
+                            break;
+                        case "JLT":
+                        case "JLE":
+                        case "JEQ":
+                            byte jExpected = byte.Parse(words[1].TrimStart('r'));
+
+                            ushort jB;
+                            if (words[2].StartsWith("r"))
+                                jB = ushort.Parse(words[2].TrimStart('r'));
+                            else
+                                jB = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
+
+                            ushort jC;
+                            if (words[3].StartsWith("r"))
+                                jC = ushort.Parse(words[3].TrimStart('r'));
+                            else
+                                jC = (ushort)(_chunk.SetConstant(ParseDouble(words[3])) + 256);
+
+                            OpCode jOp = GetOpCode(words[0]);
+                            int jOffset = (int)(labels[words[4]] - (pc + 2));
+                            instruction = Instruction.CreateABC(jOp, jExpected, jB, jC);
+                            if (currentRaptLine > 0)
+                            {
+                                sourceMap.AddMapping(instructions.Count, currentRaptLine);
+                            }
+                            instructions.Add(instruction);
+                            pc++;
+                            instruction = Instruction.CreateSBx26(jOp, jOffset);
                             break;
                         case "UNM":
                             byte destA4 = byte.Parse(words[1].TrimStart('r'));
@@ -476,6 +509,12 @@ namespace Raptor
                     return OpCode.LT;
                 case "LE":
                     return OpCode.LE;
+                case "JLT":
+                    return OpCode.JLT;
+                case "JLE":
+                    return OpCode.JLE;
+                case "JEQ":
+                    return OpCode.JEQ;
                 case "SETARR":
                     return OpCode.SETARR;
                 case "SETARRA":
