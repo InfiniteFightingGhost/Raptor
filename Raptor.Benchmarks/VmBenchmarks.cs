@@ -661,7 +661,7 @@ DEFINE roll r7
 DEFINE zero r8
 
 LOADC player_hp 100.0
-LOADC enemy_hp 150.0
+LOADC enemy_hp 1000000.0
 LOADC attack_dmg 25.0
 LOADC defense 5.0
 LOADC hit_rate 0.8

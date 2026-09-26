@@ -34,9 +34,9 @@ public static class RaptorBenchmarkConfig
             .AddDiagnoser(MemoryDiagnoser.Default)
             .AddJob(
                 Job
-                    .Default.WithWarmupCount(3)
-                    .WithIterationCount(10)
-                    .WithLaunchCount(1)
+                    .Default.WithWarmupCount(5)
+                    .WithIterationCount(15)
+                    .WithLaunchCount(3)
                     .WithId("RaptorJob")
             );
     }

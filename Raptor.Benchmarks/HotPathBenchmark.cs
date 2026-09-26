@@ -36,16 +36,27 @@ public class HotPathBenchmark
     }
 
     [Benchmark(Baseline = true)]
-    public void RunFast_Fibonacci() => _fibVm.RunFast();
+    public void RunFast_Fibonacci() => RunAndValidate(_fibVm);
 
     [Benchmark]
-    public void RunFast_MonteCarlo() => _monteCarloVm.RunFast();
+    public void RunFast_MonteCarlo() => RunAndValidate(_monteCarloVm);
 
     [Benchmark]
-    public void RunFast_Physics() => _physicsVm.RunFast();
+    public void RunFast_Physics() => RunAndValidate(_physicsVm);
 
     [Benchmark]
-    public void RunFast_Ecs() => _ecsVm.RunFast();
+    public void RunFast_Ecs() => RunAndValidate(_ecsVm);
+
+    private static void RunAndValidate(VirtualMachine vm)
+    {
+        ExecutionResult result = vm.RunFast();
+        if (result.Status != VMStatus.Halted)
+        {
+            throw new InvalidOperationException(
+                $"Workload did not halt cleanly: {result.Status} ({result.ErrorMessage})"
+            );
+        }
+    }
 
     private const string LinearFibAsm =
         @"
