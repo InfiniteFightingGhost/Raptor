@@ -239,11 +239,18 @@ namespace Raptor
         ///This is the main performance focused run method in this VM.
         ///</summary>
         ///<remarks>
-        ///Be careful not to blink or you will miss the magic.
+        ///The program counter is kept in the local <c>ip</c> instead of <see cref="VMState.Ip"/> so
+        ///RyuJIT can keep it in a register: a field of <see cref="VMState"/> is spilled to the stack
+        ///because the struct is passed by <c>ref</c> to the opcode handlers. Handlers that move the
+        ///counter take a <c>ref uint* ip</c>, and handlers that can raise a <see cref="VMPanicException"/>
+        ///receive <c>ip</c> so the error reports its instruction offset (carried on the exception and
+        ///read by the <c>catch</c>). The local is deliberately never referenced from the <c>catch</c>
+        ///block: a local used in an exception handler is forced to memory, which would undo this.
         ///</remarks>
         public unsafe ExecutionResult RunFast()
         {
             double* RegPtr = _regPtr;
+            uint* ip = _instPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -269,7 +276,7 @@ namespace Raptor
                 {
                     while (true)
                     {
-                        Instruction instruction = new Instruction(*state.Ip++);
+                        Instruction instruction = new Instruction(*ip++);
                         switch (instruction.Op)
                         {
                             case OpCode.LOADC:
@@ -294,7 +301,7 @@ namespace Raptor
                                 ExecuteMul(instruction, ref state);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state);
+                                ExecuteDiv(instruction, ref state, ip);
                                 break;
                             case OpCode.POW:
                                 ExecutePow(instruction, ref state);
@@ -306,13 +313,13 @@ namespace Raptor
                                 ExecuteFisr(instruction, ref state);
                                 break;
                             case OpCode.JUMP:
-                                ExecuteJump(instruction, ref state);
+                                ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
-                                ExecuteCallOrFFI(instruction, ref state, this);
+                                ExecuteCallOrFFI(instruction, ref state, ref ip, this);
                                 break;
                             case OpCode.RETURN:
-                                ExecuteReturn(instruction, ref state);
+                                ExecuteReturn(instruction, ref state, ref ip);
                                 break;
                             case OpCode.PRINT:
                                 ExecutePrint(instruction, ref state);
@@ -321,13 +328,13 @@ namespace Raptor
                                 ExecutePrintA(instruction, ref state);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state);
+                                ExecuteEq(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state);
+                                ExecuteLt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state);
+                                ExecuteLe(instruction, ref state, ref ip);
                                 break;
                             case OpCode.HALT:
                                 ExecuteHalt(instruction, ref state);
@@ -336,7 +343,7 @@ namespace Raptor
                                 return new ExecutionResult
                                 {
                                     Status = VMStatus.Halted,
-                                    IpOffset = (int)(state.Ip - state.InstPtr - 1),
+                                    IpOffset = (int)(ip - _instPtr - 1),
                                     RegistersSnapshot = _registers,
                                     CallStackSnapshot = Array.Empty<StackFrame>(),
                                     ErrorMessage = null,
@@ -345,22 +352,22 @@ namespace Raptor
                                 ExecuteRand(instruction, ref state);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state);
+                                ExecuteFor(instruction, ref state, ref ip);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state);
+                                ExecuteNewArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state);
+                                ExecuteSetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state);
+                                ExecuteSetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state);
+                                ExecuteGetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state);
+                                ExecuteGetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.FREEARR:
                                 ExecuteFreeArray(instruction, ref state);
@@ -381,19 +388,19 @@ namespace Raptor
                                 ExecuteBinaryRightShift(instruction, ref state);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state);
+                                ExecuteMod(instruction, ref state, ip);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state);
+                                ExecuteLenArray(instruction, ref state, ip);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state);
+                                ExecuteJlt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state);
+                                ExecuteJle(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state);
+                                ExecuteJeq(instruction, ref state, ref ip);
                                 break;
                         }
                     }
@@ -435,6 +442,7 @@ namespace Raptor
             Array.Clear(opcodeCounters, 0, opcodeCounters.Length);
             totalInstructions = 0;
             double* RegPtr = _regPtr;
+            uint* ip = _instPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -459,7 +467,7 @@ namespace Raptor
                 {
                     while (true)
                     {
-                        uint instVal = *state.Ip++;
+                        uint instVal = *ip++;
                         Instruction instruction = new Instruction(instVal);
                         opcodeCounters[(int)instruction.Op]++;
                         totalInstructions++;
@@ -487,7 +495,7 @@ namespace Raptor
                                 ExecuteMul(instruction, ref state);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state);
+                                ExecuteDiv(instruction, ref state, ip);
                                 break;
                             case OpCode.POW:
                                 ExecutePow(instruction, ref state);
@@ -499,13 +507,13 @@ namespace Raptor
                                 ExecuteFisr(instruction, ref state);
                                 break;
                             case OpCode.JUMP:
-                                ExecuteJump(instruction, ref state);
+                                ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
-                                ExecuteCallOrFFI(instruction, ref state, this);
+                                ExecuteCallOrFFI(instruction, ref state, ref ip, this);
                                 break;
                             case OpCode.RETURN:
-                                ExecuteReturn(instruction, ref state);
+                                ExecuteReturn(instruction, ref state, ref ip);
                                 break;
                             case OpCode.PRINT:
                                 ExecutePrint(instruction, ref state);
@@ -514,13 +522,13 @@ namespace Raptor
                                 ExecutePrintA(instruction, ref state);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state);
+                                ExecuteEq(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state);
+                                ExecuteLt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state);
+                                ExecuteLe(instruction, ref state, ref ip);
                                 break;
                             case OpCode.HALT:
                                 ExecuteHalt(instruction, ref state);
@@ -529,7 +537,7 @@ namespace Raptor
                                 return new ExecutionResult
                                 {
                                     Status = VMStatus.Halted,
-                                    IpOffset = (int)(state.Ip - state.InstPtr - 1),
+                                    IpOffset = (int)(ip - _instPtr - 1),
                                     RegistersSnapshot = _registers,
                                     CallStackSnapshot = Array.Empty<StackFrame>(),
                                     ErrorMessage = null,
@@ -540,22 +548,22 @@ namespace Raptor
                                 ExecuteRand(instruction, ref state);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state);
+                                ExecuteFor(instruction, ref state, ref ip);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state);
+                                ExecuteNewArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state);
+                                ExecuteSetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state);
+                                ExecuteSetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state);
+                                ExecuteGetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state);
+                                ExecuteGetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.FREEARR:
                                 ExecuteFreeArray(instruction, ref state);
@@ -576,19 +584,19 @@ namespace Raptor
                                 ExecuteBinaryRightShift(instruction, ref state);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state);
+                                ExecuteMod(instruction, ref state, ip);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state);
+                                ExecuteLenArray(instruction, ref state, ip);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state);
+                                ExecuteJlt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state);
+                                ExecuteJle(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state);
+                                ExecuteJeq(instruction, ref state, ref ip);
                                 break;
                         }
                     }
@@ -633,6 +641,7 @@ namespace Raptor
         public unsafe ExecutionResult RunDebug(DebugHook onInstructionExecuted)
         {
             double* RegPtr = _regPtr;
+            uint* ip = _instPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -659,8 +668,8 @@ namespace Raptor
                 {
                     while (true)
                     {
-                        Instruction instruction = new Instruction(*state.Ip++);
-
+                        Instruction instruction = new Instruction(*ip++);
+                        state.Ip = ip; // keep the debugger-facing snapshot current
                         onInstructionExecuted?.Invoke(ref state, instruction);
 
                         switch (instruction.Op)
@@ -687,7 +696,7 @@ namespace Raptor
                                 ExecuteMul(instruction, ref state);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state);
+                                ExecuteDiv(instruction, ref state, ip);
                                 break;
                             case OpCode.POW:
                                 ExecutePow(instruction, ref state);
@@ -699,13 +708,13 @@ namespace Raptor
                                 ExecuteFisr(instruction, ref state);
                                 break;
                             case OpCode.JUMP:
-                                ExecuteJump(instruction, ref state);
+                                ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
-                                ExecuteCallOrFFI(instruction, ref state, this);
+                                ExecuteCallOrFFI(instruction, ref state, ref ip, this);
                                 break;
                             case OpCode.RETURN:
-                                ExecuteReturn(instruction, ref state);
+                                ExecuteReturn(instruction, ref state, ref ip);
                                 break;
                             case OpCode.PRINT:
                                 ExecutePrint(instruction, ref state);
@@ -714,13 +723,13 @@ namespace Raptor
                                 ExecutePrintA(instruction, ref state);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state);
+                                ExecuteEq(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state);
+                                ExecuteLt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state);
+                                ExecuteLe(instruction, ref state, ref ip);
                                 break;
                             case OpCode.HALT:
                                 stopwatch.Stop();
@@ -733,7 +742,7 @@ namespace Raptor
                                 return new ExecutionResult
                                 {
                                     Status = VMStatus.Halted,
-                                    IpOffset = (int)(state.Ip - state.InstPtr - 1),
+                                    IpOffset = (int)(ip - _instPtr - 1),
                                     RegistersSnapshot = _registers,
                                     CallStackSnapshot = Array.Empty<StackFrame>(),
                                     ErrorMessage = null,
@@ -742,22 +751,22 @@ namespace Raptor
                                 ExecuteRand(instruction, ref state);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state);
+                                ExecuteFor(instruction, ref state, ref ip);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state);
+                                ExecuteNewArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state);
+                                ExecuteSetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state);
+                                ExecuteSetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state);
+                                ExecuteGetArray(instruction, ref state, ip);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state);
+                                ExecuteGetArrayASCII(instruction, ref state, ip);
                                 break;
                             case OpCode.FREEARR:
                                 ExecuteFreeArray(instruction, ref state);
@@ -778,19 +787,19 @@ namespace Raptor
                                 ExecuteBinaryRightShift(instruction, ref state);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state);
+                                ExecuteMod(instruction, ref state, ip);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state);
+                                ExecuteLenArray(instruction, ref state, ip);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state);
+                                ExecuteJlt(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state);
+                                ExecuteJle(instruction, ref state, ref ip);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state);
+                                ExecuteJeq(instruction, ref state, ref ip);
                                 break;
                         }
                     }
@@ -884,16 +893,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJump(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteJump(Instruction instruction, ref VMState state, ref uint* ip)
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
                     VMStatus.GasExceeded,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "VM ran out of instruction gas before finishing"
                 );
             state.Gas--;
-            state.Ip += instruction.sBx26 - 1;
+            ip += instruction.sBx26 - 1;
             return true;
         }
 
@@ -901,6 +910,7 @@ namespace Raptor
         private static unsafe void ExecuteCallOrFFI(
             Instruction instruction,
             ref VMState state,
+            ref uint* ip,
             VirtualMachine vm
         )
         {
@@ -909,6 +919,7 @@ namespace Raptor
             {
                 byte start = instruction.A;
                 state.RegPtr += start;
+                state.Ip = ip;
                 var managedPtr = vm._managedHostMethodsArray[methodIndex];
                 if (managedPtr != null)
                 {
@@ -922,17 +933,17 @@ namespace Raptor
             }
             else
             {
-                ExecuteCall(instruction, ref state);
+                ExecuteCall(instruction, ref state, ref ip);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteCall(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteCall(Instruction instruction, ref VMState state, ref uint* ip)
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
                     VMStatus.GasExceeded,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "VM ran out of instruction gas before finishing"
                 );
             state.Gas--;
@@ -940,23 +951,23 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.StackOverflow,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Call stack overflow"
                 );
             }
             byte start = instruction.A;
             ushort methodIndex = instruction.B;
-            int currentPcIndex = (int)(state.Ip - state.InstPtr);
+            int currentPcIndex = (int)(ip - state.InstPtr);
             StackFrame frame = new StackFrame(currentPcIndex, state.RegPtr);
             CallStackPush(ref state.CallStackPtr, frame);
             state.RegPtr += start;
 
-            state.Ip = state.InstPtr + (int)state.MethodTablePtr[methodIndex];
+            ip = state.InstPtr + (int)state.MethodTablePtr[methodIndex];
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteReturn(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteReturn(Instruction instruction, ref VMState state, ref uint* ip)
         {
             byte start = instruction.A;
             byte end = (byte)instruction.B;
@@ -967,7 +978,7 @@ namespace Raptor
             }
             StackFrame frame = CallStackPop(ref state.CallStackPtr);
             state.RegPtr = frame.PreviousRegPtr;
-            state.Ip = state.InstPtr + frame.ReturnPC;
+            ip = state.InstPtr + frame.ReturnPC;
 
             return true;
         }
@@ -1009,7 +1020,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteDiv(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteDiv(Instruction instruction, ref VMState state, uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1020,7 +1031,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.DivisionByZero,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Division by zero"
                 );
             }
@@ -1041,7 +1052,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state, uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1052,7 +1063,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.DivisionByZero,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Modulo by zero"
                 );
             }
@@ -1061,7 +1072,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteEq(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteEq(Instruction instruction, ref VMState state, ref uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1072,13 +1083,13 @@ namespace Raptor
             bool expected = (a != 0);
             if (comparison == expected)
             {
-                state.Ip++;
+                ip++;
             }
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLt(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteLt(Instruction instruction, ref VMState state, ref uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1090,13 +1101,13 @@ namespace Raptor
             bool expected = (a != 0);
             if (comparison == expected)
             {
-                state.Ip++;
+                ip++;
             }
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLe(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteLe(Instruction instruction, ref VMState state, ref uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1107,7 +1118,7 @@ namespace Raptor
             bool expected = (a != 0);
             if (comparison == expected)
             {
-                state.Ip++;
+                ip++;
             }
             return true;
         }
@@ -1116,53 +1127,54 @@ namespace Raptor
         private static unsafe void ExecuteFusedBranch(
             bool comparison,
             byte expected,
-            ref VMState state
+            ref VMState state,
+            ref uint* ip
         )
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
                     VMStatus.GasExceeded,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "VM ran out of instruction gas before finishing"
                 );
             state.Gas--;
-            Instruction payload = new Instruction(*state.Ip++);
+            Instruction payload = new Instruction(*ip++);
             if (comparison != (expected != 0))
             {
-                state.Ip += payload.sBx26;
+                ip += payload.sBx26;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state, ref uint* ip)
         {
             ushort b = instruction.B;
             double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB < valC, instruction.A, ref state);
+            ExecuteFusedBranch(valB < valC, instruction.A, ref state, ref ip);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state, ref uint* ip)
         {
             ushort b = instruction.B;
             double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB <= valC, instruction.A, ref state);
+            ExecuteFusedBranch(valB <= valC, instruction.A, ref state, ref ip);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state, ref uint* ip)
         {
             ushort b = instruction.B;
             double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB == valC, instruction.A, ref state);
+            ExecuteFusedBranch(valB == valC, instruction.A, ref state, ref ip);
             return true;
         }
 
@@ -1272,12 +1284,12 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state, ref uint* ip)
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
                     VMStatus.GasExceeded,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "VM ran out of instruction gas before finishing"
                 );
             state.Gas--;
@@ -1290,7 +1302,7 @@ namespace Raptor
             double valStep = step < 256 ? Reg(state.RegPtr, step) : state.ConstPtr[step - 256];
             valIndex += valStep;
             Reg(state.RegPtr, index) = valIndex;
-            Instruction secondInst = new Instruction(*state.Ip++);
+            Instruction secondInst = new Instruction(*ip++);
             byte condition = secondInst.A;
             bool conditionMet = false;
             switch (condition)
@@ -1317,7 +1329,7 @@ namespace Raptor
             if (conditionMet)
             {
                 int jumpOffset = secondInst.sBx16;
-                state.Ip += jumpOffset;
+                ip += jumpOffset;
             }
             return true;
         }
@@ -1328,7 +1340,7 @@ namespace Raptor
          *
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state, uint* ip)
         {
             byte pointerAddress = instruction.A;
             uint size = instruction.B;
@@ -1355,7 +1367,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.OutOfMemory,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "VM heap ran out of memory"
                 );
             }
@@ -1448,7 +1460,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArray(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteSetArray(Instruction instruction, ref VMState state, uint* ip)
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
@@ -1460,7 +1472,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Null reference exception: array pointer is null"
                 );
             }
@@ -1470,7 +1482,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
                 );
             }
@@ -1480,7 +1492,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArrayASCII(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteSetArrayASCII(Instruction instruction, ref VMState state, uint* ip)
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
@@ -1492,7 +1504,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Null reference exception: array pointer is null"
                 );
             }
@@ -1502,7 +1514,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
                 );
             }
@@ -1512,7 +1524,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArray(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteGetArray(Instruction instruction, ref VMState state, uint* ip)
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
@@ -1521,7 +1533,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Null reference exception: array pointer is null"
                 );
             }
@@ -1533,7 +1545,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
                 );
             }
@@ -1544,7 +1556,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArrayASCII(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteGetArrayASCII(Instruction instruction, ref VMState state, uint* ip)
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
@@ -1553,7 +1565,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Null reference exception: array pointer is null"
                 );
             }
@@ -1565,7 +1577,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     $"Index out of bounds exception: index {rawIndex} is out of bounds for array of length {arrayLen}"
                 );
             }
@@ -1639,7 +1651,7 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLenArray(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteLenArray(Instruction instruction, ref VMState state, uint* ip)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
@@ -1649,7 +1661,7 @@ namespace Raptor
             {
                 throw new VMPanicException(
                     VMStatus.HostError,
-                    (int)(state.Ip - state.InstPtr - 1),
+                    (int)(ip - state.InstPtr - 1),
                     "Null reference exception: array pointer is null"
                 );
             }
