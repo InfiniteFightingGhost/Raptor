@@ -251,6 +251,8 @@ namespace Raptor
         {
             double* RegPtr = _regPtr;
             uint* ip = _instPtr;
+            double* reg = _regPtr;
+            double* cst = _constPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -280,64 +282,66 @@ namespace Raptor
                         switch (instruction.Op)
                         {
                             case OpCode.LOADC:
-                                ExecuteLoadC(instruction, ref state);
+                                ExecuteLoadC(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOVE:
-                                ExecuteMove(instruction, ref state);
+                                ExecuteMove(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.UNM:
-                                ExecuteUnm(instruction, ref state);
+                                ExecuteUnm(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SWAP:
-                                ExecuteSwap(instruction, ref state);
+                                ExecuteSwap(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.ADD:
-                                ExecuteAdd(instruction, ref state);
+                                ExecuteAdd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SUB:
-                                ExecuteSub(instruction, ref state);
+                                ExecuteSub(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MUL:
-                                ExecuteMul(instruction, ref state);
+                                ExecuteMul(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state, ip);
+                                ExecuteDiv(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.POW:
-                                ExecutePow(instruction, ref state);
+                                ExecutePow(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SQRT:
-                                ExecuteSqrt(instruction, ref state);
+                                ExecuteSqrt(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FISR:
-                                ExecuteFisr(instruction, ref state);
+                                ExecuteFisr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.JUMP:
                                 ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
                                 ExecuteCallOrFFI(instruction, ref state, ref ip, this);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.RETURN:
                                 ExecuteReturn(instruction, ref state, ref ip);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.PRINT:
-                                ExecutePrint(instruction, ref state);
+                                ExecutePrint(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.PRINTA:
-                                ExecutePrintA(instruction, ref state);
+                                ExecutePrintA(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state, ref ip);
+                                ExecuteEq(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state, ref ip);
+                                ExecuteLt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state, ref ip);
+                                ExecuteLe(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.HALT:
-                                ExecuteHalt(instruction, ref state);
+                                ExecuteHalt(instruction, ref state, reg, cst);
                                 _rngState = state.RngState;
 
                                 return new ExecutionResult
@@ -349,58 +353,58 @@ namespace Raptor
                                     ErrorMessage = null,
                                 };
                             case OpCode.RAND:
-                                ExecuteRand(instruction, ref state);
+                                ExecuteRand(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state, ref ip);
+                                ExecuteFor(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state, ip);
+                                ExecuteNewArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state, ip);
+                                ExecuteSetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state, ip);
+                                ExecuteSetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state, ip);
+                                ExecuteGetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state, ip);
+                                ExecuteGetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.FREEARR:
-                                ExecuteFreeArray(instruction, ref state);
+                                ExecuteFreeArray(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINAND:
-                                ExecuteBinaryAnd(instruction, ref state);
+                                ExecuteBinaryAnd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINOR:
-                                ExecuteBinaryOr(instruction, ref state);
+                                ExecuteBinaryOr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINXOR:
-                                ExecuteBinaryXor(instruction, ref state);
+                                ExecuteBinaryXor(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINLSH:
-                                ExecuteBinaryLeftShift(instruction, ref state);
+                                ExecuteBinaryLeftShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINRSH:
-                                ExecuteBinaryRightShift(instruction, ref state);
+                                ExecuteBinaryRightShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state, ip);
+                                ExecuteMod(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state, ip);
+                                ExecuteLenArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state, ref ip);
+                                ExecuteJlt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state, ref ip);
+                                ExecuteJle(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state, ref ip);
+                                ExecuteJeq(instruction, ref state, ref ip, reg, cst);
                                 break;
                         }
                     }
@@ -443,6 +447,8 @@ namespace Raptor
             totalInstructions = 0;
             double* RegPtr = _regPtr;
             uint* ip = _instPtr;
+            double* reg = _regPtr;
+            double* cst = _constPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -475,64 +481,66 @@ namespace Raptor
                         switch (instruction.Op)
                         {
                             case OpCode.LOADC:
-                                ExecuteLoadC(instruction, ref state);
+                                ExecuteLoadC(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOVE:
-                                ExecuteMove(instruction, ref state);
+                                ExecuteMove(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.UNM:
-                                ExecuteUnm(instruction, ref state);
+                                ExecuteUnm(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SWAP:
-                                ExecuteSwap(instruction, ref state);
+                                ExecuteSwap(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.ADD:
-                                ExecuteAdd(instruction, ref state);
+                                ExecuteAdd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SUB:
-                                ExecuteSub(instruction, ref state);
+                                ExecuteSub(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MUL:
-                                ExecuteMul(instruction, ref state);
+                                ExecuteMul(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state, ip);
+                                ExecuteDiv(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.POW:
-                                ExecutePow(instruction, ref state);
+                                ExecutePow(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SQRT:
-                                ExecuteSqrt(instruction, ref state);
+                                ExecuteSqrt(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FISR:
-                                ExecuteFisr(instruction, ref state);
+                                ExecuteFisr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.JUMP:
                                 ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
                                 ExecuteCallOrFFI(instruction, ref state, ref ip, this);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.RETURN:
                                 ExecuteReturn(instruction, ref state, ref ip);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.PRINT:
-                                ExecutePrint(instruction, ref state);
+                                ExecutePrint(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.PRINTA:
-                                ExecutePrintA(instruction, ref state);
+                                ExecutePrintA(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state, ref ip);
+                                ExecuteEq(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state, ref ip);
+                                ExecuteLt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state, ref ip);
+                                ExecuteLe(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.HALT:
-                                ExecuteHalt(instruction, ref state);
+                                ExecuteHalt(instruction, ref state, reg, cst);
                                 _rngState = state.RngState;
 
                                 return new ExecutionResult
@@ -546,58 +554,58 @@ namespace Raptor
                                     TotalInstructions = totalInstructions,
                                 };
                             case OpCode.RAND:
-                                ExecuteRand(instruction, ref state);
+                                ExecuteRand(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state, ref ip);
+                                ExecuteFor(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state, ip);
+                                ExecuteNewArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state, ip);
+                                ExecuteSetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state, ip);
+                                ExecuteSetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state, ip);
+                                ExecuteGetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state, ip);
+                                ExecuteGetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.FREEARR:
-                                ExecuteFreeArray(instruction, ref state);
+                                ExecuteFreeArray(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINAND:
-                                ExecuteBinaryAnd(instruction, ref state);
+                                ExecuteBinaryAnd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINOR:
-                                ExecuteBinaryOr(instruction, ref state);
+                                ExecuteBinaryOr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINXOR:
-                                ExecuteBinaryXor(instruction, ref state);
+                                ExecuteBinaryXor(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINLSH:
-                                ExecuteBinaryLeftShift(instruction, ref state);
+                                ExecuteBinaryLeftShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINRSH:
-                                ExecuteBinaryRightShift(instruction, ref state);
+                                ExecuteBinaryRightShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state, ip);
+                                ExecuteMod(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state, ip);
+                                ExecuteLenArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state, ref ip);
+                                ExecuteJlt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state, ref ip);
+                                ExecuteJle(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state, ref ip);
+                                ExecuteJeq(instruction, ref state, ref ip, reg, cst);
                                 break;
                         }
                     }
@@ -643,6 +651,8 @@ namespace Raptor
         {
             double* RegPtr = _regPtr;
             uint* ip = _instPtr;
+            double* reg = _regPtr;
+            double* cst = _constPtr;
             StackFrame* framePtr = stackalloc StackFrame[32];
             {
                 *(uint*)_heapPtr = 0xFFFFFFFF;
@@ -677,65 +687,67 @@ namespace Raptor
                         switch (instruction.Op)
                         {
                             case OpCode.LOADC:
-                                ExecuteLoadC(instruction, ref state);
+                                ExecuteLoadC(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOVE:
-                                ExecuteMove(instruction, ref state);
+                                ExecuteMove(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.UNM:
-                                ExecuteUnm(instruction, ref state);
+                                ExecuteUnm(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SWAP:
-                                ExecuteSwap(instruction, ref state);
+                                ExecuteSwap(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.ADD:
-                                ExecuteAdd(instruction, ref state);
+                                ExecuteAdd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SUB:
-                                ExecuteSub(instruction, ref state);
+                                ExecuteSub(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MUL:
-                                ExecuteMul(instruction, ref state);
+                                ExecuteMul(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.DIV:
-                                ExecuteDiv(instruction, ref state, ip);
+                                ExecuteDiv(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.POW:
-                                ExecutePow(instruction, ref state);
+                                ExecutePow(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.SQRT:
-                                ExecuteSqrt(instruction, ref state);
+                                ExecuteSqrt(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FISR:
-                                ExecuteFisr(instruction, ref state);
+                                ExecuteFisr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.JUMP:
                                 ExecuteJump(instruction, ref state, ref ip);
                                 break;
                             case OpCode.CALL:
                                 ExecuteCallOrFFI(instruction, ref state, ref ip, this);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.RETURN:
                                 ExecuteReturn(instruction, ref state, ref ip);
+                                reg = state.RegPtr;
                                 break;
                             case OpCode.PRINT:
-                                ExecutePrint(instruction, ref state);
+                                ExecutePrint(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.PRINTA:
-                                ExecutePrintA(instruction, ref state);
+                                ExecutePrintA(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.EQ:
-                                ExecuteEq(instruction, ref state, ref ip);
+                                ExecuteEq(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LT:
-                                ExecuteLt(instruction, ref state, ref ip);
+                                ExecuteLt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.LE:
-                                ExecuteLe(instruction, ref state, ref ip);
+                                ExecuteLe(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.HALT:
                                 stopwatch.Stop();
-                                ExecuteHalt(instruction, ref state);
+                                ExecuteHalt(instruction, ref state, reg, cst);
                                 _rngState = state.RngState;
                                 Console.Error.WriteLine(
                                     $"Debug Execution time:{stopwatch.ElapsedMilliseconds} ms ({stopwatch.ElapsedTicks} ticks, {(stopwatch.Elapsed.Ticks / 10.0):F1} us)"
@@ -750,58 +762,58 @@ namespace Raptor
                                     ErrorMessage = null,
                                 };
                             case OpCode.RAND:
-                                ExecuteRand(instruction, ref state);
+                                ExecuteRand(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.FOR:
-                                ExecuteFor(instruction, ref state, ref ip);
+                                ExecuteFor(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.NEWARR:
-                                ExecuteNewArray(instruction, ref state, ip);
+                                ExecuteNewArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARR:
-                                ExecuteSetArray(instruction, ref state, ip);
+                                ExecuteSetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.SETARRA:
-                                ExecuteSetArrayASCII(instruction, ref state, ip);
+                                ExecuteSetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARR:
-                                ExecuteGetArray(instruction, ref state, ip);
+                                ExecuteGetArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.GETARRA:
-                                ExecuteGetArrayASCII(instruction, ref state, ip);
+                                ExecuteGetArrayASCII(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.FREEARR:
-                                ExecuteFreeArray(instruction, ref state);
+                                ExecuteFreeArray(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINAND:
-                                ExecuteBinaryAnd(instruction, ref state);
+                                ExecuteBinaryAnd(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINOR:
-                                ExecuteBinaryOr(instruction, ref state);
+                                ExecuteBinaryOr(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINXOR:
-                                ExecuteBinaryXor(instruction, ref state);
+                                ExecuteBinaryXor(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINLSH:
-                                ExecuteBinaryLeftShift(instruction, ref state);
+                                ExecuteBinaryLeftShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.BINRSH:
-                                ExecuteBinaryRightShift(instruction, ref state);
+                                ExecuteBinaryRightShift(instruction, ref state, reg, cst);
                                 break;
                             case OpCode.MOD:
-                                ExecuteMod(instruction, ref state, ip);
+                                ExecuteMod(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.LENARR:
-                                ExecuteLenArray(instruction, ref state, ip);
+                                ExecuteLenArray(instruction, ref state, ip, reg, cst);
                                 break;
                             case OpCode.JLT:
-                                ExecuteJlt(instruction, ref state, ref ip);
+                                ExecuteJlt(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JLE:
-                                ExecuteJle(instruction, ref state, ref ip);
+                                ExecuteJle(instruction, ref state, ref ip, reg, cst);
                                 break;
                             case OpCode.JEQ:
-                                ExecuteJeq(instruction, ref state, ref ip);
+                                ExecuteJeq(instruction, ref state, ref ip, reg, cst);
                                 break;
                         }
                     }
@@ -855,42 +867,42 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLoadC(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteLoadC(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             uint constantIndex = instruction.Bx;
-            Reg(state.RegPtr, a) = state.ConstPtr[constantIndex];
+            Reg(reg, a) = cst[constantIndex];
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMove(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteMove(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             byte b = (byte)instruction.B;
-            Reg(state.RegPtr, a) = Reg(state.RegPtr, b);
+            Reg(reg, a) = Reg(reg, b);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSwap(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteSwap(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             byte b = (byte)instruction.B;
-            (Reg(state.RegPtr, a), Reg(state.RegPtr, b)) = (
-                Reg(state.RegPtr, b),
-                Reg(state.RegPtr, a)
+            (Reg(reg, a), Reg(reg, b)) = (
+                Reg(reg, b),
+                Reg(reg, a)
             );
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteUnm(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteUnm(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
-            Reg(state.RegPtr, a) = -valB;
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            Reg(reg, a) = -valB;
             return true;
         }
 
@@ -986,49 +998,49 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteAdd(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteAdd(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = valB + valC;
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = valB + valC;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSub(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteSub(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = valB - valC;
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = valB - valC;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMul(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteMul(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = valB * valC;
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = valB * valC;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteDiv(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteDiv(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             if (valC == 0.0)
             {
                 throw new VMPanicException(
@@ -1037,30 +1049,30 @@ namespace Raptor
                     "Division by zero"
                 );
             }
-            Reg(state.RegPtr, a) = valB / valC;
+            Reg(reg, a) = valB / valC;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecutePow(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecutePow(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = Math.Pow(valB, valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = Math.Pow(valB, valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             if (valC == 0.0)
             {
                 throw new VMPanicException(
@@ -1069,18 +1081,18 @@ namespace Raptor
                     "Modulo by zero"
                 );
             }
-            Reg(state.RegPtr, a) = valB % valC;
+            Reg(reg, a) = valB % valC;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteEq(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteEq(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB == valC;
             bool expected = (a != 0);
             if (comparison == expected)
@@ -1091,13 +1103,13 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLt(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteLt(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB < valC;
 
             bool expected = (a != 0);
@@ -1109,13 +1121,13 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLe(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteLe(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB <= valC;
             bool expected = (a != 0);
             if (comparison == expected)
@@ -1130,7 +1142,9 @@ namespace Raptor
             bool comparison,
             byte expected,
             ref VMState state,
-            ref uint* ip
+            ref uint* ip,
+            double* reg,
+            double* cst
         )
         {
             if (state.Gas <= 1)
@@ -1148,35 +1162,35 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB < valC, instruction.A, ref state, ref ip);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            ExecuteFusedBranch(valB < valC, instruction.A, ref state, ref ip, reg, cst);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB <= valC, instruction.A, ref state, ref ip);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            ExecuteFusedBranch(valB <= valC, instruction.A, ref state, ref ip, reg, cst);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            ExecuteFusedBranch(valB == valC, instruction.A, ref state, ref ip);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            ExecuteFusedBranch(valB == valC, instruction.A, ref state, ref ip, reg, cst);
             return true;
         }
 
@@ -1192,10 +1206,10 @@ namespace Raptor
             }
         }
 
-        public static unsafe bool ExecutePrint(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecutePrint(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             uint b = (uint)instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
 
             if (state.OutBufferCapacity - state.OutBufferOffset < 48)
             {
@@ -1221,10 +1235,10 @@ namespace Raptor
             return true;
         }
 
-        public static unsafe bool ExecutePrintA(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecutePrintA(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             uint b = (uint)instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
 
             if (state.OutBufferCapacity - state.OutBufferOffset < 4)
             {
@@ -1235,40 +1249,40 @@ namespace Raptor
             return true;
         }
 
-        public static unsafe bool ExecuteHalt(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteHalt(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             FlushOutput(ref state);
             return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteRand(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteRand(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             state.RngState ^= state.RngState << 13;
             state.RngState ^= state.RngState >> 17;
             state.RngState ^= state.RngState << 5;
             double result = state.RngState * 2.3283064365386963e-10;
-            Reg(state.RegPtr, a) = result;
+            Reg(reg, a) = result;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSqrt(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteSqrt(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
-            Reg(state.RegPtr, a) = Math.Sqrt(valB);
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            Reg(reg, a) = Math.Sqrt(valB);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFisr(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteFisr(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             long i;
             double x2,
                 y;
@@ -1281,12 +1295,12 @@ namespace Raptor
             y = *(double*)&i;
             y = y * (threehalfs - (x2 * y * y)); // 1st iteration
             y = y * (threehalfs - (x2 * y * y)); // 2nd iteration, this can be removed
-            Reg(state.RegPtr, a) = y;
+            Reg(reg, a) = y;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
@@ -1299,11 +1313,11 @@ namespace Raptor
             ushort max = instruction.B;
             ushort step = instruction.C;
 
-            double valIndex = Reg(state.RegPtr, index);
-            double valMax = max < 256 ? Reg(state.RegPtr, max) : state.ConstPtr[max - 256];
-            double valStep = step < 256 ? Reg(state.RegPtr, step) : state.ConstPtr[step - 256];
+            double valIndex = Reg(reg, index);
+            double valMax = max < 256 ? Reg(reg, max) : cst[max - 256];
+            double valStep = step < 256 ? Reg(reg, step) : cst[step - 256];
             valIndex += valStep;
-            Reg(state.RegPtr, index) = valIndex;
+            Reg(reg, index) = valIndex;
             Instruction secondInst = new Instruction(*ip++);
             byte condition = secondInst.A;
             bool conditionMet = false;
@@ -1342,12 +1356,12 @@ namespace Raptor
          *
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte pointerAddress = instruction.A;
             uint size = instruction.B;
             uint valSize = (uint)(
-                size < 256 ? Reg(state.RegPtr, size) : state.ConstPtr[size - 256]
+                size < 256 ? Reg(reg, size) : cst[size - 256]
             );
             uint valSizeBytes = valSize * 8;
             uint requiredBytes = valSizeBytes + 4;
@@ -1390,7 +1404,7 @@ namespace Raptor
                 *(uint*)(state.HeapPtr + remainingFreeAddress + 4) = remainingFreeSize;
 
                 *(uint*)(state.HeapPtr + currAddress) = requiredBytes;
-                Reg(state.RegPtr, pointerAddress) = (double)
+                Reg(reg, pointerAddress) = (double)
                     (ulong)(state.HeapPtr + currAddress + 4);
             }
             else
@@ -1401,7 +1415,7 @@ namespace Raptor
                     state.FreeBlockHeaderPointer = nextAddress;
 
                 *(uint*)(state.HeapPtr + currAddress) = blockSize;
-                Reg(state.RegPtr, pointerAddress) = (double)
+                Reg(reg, pointerAddress) = (double)
                     (ulong)(state.HeapPtr + currAddress + 4);
             }
             double* bodyPtr = (double*)(state.HeapPtr + currAddress + 4);
@@ -1413,10 +1427,10 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFreeArray(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteFreeArray(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte registerAddress = instruction.A;
-            byte* arrayPtr = (byte*)(ulong)Reg(state.RegPtr, registerAddress);
+            byte* arrayPtr = (byte*)(ulong)Reg(reg, registerAddress);
             if (arrayPtr == null)
                 return true;
             uint realAddress = (uint)(arrayPtr - state.HeapPtr) - 4;
@@ -1457,19 +1471,19 @@ namespace Raptor
                     *(uint*)(state.HeapPtr + leftBlock) = rightBlock;
                 }
             }
-            Reg(state.RegPtr, registerAddress) = 0;
+            Reg(reg, registerAddress) = 0;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArray(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteSetArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            double rawIndex = index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256];
-            double valValue = value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256];
-            byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
+            double rawIndex = index < 256 ? Reg(reg, index) : cst[index - 256];
+            double valValue = value < 256 ? Reg(reg, value) : cst[value - 256];
+            byte* destinationPtr = (byte*)(ulong)Reg(reg, pointerAddress);
             if (destinationPtr == null)
             {
                 throw new VMPanicException(
@@ -1494,14 +1508,14 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArrayASCII(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteSetArrayASCII(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            double rawIndex = index < 256 ? Reg(state.RegPtr, index) : state.ConstPtr[index - 256];
-            double valValue = value < 256 ? Reg(state.RegPtr, value) : state.ConstPtr[value - 256];
-            byte* destinationPtr = (byte*)(ulong)Reg(state.RegPtr, pointerAddress);
+            double rawIndex = index < 256 ? Reg(reg, index) : cst[index - 256];
+            double valValue = value < 256 ? Reg(reg, value) : cst[value - 256];
+            byte* destinationPtr = (byte*)(ulong)Reg(reg, pointerAddress);
             if (destinationPtr == null)
             {
                 throw new VMPanicException(
@@ -1526,11 +1540,11 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArray(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteGetArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
-            byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, register);
+            byte* addressPtr = (byte*)(ulong)Reg(reg, register);
             if (addressPtr == null)
             {
                 throw new VMPanicException(
@@ -1540,7 +1554,7 @@ namespace Raptor
                 );
             }
             ushort c = instruction.C;
-            double rawIndex = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double rawIndex = c < 256 ? Reg(reg, c) : cst[c - 256];
             uint totalBytes = *(uint*)(addressPtr - 4);
             uint arrayLen = totalBytes >= 4 ? (totalBytes - 4) / 8 : 0;
             if (rawIndex < 0 || rawIndex >= arrayLen)
@@ -1553,16 +1567,16 @@ namespace Raptor
             }
             uint valIndex = (uint)rawIndex;
 
-            Reg(state.RegPtr, destination) = *(double*)(addressPtr + (valIndex * 8));
+            Reg(reg, destination) = *(double*)(addressPtr + (valIndex * 8));
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArrayASCII(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteGetArrayASCII(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
-            byte* addressPtr = (byte*)(ulong)Reg(state.RegPtr, register);
+            byte* addressPtr = (byte*)(ulong)Reg(reg, register);
             if (addressPtr == null)
             {
                 throw new VMPanicException(
@@ -1572,7 +1586,7 @@ namespace Raptor
                 );
             }
             ushort c = instruction.C;
-            double rawIndex = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
+            double rawIndex = c < 256 ? Reg(reg, c) : cst[c - 256];
             uint totalBytes = *(uint*)(addressPtr - 4);
             uint arrayLen = totalBytes >= 4 ? totalBytes - 4 : 0;
             if (rawIndex < 0 || rawIndex >= arrayLen)
@@ -1585,79 +1599,81 @@ namespace Raptor
             }
             uint valIndex = (uint)rawIndex;
 
-            Reg(state.RegPtr, destination) = *(addressPtr + valIndex);
+            Reg(reg, destination) = *(addressPtr + valIndex);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryAnd(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteBinaryAnd(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = (double)((long)valB & (long)valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = (double)((long)valB & (long)valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryOr(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteBinaryOr(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = (double)((long)valB | (long)valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = (double)((long)valB | (long)valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryXor(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteBinaryXor(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = (double)((long)valB ^ (long)valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = (double)((long)valB ^ (long)valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryLeftShift(Instruction instruction, ref VMState state)
+        public static unsafe bool ExecuteBinaryLeftShift(Instruction instruction, ref VMState state, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = (double)((long)valB << (int)valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = (double)((long)valB << (int)valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe bool ExecuteBinaryRightShift(
             Instruction instruction,
-            ref VMState state
+            ref VMState state,
+            double* reg,
+            double* cst
         )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             ushort c = instruction.C;
-            double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
-            Reg(state.RegPtr, a) = (double)((long)valB >> (int)valC);
+            double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
+            Reg(reg, a) = (double)((long)valB >> (int)valC);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLenArray(Instruction instruction, ref VMState state, uint* ip)
+        public static unsafe bool ExecuteLenArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
             byte* ptr = (byte*)(ulong)valB;
             if (ptr == null)
             {
@@ -1668,7 +1684,7 @@ namespace Raptor
                 );
             }
             uint sizeInBytes = *(uint*)(ptr - 4);
-            Reg(state.RegPtr, a) = (double)((sizeInBytes - 4) / 8);
+            Reg(reg, a) = (double)((sizeInBytes - 4) / 8);
             return true;
         }
     }
