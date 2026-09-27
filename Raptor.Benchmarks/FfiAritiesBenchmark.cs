@@ -41,9 +41,10 @@ public class FfiAritiesBenchmark
             sb.AppendLine($"LOADC r{i + 1} {i + 1}.0");
         }
         sb.AppendLine("LOADC i 0");
+        sb.AppendLine("LOADC r200 epochs");
         sb.AppendLine("loop:");
         sb.AppendLine($"    CALL sum{Arity}() r1");
-        sb.AppendLine("    FOR i epochs 1 < loop");
+        sb.AppendLine("    FOR i r200 1 < loop");
         sb.AppendLine("HALT");
 
         _chunk = engine.Compile(sb.ToString());

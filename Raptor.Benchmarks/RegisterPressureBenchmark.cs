@@ -34,6 +34,7 @@ public class RegisterPressureBenchmark
         sb4.AppendLine("LOADC r2 3.0");
         sb4.AppendLine("LOADC r3 4.0");
         sb4.AppendLine("LOADC i 0");
+        sb4.AppendLine("LOADC r200 epochs");
         sb4.AppendLine("loop:");
         for (int k = 0; k < 32; k++)
         {
@@ -42,7 +43,7 @@ public class RegisterPressureBenchmark
             sb4.AppendLine("    ADD r2 r3 r0");
             sb4.AppendLine("    ADD r1 r2 r3");
         }
-        sb4.AppendLine("    FOR i epochs 1 < loop");
+        sb4.AppendLine("    FOR i r200 1 < loop");
         sb4.AppendLine("HALT");
         _reg4Chunk = engine.Compile(sb4.ToString());
 
@@ -55,6 +56,7 @@ public class RegisterPressureBenchmark
             sb64.AppendLine($"LOADC r{r} {(double)r}");
         }
         sb64.AppendLine("LOADC i 0");
+        sb64.AppendLine("LOADC r200 epochs");
         sb64.AppendLine("loop:");
         for (int k = 0; k < 2; k++) // 2 passes * 64 = 128 additions
         {
@@ -66,7 +68,7 @@ public class RegisterPressureBenchmark
                 sb64.AppendLine($"    ADD r{rA} r{rB} r{rC}");
             }
         }
-        sb64.AppendLine("    FOR i epochs 1 < loop");
+        sb64.AppendLine("    FOR i r200 1 < loop");
         sb64.AppendLine("HALT");
         _reg64Chunk = engine.Compile(sb64.ToString());
 
@@ -79,6 +81,7 @@ public class RegisterPressureBenchmark
             sb128.AppendLine($"LOADC r{r} {(double)r}");
         }
         sb128.AppendLine("LOADC i 0");
+        sb128.AppendLine("LOADC r200 epochs");
         sb128.AppendLine("loop:");
         // 1 pass * 128 = 128 additions
         for (int r = 0; r < 128; r++)
@@ -88,7 +91,7 @@ public class RegisterPressureBenchmark
             int rC = (r + 2) % 128;
             sb128.AppendLine($"    ADD r{rA} r{rB} r{rC}");
         }
-        sb128.AppendLine("    FOR i epochs 1 < loop");
+        sb128.AppendLine("    FOR i r200 1 < loop");
         sb128.AppendLine("HALT");
         _reg128Chunk = engine.Compile(sb128.ToString());
     }
