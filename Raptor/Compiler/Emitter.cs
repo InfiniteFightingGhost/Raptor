@@ -224,7 +224,9 @@ namespace Raptor.Compiler
             if (decl.Initializer is NumberNode number)
             {
                 _environment.Define(decl.Name, regIndex);
-                _sb.Append($"LOADC r{regIndex} {number.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} ");
+                _sb.Append(
+                    $"LOADC r{regIndex} {number.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} "
+                );
                 _sb.AppendLine($"; var {decl.Name}");
                 return;
             }
@@ -358,7 +360,6 @@ namespace Raptor.Compiler
                     }
                 }
 
-
                 bool canUseForOpCode = false;
                 string compOp = "<";
                 string limitStr = "";
@@ -378,8 +379,14 @@ namespace Raptor.Compiler
 
                     if (indexReg != -1)
                     {
-                        bool isLeftIndex = binOp.Left is IdentifierNode idL && _environment.TryGet(idL.Name, out int rL) && rL == indexReg;
-                        bool isRightIndex = binOp.Right is IdentifierNode idR && _environment.TryGet(idR.Name, out int rR) && rR == indexReg;
+                        bool isLeftIndex =
+                            binOp.Left is IdentifierNode idL
+                            && _environment.TryGet(idL.Name, out int rL)
+                            && rL == indexReg;
+                        bool isRightIndex =
+                            binOp.Right is IdentifierNode idR
+                            && _environment.TryGet(idR.Name, out int rR)
+                            && rR == indexReg;
 
                         if (isLeftIndex)
                         {
@@ -394,8 +401,14 @@ namespace Raptor.Compiler
 
                         if (isLeftIndex || isRightIndex)
                         {
-                            bool isIncLeftIndex = incMath.Left is IdentifierNode idIncL && _environment.TryGet(idIncL.Name, out int rIncL) && rIncL == indexReg;
-                            bool isIncRightIndex = incMath.Right is IdentifierNode idIncR && _environment.TryGet(idIncR.Name, out int rIncR) && rIncR == indexReg;
+                            bool isIncLeftIndex =
+                                incMath.Left is IdentifierNode idIncL
+                                && _environment.TryGet(idIncL.Name, out int rIncL)
+                                && rIncL == indexReg;
+                            bool isIncRightIndex =
+                                incMath.Right is IdentifierNode idIncR
+                                && _environment.TryGet(idIncR.Name, out int rIncR)
+                                && rIncR == indexReg;
 
                             if (incMath.Op == "+")
                             {
@@ -450,7 +463,6 @@ namespace Raptor.Compiler
                         int stepReg = int.Parse(stepStr.TrimStart('r'));
                         _environment.PinRegister(stepReg);
                     }
-
                     if (forNode.Condition != null)
                     {
                         switch (compOp)
@@ -462,10 +474,12 @@ namespace Raptor.Compiler
                                 _sb.AppendLine($"LE 1 r{indexReg} {limitStr}");
                                 break;
                             case ">":
-                                _sb.AppendLine($"LT 1 {limitStr} r{indexReg}");
+                                _sb.AppendLine($"LE 0 r{indexReg} {limitStr}");
+                                // _sb.AppendLine($"LT 1 {limitStr} r{indexReg}");
                                 break;
                             case ">=":
-                                _sb.AppendLine($"LE 1 {limitStr} r{indexReg}");
+                                _sb.AppendLine($"LT 0 r{indexReg} {limitStr}");
+                                // _sb.AppendLine($"LE 1 {limitStr} r{indexReg}");
                                 break;
                             case "==":
                                 _sb.AppendLine($"EQ 1 r{indexReg} {limitStr}");
@@ -480,7 +494,18 @@ namespace Raptor.Compiler
                     _sb.AppendLine($"{bodyLabel}:");
                     EmitBlock(forNode.Body);
 
-                    _sb.AppendLine($"FOR r{indexReg} {limitStr} {stepStr} {compOp} {bodyLabel}");
+                    if (!limitStr.StartsWith("r"))
+                    {
+                        int limitReg = AllocateRegister();
+                        _sb.AppendLine($"LOADC {limitReg} {limitStr}");
+                        _sb.AppendLine(
+                            $"FOR r{indexReg} {limitReg} {stepStr} {compOp} {bodyLabel}"
+                        );
+                    }
+                    else
+                        _sb.AppendLine(
+                            $"FOR r{indexReg} {limitStr} {stepStr} {compOp} {bodyLabel}"
+                        );
                     _sb.AppendLine($"{endLabel}:");
                 }
                 else
@@ -545,11 +570,13 @@ namespace Raptor.Compiler
                         break;
                     case ">":
                         // a > b -> b < a
-                        _sb.AppendLine($"JLT 1 {rightStr} r{leftReg} {jumpLabel}");
+                        _sb.AppendLine($"JLE 0 r{leftReg} {rightStr} {jumpLabel}");
+                        // _sb.AppendLine($"JLT 1 {rightStr} r{leftReg} {jumpLabel}");
                         break;
                     case ">=":
                         // a >= b -> b <= a
-                        _sb.AppendLine($"JLE 1 {rightStr} r{leftReg} {jumpLabel}");
+                        _sb.AppendLine($"JLT 0 r{leftReg} {rightStr} {jumpLabel}");
+                        // _sb.AppendLine($"JLE 1 {rightStr} r{leftReg} {jumpLabel}");
                         break;
                     case "==":
                         _sb.AppendLine($"JEQ 1 r{leftReg} {rightStr} {jumpLabel}");
@@ -636,7 +663,9 @@ namespace Raptor.Compiler
             {
                 case NumberNode num:
                     int numReg = (targetReg != null) ? (int)targetReg : AllocateRegister(num);
-                    _sb.AppendLine($"LOADC r{numReg} {num.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}");
+                    _sb.AppendLine(
+                        $"LOADC r{numReg} {num.Value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)}"
+                    );
                     return numReg;
 
                 case IdentifierNode id:
@@ -663,8 +692,12 @@ namespace Raptor.Compiler
 
                 case UnaryOpNode unary:
                     int operandReg = EmitExpression(unary.Operand);
-                    bool hasNotCollision = unary.Op == "!" && targetReg != null && (int)targetReg == operandReg;
-                    int resReg = (targetReg != null && !hasNotCollision) ? (int)targetReg : AllocateRegister(unary);
+                    bool hasNotCollision =
+                        unary.Op == "!" && targetReg != null && (int)targetReg == operandReg;
+                    int resReg =
+                        (targetReg != null && !hasNotCollision)
+                            ? (int)targetReg
+                            : AllocateRegister(unary);
                     if (unary.Op == "-")
                     {
                         _sb.AppendLine($"UNM r{resReg} r{operandReg}");
@@ -756,11 +789,14 @@ namespace Raptor.Compiler
                     return returnReg;
                 case ArrayLiteralNode arrLiteral:
                     int arrReg = AllocateRegister(arrLiteral);
-                    _sb.AppendLine($"NEWARR r{arrReg} {arrLiteral.Elements.Count}");
+                    _sb.AppendLine($"LOADC r{arrReg} {arrLiteral.Elements.Count}");
+                    _sb.AppendLine($"NEWARR r{arrReg} r{arrReg}");
+                    int temp = AllocateRegister(); //TODO: Make this better in the future
                     for (int i = 0; i < arrLiteral.Elements.Count; i++)
                     {
                         int elementReg = EmitExpression(arrLiteral.Elements[i]);
-                        _sb.AppendLine($"SETARR r{arrReg} {i} r{elementReg}");
+                        _sb.AppendLine($"LOADC r{temp} {i}");
+                        _sb.AppendLine($"SETARR r{arrReg} {temp} r{elementReg}");
                     }
                     if (targetReg != null && (int)targetReg != arrReg)
                     {
@@ -773,8 +809,13 @@ namespace Raptor.Compiler
 
                     int accessIndexReg = EmitExpression(indexAccess.IndexExpr);
 
-                    bool hasIndexCollision = targetReg != null && ((int)targetReg == targetArrayReg || (int)targetReg == accessIndexReg);
-                    int resultReg = (targetReg != null && !hasIndexCollision) ? (int)targetReg : AllocateRegister(indexAccess);
+                    bool hasIndexCollision =
+                        targetReg != null
+                        && ((int)targetReg == targetArrayReg || (int)targetReg == accessIndexReg);
+                    int resultReg =
+                        (targetReg != null && !hasIndexCollision)
+                            ? (int)targetReg
+                            : AllocateRegister(indexAccess);
 
                     _sb.AppendLine($"GETARR r{resultReg} r{targetArrayReg} r{accessIndexReg}");
                     if (targetReg != null && (int)targetReg != resultReg)
@@ -819,7 +860,8 @@ namespace Raptor.Compiler
             int rightReg = EmitExpression(binary.Right);
 
             bool isComparison = IsComparisonOp(binary.Op);
-            bool hasCollision = targetReg != null && ((int)targetReg == leftReg || (int)targetReg == rightReg);
+            bool hasCollision =
+                targetReg != null && ((int)targetReg == leftReg || (int)targetReg == rightReg);
 
             int resReg;
             if (isComparison && hasCollision)

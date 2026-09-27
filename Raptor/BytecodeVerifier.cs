@@ -105,7 +105,6 @@ namespace Raptor
                         case OpCode.JLT:
                         case OpCode.JLE:
                         case OpCode.JEQ:
-                            VerifyRcOperand(inst.B, chunk.Constants.Length, i, "B", op);
                             VerifyRcOperand(inst.C, chunk.Constants.Length, i, "C", op);
                             break;
 
@@ -123,7 +122,6 @@ namespace Raptor
                             break;
 
                         case OpCode.FOR:
-                            VerifyRcOperand(inst.B, chunk.Constants.Length, i, "B", op);
                             VerifyRcOperand(inst.C, chunk.Constants.Length, i, "C", op);
                             break;
                     }
@@ -142,7 +140,7 @@ namespace Raptor
 
                         case OpCode.JUMP:
                             {
-                                int target = i + inst.sBx26;
+                                int target = i + inst.sBx25;
                                 if (target < 0 || target >= length)
                                 {
                                     throw new VerificationException(
@@ -161,7 +159,7 @@ namespace Raptor
                         case OpCode.FOR:
                             {
                                 Instruction secondWord = new Instruction(chunk.Instructions[i + 1]);
-                                int target = (i + 2) + secondWord.sBx16;
+                                int target = (i + 2) + secondWord.sBx17;
                                 if (target < 0 || target >= length)
                                 {
                                     throw new VerificationException(
@@ -219,7 +217,7 @@ namespace Raptor
                         case OpCode.JEQ:
                             {
                                 Instruction payload = new Instruction(chunk.Instructions[i + 1]);
-                                int target = (i + 2) + payload.sBx26;
+                                int target = (i + 2) + payload.sBx25;
                                 if (target < 0 || target >= length)
                                 {
                                     throw new VerificationException(

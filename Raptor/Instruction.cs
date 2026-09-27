@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace Raptor
 {
@@ -17,13 +17,13 @@ namespace Raptor
     {
         public readonly uint Value;
 
-        private const int OpCodeBits = 6;
+        private const int OpCodeBits = 7;
         private const int ABits = 8;
-        private const int BBits = 9;
+        private const int BBits = 8;
         private const int CBits = 9;
-        private const int BxBits = 18;
-        private const int sBx16Bits = 16;
-        private const int sBx26Bits = 26;
+        private const int BxBits = 17;
+        private const int sBx17Bits = 17;
+        private const int sBx25Bits = 25;
 
         private const int AShift = OpCodeBits;
         private const int BShift = AShift + ABits;
@@ -34,8 +34,8 @@ namespace Raptor
         private const uint BMask = (1 << BBits) - 1;
         private const uint CMask = (1 << CBits) - 1;
         private const uint BxMask = (1 << BxBits) - 1;
-        private const uint sBx16Mask = (1 << sBx16Bits) - 1;
-        private const uint sBx26Mask = (1 << sBx26Bits) - 1;
+        private const uint sBx17Mask = (1 << sBx17Bits) - 1;
+        private const uint sBx25Mask = (1 << sBx25Bits) - 1;
 
         public Instruction(uint value) => Value = value;
 
@@ -45,15 +45,19 @@ namespace Raptor
         public ushort C => (ushort)((Value >> CShift) & CMask);
         public uint Bx => (Value >> BShift) & BxMask;
         private const int sBx16Bias = 32767;
-        public int sBx16 => (int)((Value >> BShift) & sBx16Mask) - sBx16Bias;
+        public int sBx17 => (int)((Value >> BShift) & sBx17Mask) - sBx16Bias;
 
-        private const int sBx26Bias = 33554431;
-        public int sBx26 => (int)((Value >> AShift) & sBx26Mask) - sBx26Bias;
+        private const int sBx25Bias = 16777216;
+        public int sBx25 => (int)((Value >> AShift) & sBx25Mask) - sBx25Bias;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Instruction CreateABC(OpCode op, byte a, ushort b, ushort c)
         {
-            uint val = (uint)op | (((uint)a & AMask) << AShift) | (((uint)b & BMask) << BShift) | (((uint)c & CMask) << CShift);
+            uint val =
+                (uint)op
+                | (((uint)a & AMask) << AShift)
+                | (((uint)b & BMask) << BShift)
+                | (((uint)c & CMask) << CShift);
             return new Instruction(val);
         }
 
@@ -67,15 +71,15 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Instruction CreateAsBx(OpCode op, byte a, int sbx)
         {
-            uint biasedBx = (uint)(sbx + sBx16Bias) & sBx16Mask;
+            uint biasedBx = (uint)(sbx + sBx16Bias) & sBx17Mask;
             uint val = (uint)op | ((uint)a << AShift) | (biasedBx << BShift);
             return new Instruction(val);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Instruction CreateSBx26(OpCode op, int sBxOffset)
+        public static Instruction CreateSBx25(OpCode op, int sBxOffset)
         {
-            uint biasedBx = (uint)(sBxOffset + sBx26Bias) & 0x3FFFFFF;
+            uint biasedBx = (uint)(sBxOffset + sBx25Bias) & 0x1FFFFFF;
 
             uint val = (uint)op | (biasedBx << AShift);
 

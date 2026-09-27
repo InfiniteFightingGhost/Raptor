@@ -179,15 +179,7 @@ namespace Raptor
                         case "BINRSH":
                             byte destA3 = byte.Parse(words[1].TrimStart('r'));
 
-                            ushort destB3;
-                            if (words[2].StartsWith("r"))
-                            {
-                                destB3 = ushort.Parse(words[2].TrimStart('r'));
-                            }
-                            else
-                            {
-                                destB3 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
-                            }
+                            ushort destB3 = ushort.Parse(words[2].TrimStart('r'));
 
                             ushort destC3;
                             if (words[3].StartsWith("r"))
@@ -211,14 +203,7 @@ namespace Raptor
                         case "LE":
                             destA3 = byte.Parse(words[1].TrimStart('r'));
 
-                            if (words[2].StartsWith("r"))
-                            {
-                                destB3 = ushort.Parse(words[2].TrimStart('r'));
-                            }
-                            else
-                            {
-                                destB3 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
-                            }
+                            destB3 = ushort.Parse(words[2].TrimStart('r'));
 
                             if (words[3].StartsWith("r"))
                             {
@@ -241,10 +226,7 @@ namespace Raptor
                             byte jExpected = byte.Parse(words[1].TrimStart('r'));
 
                             ushort jB;
-                            if (words[2].StartsWith("r"))
-                                jB = ushort.Parse(words[2].TrimStart('r'));
-                            else
-                                jB = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
+                            jB = ushort.Parse(words[2].TrimStart('r'));
 
                             ushort jC;
                             if (words[3].StartsWith("r"))
@@ -261,20 +243,12 @@ namespace Raptor
                             }
                             instructions.Add(instruction);
                             pc++;
-                            instruction = Instruction.CreateSBx26(jOp, jOffset);
+                            instruction = Instruction.CreateSBx25(jOp, jOffset);
                             break;
                         case "UNM":
                             byte destA4 = byte.Parse(words[1].TrimStart('r'));
 
-                            ushort destB4;
-                            if (words[2].StartsWith("r"))
-                            {
-                                destB4 = ushort.Parse(words[2].TrimStart('r'));
-                            }
-                            else
-                            {
-                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
-                            }
+                            ushort destB4 = ushort.Parse(words[2].TrimStart('r'));
 
                             instruction = Instruction.CreateABx(OpCode.UNM, destA4, destB4);
                             break;
@@ -289,7 +263,7 @@ namespace Raptor
                                 throw new Exception("There isnt a label with name " + words[1]);
                             }
 
-                            instruction = Instruction.CreateSBx26(OpCode.JUMP, labelIndex);
+                            instruction = Instruction.CreateSBx25(OpCode.JUMP, labelIndex);
                             break;
                         case "CALL":
                             uint methodIndex = 0;
@@ -351,35 +325,17 @@ namespace Raptor
                             break;
                         case "SQRT":
                             destA4 = byte.Parse(words[1].TrimStart('r'));
-                            if (words[2].StartsWith("r"))
-                            {
-                                destB4 = ushort.Parse(words[2].TrimStart('r'));
-                            }
-                            else
-                            {
-                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
-                            }
+                            destB4 = ushort.Parse(words[2].TrimStart('r'));
                             instruction = Instruction.CreateABx(OpCode.SQRT, destA4, destB4);
                             break;
                         case "FISR":
                             destA4 = byte.Parse(words[1].TrimStart('r'));
-                            if (words[2].StartsWith("r"))
-                            {
-                                destB4 = ushort.Parse(words[2].TrimStart('r'));
-                            }
-                            else
-                            {
-                                destB4 = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
-                            }
+                            destB4 = ushort.Parse(words[2].TrimStart('r'));
                             instruction = Instruction.CreateABx(OpCode.FISR, destA4, destB4);
                             break;
                         case "FOR":
                             byte rIndex = byte.Parse(words[1].TrimStart('r'));
-                            ushort rMax;
-                            if (words[2].StartsWith("r"))
-                                rMax = ushort.Parse(words[2].TrimStart('r'));
-                            else
-                                rMax = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
+                            ushort rMax = ushort.Parse(words[2].TrimStart('r'));
 
                             ushort rStep;
                             if (words[3].StartsWith("r"))
@@ -443,11 +399,7 @@ namespace Raptor
                             }
                             byte regPtr = byte.Parse(words[1].Trim('r'));
 
-                            ushort index;
-                            if (words[2].StartsWith("r"))
-                                index = ushort.Parse(words[2].TrimStart('r'));
-                            else
-                                index = (ushort)(_chunk.SetConstant(ParseDouble(words[2])) + 256);
+                            ushort index = ushort.Parse(words[2].TrimStart('r'));
 
                             ushort indexC = 0;
                             if (words.Length > 3)

@@ -18,7 +18,8 @@ public class DisassemblerTests
 LOADC r1 10.0
 LOADC r2 5.5
 ADD r3 r1 r2
-FOR r4 100 1 < loop
+LOADC r5 100
+FOR r4 r5 1 < loop
 ADD r1 r1 r1
 loop:
 HALT
@@ -29,7 +30,6 @@ HALT
 
         Assert.Contains("LOADC r1 10", disassembly);
         Assert.Contains("ADD r3 r1 r2", disassembly);
-        Console.WriteLine(disassembly);
-        Assert.Contains("FOR r4 100 1 < 0006", disassembly);
+        Assert.Contains("FOR r4 r5 1 < 0007", disassembly);
     }
 }

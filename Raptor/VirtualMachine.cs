@@ -192,8 +192,6 @@ namespace Raptor
             _constants = chunk.Constants;
             _methods = chunk.MethodTable;
 
-            // TODO: understand why tf this piece of commented piece of code actually doesn't change unit test coverage
-            //  and everything still works, when it shouldn't
             foreach (var pair in _registeredHostMethods)
             {
                 if ((_methods[pair.Key] & 0x80000000) == 0)
@@ -867,7 +865,12 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLoadC(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteLoadC(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             uint constantIndex = instruction.Bx;
@@ -876,7 +879,12 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMove(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteMove(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             byte b = (byte)instruction.B;
@@ -885,29 +893,40 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSwap(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteSwap(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             byte b = (byte)instruction.B;
-            (Reg(reg, a), Reg(reg, b)) = (
-                Reg(reg, b),
-                Reg(reg, a)
-            );
+            (Reg(reg, a), Reg(reg, b)) = (Reg(reg, b), Reg(reg, a));
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteUnm(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteUnm(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             Reg(reg, a) = -valB;
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJump(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteJump(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip
+        )
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
@@ -916,7 +935,7 @@ namespace Raptor
                     "VM ran out of instruction gas before finishing"
                 );
             state.Gas--;
-            ip += instruction.sBx26 - 1;
+            ip += instruction.sBx25 - 1;
             return true;
         }
 
@@ -928,7 +947,7 @@ namespace Raptor
             VirtualMachine vm
         )
         {
-            ushort methodIndex = instruction.B;
+            uint methodIndex = instruction.Bx;
             if ((vm._methods[methodIndex] & 0x80000000) != 0)
             {
                 byte start = instruction.A;
@@ -952,7 +971,11 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteCall(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteCall(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip
+        )
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
@@ -970,7 +993,7 @@ namespace Raptor
                 );
             }
             byte start = instruction.A;
-            ushort methodIndex = instruction.B;
+            uint methodIndex = instruction.Bx;
             int currentPcIndex = (int)(ip - state.InstPtr);
             StackFrame frame = new StackFrame(currentPcIndex, state.RegPtr);
             CallStackPush(ref state.CallStackPtr, frame);
@@ -981,7 +1004,11 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteReturn(Instruction instruction, ref VMState state, ref uint* ip)
+        public static unsafe bool ExecuteReturn(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip
+        )
         {
             byte start = instruction.A;
             byte end = (byte)instruction.B;
@@ -998,11 +1025,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteAdd(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteAdd(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = valB + valC;
@@ -1010,11 +1042,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSub(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteSub(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = valB - valC;
@@ -1022,11 +1059,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMul(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteMul(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = valB * valC;
@@ -1034,11 +1076,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteDiv(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteDiv(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             if (valC == 0.0)
@@ -1054,11 +1102,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecutePow(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecutePow(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = Math.Pow(valB, valC);
@@ -1066,11 +1119,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteMod(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteMod(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             if (valC == 0.0)
@@ -1086,11 +1145,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteEq(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteEq(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB == valC;
@@ -1103,11 +1168,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLt(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteLt(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB < valC;
@@ -1121,11 +1192,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLe(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteLe(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             bool comparison = valB <= valC;
@@ -1157,15 +1234,21 @@ namespace Raptor
             Instruction payload = new Instruction(*ip++);
             if (comparison != (expected != 0))
             {
-                ip += payload.sBx26;
+                ip += payload.sBx25;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJlt(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteJlt(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             ExecuteFusedBranch(valB < valC, instruction.A, ref state, ref ip, reg, cst);
@@ -1173,10 +1256,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJle(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteJle(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             ExecuteFusedBranch(valB <= valC, instruction.A, ref state, ref ip, reg, cst);
@@ -1184,10 +1273,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteJeq(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteJeq(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             ExecuteFusedBranch(valB == valC, instruction.A, ref state, ref ip, reg, cst);
@@ -1206,10 +1301,15 @@ namespace Raptor
             }
         }
 
-        public static unsafe bool ExecutePrint(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecutePrint(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             uint b = (uint)instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
 
             if (state.OutBufferCapacity - state.OutBufferOffset < 48)
             {
@@ -1235,10 +1335,15 @@ namespace Raptor
             return true;
         }
 
-        public static unsafe bool ExecutePrintA(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecutePrintA(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             uint b = (uint)instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
 
             if (state.OutBufferCapacity - state.OutBufferOffset < 4)
             {
@@ -1249,14 +1354,24 @@ namespace Raptor
             return true;
         }
 
-        public static unsafe bool ExecuteHalt(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteHalt(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             FlushOutput(ref state);
             return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteRand(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteRand(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             state.RngState ^= state.RngState << 13;
@@ -1268,21 +1383,31 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSqrt(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteSqrt(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             Reg(reg, a) = Math.Sqrt(valB);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFisr(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteFisr(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             long i;
             double x2,
                 y;
@@ -1300,7 +1425,13 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFor(Instruction instruction, ref VMState state, ref uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteFor(
+            Instruction instruction,
+            ref VMState state,
+            ref uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             if (state.Gas <= 1)
                 throw new VMPanicException(
@@ -1344,7 +1475,7 @@ namespace Raptor
             }
             if (conditionMet)
             {
-                int jumpOffset = secondInst.sBx16;
+                int jumpOffset = secondInst.sBx17;
                 ip += jumpOffset;
             }
             return true;
@@ -1356,13 +1487,17 @@ namespace Raptor
          *
          */
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteNewArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteNewArray(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte pointerAddress = instruction.A;
             uint size = instruction.B;
-            uint valSize = (uint)(
-                size < 256 ? Reg(reg, size) : cst[size - 256]
-            );
+            uint valSize = (uint)Reg(reg, size);
             uint valSizeBytes = valSize * 8;
             uint requiredBytes = valSizeBytes + 4;
 
@@ -1404,8 +1539,7 @@ namespace Raptor
                 *(uint*)(state.HeapPtr + remainingFreeAddress + 4) = remainingFreeSize;
 
                 *(uint*)(state.HeapPtr + currAddress) = requiredBytes;
-                Reg(reg, pointerAddress) = (double)
-                    (ulong)(state.HeapPtr + currAddress + 4);
+                Reg(reg, pointerAddress) = (double)(ulong)(state.HeapPtr + currAddress + 4);
             }
             else
             {
@@ -1415,8 +1549,7 @@ namespace Raptor
                     state.FreeBlockHeaderPointer = nextAddress;
 
                 *(uint*)(state.HeapPtr + currAddress) = blockSize;
-                Reg(reg, pointerAddress) = (double)
-                    (ulong)(state.HeapPtr + currAddress + 4);
+                Reg(reg, pointerAddress) = (double)(ulong)(state.HeapPtr + currAddress + 4);
             }
             double* bodyPtr = (double*)(state.HeapPtr + currAddress + 4);
             for (uint i = 0; i < valSize; i++)
@@ -1427,7 +1560,12 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteFreeArray(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteFreeArray(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte registerAddress = instruction.A;
             byte* arrayPtr = (byte*)(ulong)Reg(reg, registerAddress);
@@ -1476,12 +1614,18 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteSetArray(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            double rawIndex = index < 256 ? Reg(reg, index) : cst[index - 256];
+            double rawIndex = Reg(reg, index);
             double valValue = value < 256 ? Reg(reg, value) : cst[value - 256];
             byte* destinationPtr = (byte*)(ulong)Reg(reg, pointerAddress);
             if (destinationPtr == null)
@@ -1508,12 +1652,18 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteSetArrayASCII(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteSetArrayASCII(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte pointerAddress = instruction.A;
             ushort index = instruction.B;
             ushort value = instruction.C;
-            double rawIndex = index < 256 ? Reg(reg, index) : cst[index - 256];
+            double rawIndex = Reg(reg, index);
             double valValue = value < 256 ? Reg(reg, value) : cst[value - 256];
             byte* destinationPtr = (byte*)(ulong)Reg(reg, pointerAddress);
             if (destinationPtr == null)
@@ -1540,7 +1690,13 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteGetArray(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
@@ -1572,7 +1728,13 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteGetArrayASCII(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteGetArrayASCII(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte destination = instruction.A;
             ushort register = instruction.B;
@@ -1604,11 +1766,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryAnd(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteBinaryAnd(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = (double)((long)valB & (long)valC);
@@ -1616,11 +1783,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryOr(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteBinaryOr(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = (double)((long)valB | (long)valC);
@@ -1628,11 +1800,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryXor(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteBinaryXor(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = (double)((long)valB ^ (long)valC);
@@ -1640,11 +1817,16 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteBinaryLeftShift(Instruction instruction, ref VMState state, double* reg, double* cst)
+        public static unsafe bool ExecuteBinaryLeftShift(
+            Instruction instruction,
+            ref VMState state,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = (double)((long)valB << (int)valC);
@@ -1661,7 +1843,7 @@ namespace Raptor
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             ushort c = instruction.C;
             double valC = c < 256 ? Reg(reg, c) : cst[c - 256];
             Reg(reg, a) = (double)((long)valB >> (int)valC);
@@ -1669,11 +1851,17 @@ namespace Raptor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe bool ExecuteLenArray(Instruction instruction, ref VMState state, uint* ip, double* reg, double* cst)
+        public static unsafe bool ExecuteLenArray(
+            Instruction instruction,
+            ref VMState state,
+            uint* ip,
+            double* reg,
+            double* cst
+        )
         {
             byte a = instruction.A;
             ushort b = instruction.B;
-            double valB = b < 256 ? Reg(reg, b) : cst[b - 256];
+            double valB = Reg(reg, b);
             byte* ptr = (byte*)(ulong)valB;
             if (ptr == null)
             {

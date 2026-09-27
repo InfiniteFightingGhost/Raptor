@@ -26,7 +26,7 @@ public class BytecodeVerifierTests
         VMChunk badChunk = new VMChunk();
         badChunk.Instructions = new uint[]
         {
-            Instruction.CreateSBx26(OpCode.JUMP, 10),
+            Instruction.CreateSBx25(OpCode.JUMP, 10),
             Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
         };
         Assert.Throws<VerificationException>(() => BytecodeVerifier.Verify(badChunk, 1024));
@@ -38,7 +38,7 @@ public class BytecodeVerifierTests
         VMChunk badChunk = new VMChunk();
         badChunk.Instructions = new uint[]
         {
-            Instruction.CreateSBx26(OpCode.JUMP, 2),
+            Instruction.CreateSBx25(OpCode.JUMP, 2),
             Instruction.CreateABC(OpCode.FOR, 0, 0, 0),
             Instruction.CreateAsBx(OpCode.FOR, 0, 0),
             Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
@@ -56,7 +56,7 @@ public class BytecodeVerifierTests
 
         badChunk.Instructions = new uint[]
         {
-            Instruction.CreateABC(OpCode.ADD, 0, 256, 0),
+            Instruction.CreateABC(OpCode.ADD, 0, 0, 256),
             Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
         };
         Assert.Throws<VerificationException>(() => BytecodeVerifier.Verify(badChunk, 1024));

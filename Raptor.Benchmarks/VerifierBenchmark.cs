@@ -19,8 +19,6 @@ public class VerifierBenchmark
     [GlobalSetup]
     public void Setup()
     {
-
-
         var engine = new ScriptEngine();
 
         _chunk100 = GenerateValidProgram(engine, 100);
@@ -28,18 +26,22 @@ public class VerifierBenchmark
         _chunk10000 = GenerateValidProgram(engine, 10000);
 
         // Program with out-of-bounds jump target (compiled cleanly, then manually corrupted)
-        _invalidJumpChunk = engine.Compile(@"
+        _invalidJumpChunk = engine.Compile(
+            @"
             target:
                 LOADC r0 5.5
                 JUMP target
-                HALT");
-        _invalidJumpChunk.Instructions[1] = Instruction.CreateSBx26(OpCode.JUMP, 99999);
+                HALT"
+        );
+        _invalidJumpChunk.Instructions[1] = Instruction.CreateSBx25(OpCode.JUMP, 99999);
 
         // Program with array allocation exceeding heap size (compiled cleanly, then manually corrupted constant pool)
-        _invalidMemoryChunk = engine.Compile(@"
+        _invalidMemoryChunk = engine.Compile(
+            @"
             DEFINE large_size 10.0
             NEWARR r1 large_size
-            HALT");
+            HALT"
+        );
         _invalidMemoryChunk.Constants[0] = 999999999.0;
     }
 

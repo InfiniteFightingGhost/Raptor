@@ -100,6 +100,7 @@ DEFINE x r1
 DEFINE y r2
 DEFINE hits r4
 DEFINE i r5
+LOADC r250 epochs
 loop:
     RAND x
     RAND y
@@ -129,7 +130,7 @@ loop:
     ADD y y x
     LE 0 y 1
     ADD hits hits 1
-    FOR i epochs 1 < loop
+    FOR i r250 1 < loop
 DEFINE result r6
 DIV result hits epochs
 PRINT result
@@ -261,13 +262,14 @@ update()
     {
         string arrayTest =
             @"
-NEWARR r0 100
-NEWARR r1 100
-NEWARR r2 100
+LOADC r3 100
+NEWARR r0 r3
+NEWARR r1 r3
+NEWARR r2 r3
 FREEARR r0
 FREEARR r2
 FREEARR r1
-NEWARR r0 100
+NEWARR r0 r3
 HALT
 ";
         VMChunk chunk = new VMChunk();
@@ -412,25 +414,44 @@ DIV step temp2 temp1
 SWP temp1 temp2
 
 ; Allocate and write PPM header into heap
-NEWARR header_ptr 18
-SETARRA header_ptr 0 80   ; 'P'
-SETARRA header_ptr 1 51   ; '3'
-SETARRA header_ptr 2 10   ; '\n'
-SETARRA header_ptr 3 50   ; '3'
-SETARRA header_ptr 4 48   ; '0'
-SETARRA header_ptr 5 52   ; '2'
-SETARRA header_ptr 6 56   ; '4'
-SETARRA header_ptr 7 32   ; ' '
-SETARRA header_ptr 8 50   ; '1'
-SETARRA header_ptr 9 48   ; '0'
-SETARRA header_ptr 10 52  ; '2'
-SETARRA header_ptr 11 56  ; '4'
-SETARRA header_ptr 12 10  ; '\n'
-SETARRA header_ptr 13 50  ; '2'
-SETARRA header_ptr 14 53  ; '5'
-SETARRA header_ptr 15 53  ; '5'
-SETARRA header_ptr 16 10  ; '\n'
-SETARRA header_ptr 17 0   ; Null-terminator
+LOADC r250 18
+NEWARR header_ptr r250
+LOADC r250 0
+SETARRA header_ptr r250 80   ; 'P'
+LOADC r250 1
+SETARRA header_ptr r250 51   ; '3'
+LOADC r250 2
+SETARRA header_ptr r250 10   ; '\n'
+LOADC r250 3
+SETARRA header_ptr r250 50   ; '3'
+LOADC r250 4
+SETARRA header_ptr r250 48   ; '0'
+LOADC r250 5
+SETARRA header_ptr r250 52   ; '2'
+LOADC r250 6
+SETARRA header_ptr r250 56   ; '4'
+LOADC r250 7
+SETARRA header_ptr r250 32   ; ' '
+LOADC r250 8
+SETARRA header_ptr r250 50   ; '1'
+LOADC r250 9
+SETARRA header_ptr r250 48   ; '0'
+LOADC r250 10
+SETARRA header_ptr r250 52  ; '2'
+LOADC r250 11
+SETARRA header_ptr r250 56  ; '4'
+LOADC r250 12
+SETARRA header_ptr r250 10  ; '\n'
+LOADC r250 13
+SETARRA header_ptr r250 50  ; '2'
+LOADC r250 14
+SETARRA header_ptr r250 53  ; '5'
+LOADC r250 15
+SETARRA header_ptr r250 53  ; '5'
+LOADC r250 16
+SETARRA header_ptr r250 10  ; '\n'
+LOADC r250 17
+SETARRA header_ptr r250 0   ; Null-terminator
 
 LOADC offset 0
 print_header:
@@ -445,23 +466,38 @@ header_done:
     FREEARR header_ptr
 
 ; Initialize sphere data in heap (size 14: 2 spheres * 7 parameters)
-NEWARR spheres 14
+LOADC r250 14
+NEWARR spheres r250
 ; Sphere 1: Center=(0, 0, 3), Radius=1, Color=(255, 100, 20)
-SETARR spheres 0 0
-SETARR spheres 1 0
-SETARR spheres 2 3
-SETARR spheres 3 1
-SETARR spheres 4 255
-SETARR spheres 5 100
-SETARR spheres 6 20
+LOADC r250 0
+SETARR spheres r250 0
+LOADC r250 1
+SETARR spheres r250 0
+LOADC r250 2
+SETARR spheres r250 3
+LOADC r250 3
+SETARR spheres r250 1
+LOADC r250 4
+SETARR spheres r250 255
+LOADC r250 5
+SETARR spheres r250 100
+LOADC r250 6
+SETARR spheres r250 20
 ; Sphere 2: Center=(0, -100.5, 3), Radius=100, Color=(20, 200, 20)
-SETARR spheres 7 0
-SETARR spheres 8 -100.5
-SETARR spheres 9 3
-SETARR spheres 10 100
-SETARR spheres 11 20
-SETARR spheres 12 200
-SETARR spheres 13 20
+LOADC r250 7
+SETARR spheres r250 0
+LOADC r250 8
+SETARR spheres r250 -100.5
+LOADC r250 9
+SETARR spheres r250 3
+LOADC r250 10
+SETARR spheres r250 100
+LOADC r250 11
+SETARR spheres r250 20
+LOADC r250 12
+SETARR spheres r250 200
+LOADC r250 13
+SETARR spheres r250 20
 
 LOADC j 0
 LOADC ry 1.0
@@ -607,7 +643,8 @@ output_color:
 render_sky:
     MUL sky_t dy 0.5
     ADD sky_t sky_t 0.5
-    SUB one_minus_sky_t 1.0 sky_t
+    LOADC r250 1.0
+SUB one_minus_sky_t r250 sky_t
     MUL r one_minus_sky_t 255.0
     MUL temp1 sky_t 128.0
     ADD r r temp1
@@ -713,12 +750,17 @@ no_hit:
     public void TestArrayOutOfBoundsReturnsHostError()
     {
         using var engine = new ScriptEngine();
-        string script = @"
+        string script =
+            @"
             var arr = alloc(2);
             arr[5] = 42;
         ";
 
-        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            script,
+            out var vars,
+            new Raptor.Compiler.DiagnosticReporter()
+        );
         VMChunk chunk = engine.Compile(rasm);
         ExecutionResult result = engine.Execute(chunk);
 
@@ -730,11 +772,16 @@ no_hit:
     public void TestModuloByZeroReturnsDivisionByZeroError()
     {
         using var engine = new ScriptEngine();
-        string script = @"
+        string script =
+            @"
             var a = 10 % 0;
         ";
 
-        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            script,
+            out var vars,
+            new Raptor.Compiler.DiagnosticReporter()
+        );
         VMChunk chunk = engine.Compile(rasm);
         ExecutionResult result = engine.Execute(chunk);
 
@@ -746,12 +793,17 @@ no_hit:
     public void TestNullArrayReferencePanic()
     {
         using var engine = new ScriptEngine();
-        string script = @"
+        string script =
+            @"
             var a = 0;
             var val = a[0];
         ";
 
-        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(script, out var vars, new Raptor.Compiler.DiagnosticReporter());
+        string rasm = Raptor.Compiler.RaptorScriptCompiler.Compile(
+            script,
+            out var vars,
+            new Raptor.Compiler.DiagnosticReporter()
+        );
         VMChunk chunk = engine.Compile(rasm);
         ExecutionResult result = engine.Execute(chunk);
 
@@ -759,4 +811,3 @@ no_hit:
         Assert.Contains("Null reference exception", result.ErrorMessage);
     }
 }
-

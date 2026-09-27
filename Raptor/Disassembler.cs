@@ -84,7 +84,7 @@ namespace Raptor
                         break;
                     case OpCode.JUMP:
                         {
-                            int target = pc + 1 + inst.sBx26;
+                            int target = pc + 1 + inst.sBx25;
                             sb.AppendLine($"JUMP {target:D4}");
                         }
                         break;
@@ -102,7 +102,7 @@ namespace Raptor
                             if (pc + 1 < instructions.Length)
                             {
                                 Instruction payload = new Instruction(instructions[pc + 1]);
-                                int target = (pc + 2) + payload.sBx26;
+                                int target = (pc + 2) + payload.sBx25;
                                 sb.AppendLine(
                                     $"{inst.Op} {inst.A} {GetValString(inst.B)} {GetValString(inst.C)} {target:D4}"
                                 );
@@ -162,7 +162,7 @@ namespace Raptor
                                         5 => "!=",
                                         _ => "?",
                                     };
-                                    int target = (pc + 2) + nextInst.sBx16;
+                                    int target = (pc + 2) + nextInst.sBx17;
                                     sb.AppendLine(
                                         $"FOR r{rIndex} {rMax} {rStep} {compStr} {target:D4}"
                                     );

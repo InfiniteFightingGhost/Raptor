@@ -48,12 +48,12 @@ HALT";
     }
 
     [Theory]
-    [InlineData("JLT 1 5.0 10.0", 1.0)] // 5 < 10 -> jump skipped, fall through to LOADC 1
-    [InlineData("JLT 1 10.0 5.0", 0.0)]
-    [InlineData("JLE 1 5.0 5.0", 1.0)]
-    [InlineData("JEQ 1 7.0 7.0", 1.0)]
-    [InlineData("JEQ 0 7.0 7.0", 0.0)]
-    [InlineData("JLT 0 5.0 10.0", 0.0)] // expected=false, (5<10)!=false -> jump to skip
+    [InlineData("LOADC r1 5.0\nJLT 1 r1 10.0", 1.0)] // 5 < 10 -> jump skipped, fall through to LOADC 1
+    [InlineData("LOADC r1 10.0\nJLT 1 r1 5.0", 0.0)]
+    [InlineData("LOADC r1 5.0\nJLE 1 r1 5.0", 1.0)]
+    [InlineData("LOADC r1 7.0\nJEQ 1 r1 7.0", 1.0)]
+    [InlineData("LOADC r1 7.0\nJEQ 0 r1 7.0", 0.0)]
+    [InlineData("LOADC r1 5.0\nJLT 0 r1 10.0", 0.0)] // expected=false, (5<10)!=false -> jump to skip
     public void FusedComparisonPolarityIsCorrect(string branch, double expected)
     {
         string asm =
@@ -91,9 +91,9 @@ HALT";
         VMChunk badChunk = new VMChunk();
         badChunk.Instructions = new uint[]
         {
-            Instruction.CreateSBx26(OpCode.JUMP, 2), // lands on the payload word at index 2
+            Instruction.CreateSBx25(OpCode.JUMP, 2), // lands on the payload word at index 2
             Instruction.CreateABC(OpCode.JLT, 1, 0, 0),
-            Instruction.CreateSBx26(OpCode.JLT, 0),
+            Instruction.CreateSBx25(OpCode.JLT, 0),
             Instruction.CreateABC(OpCode.HALT, 0, 0, 0),
         };
         Assert.Throws<VerificationException>(() => BytecodeVerifier.Verify(badChunk, 1024));
