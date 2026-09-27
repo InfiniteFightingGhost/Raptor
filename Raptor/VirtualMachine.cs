@@ -462,6 +462,7 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
+                    Gas = _gas,
                 };
                 try
                 {
@@ -662,6 +663,7 @@ namespace Raptor
                     OutBufferPtr = _outBufferPtr,
                     OutBufferCapacity = _outBuffer.Length,
                     OutBufferOffset = 0,
+                    Gas = _gas,
                 };
                 var stopwatch = Stopwatch.StartNew();
                 try
