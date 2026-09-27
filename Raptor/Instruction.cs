@@ -44,10 +44,10 @@ namespace Raptor
         public ushort B => (ushort)((Value >> BShift) & BMask);
         public ushort C => (ushort)((Value >> CShift) & CMask);
         public uint Bx => (Value >> BShift) & BxMask;
-        private const int sBx16Bias = 32767;
-        public int sBx17 => (int)((Value >> BShift) & sBx17Mask) - sBx16Bias;
+        private const int sBx17Bias = 65535;
+        public int sBx17 => (int)((Value >> BShift) & sBx17Mask) - sBx17Bias;
 
-        private const int sBx25Bias = 16777216;
+        private const int sBx25Bias = 16777215;
         public int sBx25 => (int)((Value >> AShift) & sBx25Mask) - sBx25Bias;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -71,7 +71,7 @@ namespace Raptor
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Instruction CreateAsBx(OpCode op, byte a, int sbx)
         {
-            uint biasedBx = (uint)(sbx + sBx16Bias) & sBx17Mask;
+            uint biasedBx = (uint)(sbx + sBx17Bias) & sBx17Mask;
             uint val = (uint)op | ((uint)a << AShift) | (biasedBx << BShift);
             return new Instruction(val);
         }
