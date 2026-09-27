@@ -497,9 +497,9 @@ namespace Raptor.Compiler
                     if (!limitStr.StartsWith("r"))
                     {
                         int limitReg = AllocateRegister();
-                        _sb.AppendLine($"LOADC {limitReg} {limitStr}");
+                        _sb.AppendLine($"LOADC r{limitReg} {limitStr}");
                         _sb.AppendLine(
-                            $"FOR r{indexReg} {limitReg} {stepStr} {compOp} {bodyLabel}"
+                            $"FOR r{indexReg} r{limitReg} {stepStr} {compOp} {bodyLabel}"
                         );
                     }
                     else
@@ -796,7 +796,7 @@ namespace Raptor.Compiler
                     {
                         int elementReg = EmitExpression(arrLiteral.Elements[i]);
                         _sb.AppendLine($"LOADC r{temp} {i}");
-                        _sb.AppendLine($"SETARR r{arrReg} {temp} r{elementReg}");
+                        _sb.AppendLine($"SETARR r{arrReg} r{temp} r{elementReg}");
                     }
                     if (targetReg != null && (int)targetReg != arrReg)
                     {
