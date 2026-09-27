@@ -85,6 +85,7 @@ DEFINE hits r4
 DEFINE i r5
 LOADC hits 0
 LOADC i 0
+    LOADC r200 epochs
 loop:
     RAND x
     RAND y
@@ -93,7 +94,7 @@ loop:
     ADD y y x
     LE 0 y 1
     ADD hits hits 1
-    FOR i epochs 1 < loop
+    FOR i r200 1 < loop
 HALT";
 
     private const string PhysicsAsm =
@@ -108,6 +109,7 @@ LOADC r5 9.81
 LOADC r6 0.016
 LOADC r7 0.0
 LOADC i 0
+    LOADC r201 epochs
 loop:
     MUL r9 r5 r6
     SUB r4 r4 r9
@@ -120,7 +122,7 @@ loop:
     MOVE r2 r7
     LOADC r4 0.0
 skip_ground:
-    FOR i epochs 1 < loop
+    FOR i r201 1 < loop
 HALT";
 
     private const string EcsAsm =
@@ -135,9 +137,12 @@ DEFINE py r5
 DEFINE vx r6
 DEFINE vy r7
 DEFINE temp r8
-NEWARR pos_arr size
-NEWARR vel_arr size
+LOADC r202 size
+NEWARR pos_arr r202
+LOADC r203 size
+NEWARR vel_arr r203
 LOADC i 0
+    LOADC r204 size
 loop:
     GETARR px pos_arr i
     GETARR vx vel_arr i
@@ -149,7 +154,7 @@ loop:
     MUL temp vy dt
     ADD py py temp
     SETARR pos_arr i py
-    FOR i size 1 < loop
+    FOR i r204 1 < loop
 FREEARR pos_arr
 FREEARR vel_arr
 HALT";

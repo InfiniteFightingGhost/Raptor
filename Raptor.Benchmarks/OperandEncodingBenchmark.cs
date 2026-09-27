@@ -30,10 +30,11 @@ DEFINE i r5
 LOADC r1 1.5
 LOADC r2 2.5
 LOADC i 0
+    LOADC r200 epochs
 loop:
     ADD r3 r1 r2
     MUL r4 r1 r3
-    FOR i epochs 1 < loop
+    FOR i r200 1 < loop
 HALT"
         );
 
@@ -42,10 +43,13 @@ HALT"
 DEFINE epochs 50000
 DEFINE i r5
 LOADC i 0
+    LOADC r203 epochs
 loop:
-    ADD r3 1.5 2.5
-    MUL r4 1.5 r3
-    FOR i epochs 1 < loop
+    LOADC r201 1.5
+    ADD r3 r201 2.5
+    LOADC r202 1.5
+    MUL r4 r202 r3
+    FOR i r203 1 < loop
 HALT"
         );
 
@@ -55,10 +59,12 @@ DEFINE epochs 50000
 DEFINE i r5
 LOADC r1 1.5
 LOADC i 0
+    LOADC r205 epochs
 loop:
     ADD r3 r1 2.5
-    MUL r4 1.5 r3
-    FOR i epochs 1 < loop
+    LOADC r204 1.5
+    MUL r4 r204 r3
+    FOR i r205 1 < loop
 HALT"
         );
     }

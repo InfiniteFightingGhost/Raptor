@@ -31,6 +31,7 @@ public class MultithreadedBenchmark
             LOADC r6 0.016
             LOADC r7 0.0
             LOADC i 0
+                LOADC r200 epochs
             loop:
                 MUL r9 r5 r6
                 SUB r4 r4 r9
@@ -43,7 +44,7 @@ public class MultithreadedBenchmark
                 MOVE r2 r7
                 LOADC r4 0.0
             skip_ground:
-                FOR i epochs 1 < loop
+                FOR i r200 1 < loop
             HALT";
 
         _physicsChunk = engine.Compile(PhysicsMovementAsm);

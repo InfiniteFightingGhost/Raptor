@@ -36,9 +36,12 @@ public class GameplayBenchmark
             DEFINE vy r7
             DEFINE temp r8
             
-            NEWARR pos_arr size
-            NEWARR vel_arr size
+            LOADC r200 size
+            NEWARR pos_arr r200
+            LOADC r201 size
+            NEWARR vel_arr r201
             LOADC i 0
+                LOADC r202 size
             loop:
                 GETARR px pos_arr i
                 GETARR vx vel_arr i
@@ -53,7 +56,7 @@ public class GameplayBenchmark
                 ADD py py temp
                 SETARR pos_arr i py
                 
-                FOR i size 1 < loop
+                FOR i r202 1 < loop
             FREEARR pos_arr
             FREEARR vel_arr
             HALT");
@@ -70,13 +73,16 @@ public class GameplayBenchmark
             DEFINE row r7
             DEFINE col r8
             
-            NEWARR visited grid_size
-            NEWARR queue grid_size
+            LOADC r203 grid_size
+            NEWARR visited r203
+            LOADC r204 grid_size
+            NEWARR queue r204
             LOADC head 0
             LOADC tail 0
             
             ; Push start node (0)
-            SETARR visited 0 1
+            LOADC r205 0
+            SETARR visited r205 1
             SETARR queue tail 0
             ADD tail tail 1
             
@@ -177,6 +183,7 @@ public class GameplayBenchmark
             LOADC level 4.0
             LOADC quest_active 1.0
             LOADC i 0
+                LOADC r206 epochs
             loop:
                 ; Dialogue node 1: check quest
                 EQ 1 quest_active 1.0
@@ -212,7 +219,7 @@ public class GameplayBenchmark
                 JUMP end_dialogue
                 
             end_dialogue:
-                FOR i epochs 1 < loop
+                FOR i r206 1 < loop
             HALT");
 
         // 4. Inventory Selection Sort: sorts 100 loot items by rarity
@@ -225,19 +232,23 @@ public class GameplayBenchmark
             DEFINE val_i r7
             DEFINE val_j r8
             
-            NEWARR arr size
+            LOADC r207 size
+            NEWARR arr r207
             
             ; Fill with some test data
             LOADC i 0
+                LOADC r208 size
             fill_loop:
                 RAND val_i
                 SETARR arr i val_i
-                FOR i size 1 < fill_loop
+                FOR i r208 1 < fill_loop
             
             LOADC i 0
+                LOADC r210 size
             outer_loop:
                 MOVE min_idx i
                 ADD j i 1
+                LOADC r209 size
             inner_loop:
                 GETARR val_j arr j
                 GETARR val_i arr min_idx
@@ -247,7 +258,7 @@ public class GameplayBenchmark
             set_min:
                 MOVE min_idx j
             check_next:
-                FOR j size 1 < inner_loop
+                FOR j r209 1 < inner_loop
                 
                 ; swap arr[i] and arr[min_idx]
                 GETARR val_i arr i
@@ -255,7 +266,7 @@ public class GameplayBenchmark
                 SETARR arr i val_j
                 SETARR arr min_idx val_i
                 
-                FOR i size 1 < outer_loop
+                FOR i r210 1 < outer_loop
                 
             FREEARR arr
             HALT");

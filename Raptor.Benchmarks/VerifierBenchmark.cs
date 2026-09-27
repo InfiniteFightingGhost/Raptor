@@ -39,7 +39,8 @@ public class VerifierBenchmark
         _invalidMemoryChunk = engine.Compile(
             @"
             DEFINE large_size 10.0
-            NEWARR r1 large_size
+            LOADC r200 large_size
+            NEWARR r1 r200
             HALT"
         );
         _invalidMemoryChunk.Constants[0] = 999999999.0;

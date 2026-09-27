@@ -51,12 +51,13 @@ public class JintComparisonBenchmark
             DEFINE acc r2
             LOADC i 0
             LOADC acc 0
+                LOADC r200 count
             loop:
                 MOVE r3 i
                 LOADC r4 1.0
                 CALL hostAdd() r3
                 ADD acc acc r3
-                FOR i count 1 < loop
+                FOR i r200 1 < loop
             HALT");
 
         _raptorFib = _raptorEngine.Compile($@"
@@ -68,45 +69,55 @@ public class JintComparisonBenchmark
             LOADC a 0.0
             LOADC b 1.0
             LOADC i 1.0
+                LOADC r201 n
             loop:
                 ADD temp a b
                 MOVE a b
                 MOVE b temp
-                FOR i n 1 < loop
+                FOR i r201 1 < loop
             HALT");
 
         _raptorArray = _raptorEngine.Compile($@"
-            NEWARR r0 {ArraySize}
+            LOADC r202 {ArraySize}
+            NEWARR r0 r202
             LOADC r1 0.0
             LOADC r2 1.5
+                LOADC r203 {ArraySize}
             loop_init:
                 MUL r3 r1 r2
                 SETARR r0 r1 r3
-                FOR r1 {ArraySize} 1 < loop_init
+                FOR r1 r203 1 < loop_init
             LOADC r1 0.0
             LOADC r4 0.0
+                LOADC r204 {ArraySize}
             loop_sum:
                 GETARR r3 r0 r1
                 ADD r4 r4 r3
-                FOR r1 {ArraySize} 1 < loop_sum
+                FOR r1 r204 1 < loop_sum
             FREEARR r0
             HALT");
 
         _raptorEcs = _raptorEngine.Compile($@"
-            NEWARR r0 {EcsCount}
-            NEWARR r1 {EcsCount}
-            NEWARR r2 {EcsCount}
-            NEWARR r3 {EcsCount}
+            LOADC r205 {EcsCount}
+            NEWARR r0 r205
+            LOADC r206 {EcsCount}
+            NEWARR r1 r206
+            LOADC r207 {EcsCount}
+            NEWARR r2 r207
+            LOADC r208 {EcsCount}
+            NEWARR r3 r208
             LOADC r4 0.0
             LOADC r5 1.0
+                LOADC r209 {EcsCount}
             init_loop:
                 SETARR r0 r4 r5
                 SETARR r1 r4 r5
                 SETARR r2 r4 r5
                 SETARR r3 r4 r5
-                FOR r4 {EcsCount} 1 < init_loop
+                FOR r4 r209 1 < init_loop
             LOADC r4 0.0
             LOADC r6 0.016
+                LOADC r210 {EcsCount}
             update_loop:
                 GETARR r7 r2 r4
                 GETARR r8 r0 r4
@@ -118,7 +129,7 @@ public class JintComparisonBenchmark
                 MUL r9 r7 r6
                 ADD r8 r8 r9
                 SETARR r1 r4 r8
-                FOR r4 {EcsCount} 1 < update_loop
+                FOR r4 r210 1 < update_loop
             FREEARR r0
             FREEARR r1
             FREEARR r2

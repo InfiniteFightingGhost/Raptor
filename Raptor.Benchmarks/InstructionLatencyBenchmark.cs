@@ -37,8 +37,9 @@ public class InstructionLatencyBenchmark
             DEFINE epochs {Epochs}
             DEFINE i r5
             LOADC i 0
+                LOADC r200 epochs
             loop:
-                FOR i epochs 1 < loop
+                FOR i r200 1 < loop
             HALT");
 
         _add = engine.Compile($@"
@@ -47,9 +48,10 @@ public class InstructionLatencyBenchmark
             LOADC r1 1.5
             LOADC r2 2.5
             LOADC i 0
+                LOADC r201 epochs
             loop:
                 ADD r3 r1 r2
-                FOR i epochs 1 < loop
+                FOR i r201 1 < loop
             HALT");
 
         _sub = engine.Compile($@"
@@ -58,9 +60,10 @@ public class InstructionLatencyBenchmark
             LOADC r1 1.5
             LOADC r2 2.5
             LOADC i 0
+                LOADC r202 epochs
             loop:
                 SUB r3 r1 r2
-                FOR i epochs 1 < loop
+                FOR i r202 1 < loop
             HALT");
 
         _mul = engine.Compile($@"
@@ -69,9 +72,10 @@ public class InstructionLatencyBenchmark
             LOADC r1 1.5
             LOADC r2 2.5
             LOADC i 0
+                LOADC r203 epochs
             loop:
                 MUL r3 r1 r2
-                FOR i epochs 1 < loop
+                FOR i r203 1 < loop
             HALT");
 
         _div = engine.Compile($@"
@@ -80,9 +84,10 @@ public class InstructionLatencyBenchmark
             LOADC r1 10.0
             LOADC r2 2.0
             LOADC i 0
+                LOADC r204 epochs
             loop:
                 DIV r3 r1 r2
-                FOR i epochs 1 < loop
+                FOR i r204 1 < loop
             HALT");
 
         _sqrt = engine.Compile($@"
@@ -90,9 +95,10 @@ public class InstructionLatencyBenchmark
             DEFINE i r5
             LOADC r1 16.0
             LOADC i 0
+                LOADC r205 epochs
             loop:
                 SQRT r3 r1
-                FOR i epochs 1 < loop
+                FOR i r205 1 < loop
             HALT");
 
         _fisr = engine.Compile($@"
@@ -100,27 +106,30 @@ public class InstructionLatencyBenchmark
             DEFINE i r5
             LOADC r1 16.0
             LOADC i 0
+                LOADC r206 epochs
             loop:
                 FISR r3 r1
-                FOR i epochs 1 < loop
+                FOR i r206 1 < loop
             HALT");
 
         _rand = engine.Compile($@"
             DEFINE epochs {Epochs}
             DEFINE i r5
             LOADC i 0
+                LOADC r207 epochs
             loop:
                 RAND r1
-                FOR i epochs 1 < loop
+                FOR i r207 1 < loop
             HALT");
 
         _loadc = engine.Compile($@"
             DEFINE epochs {Epochs}
             DEFINE i r5
             LOADC i 0
+                LOADC r208 epochs
             loop:
                 LOADC r1 5.5
-                FOR i epochs 1 < loop
+                FOR i r208 1 < loop
             HALT");
 
         _move = engine.Compile($@"
@@ -128,19 +137,21 @@ public class InstructionLatencyBenchmark
             DEFINE i r5
             LOADC r2 7.7
             LOADC i 0
+                LOADC r209 epochs
             loop:
                 MOVE r1 r2
-                FOR i epochs 1 < loop
+                FOR i r209 1 < loop
             HALT");
 
         _jump = engine.Compile($@"
             DEFINE epochs {Epochs}
             DEFINE i r5
             LOADC i 0
+                LOADC r210 epochs
             loop:
                 JUMP target
             target:
-                FOR i epochs 1 < loop
+                FOR i r210 1 < loop
             HALT");
 
         // Warm up and pre-load baseline program so registers array pins correctly

@@ -61,15 +61,17 @@ public class ControlFlowBenchmark
             DEFINE val r1
             DEFINE arr r2
             DEFINE threshold 0.5
-            NEWARR arr epochs
+            LOADC r200 epochs
+            NEWARR arr r200
             CALL populateDataPredictable() arr
             LOADC i 0
+                LOADC r201 epochs
             loop:
                 GETARR val arr i
                 LT 1 val threshold
                 JUMP branch_taken
             branch_taken:
-                FOR i epochs 1 < loop
+                FOR i r201 1 < loop
             FREEARR arr
             HALT");
 
@@ -79,15 +81,17 @@ public class ControlFlowBenchmark
             DEFINE val r1
             DEFINE arr r2
             DEFINE threshold 0.5
-            NEWARR arr epochs
+            LOADC r202 epochs
+            NEWARR arr r202
             CALL populateDataUnpredictable() arr
             LOADC i 0
+                LOADC r203 epochs
             loop:
                 GETARR val arr i
                 LT 1 val threshold
                 JUMP branch_taken
             branch_taken:
-                FOR i epochs 1 < loop
+                FOR i r203 1 < loop
             FREEARR arr
             HALT");
     }

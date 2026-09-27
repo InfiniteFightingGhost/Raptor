@@ -30,15 +30,18 @@ public class MemoryBenchmark
             DEFINE i r2
             DEFINE val r3
             DEFINE outer r4
-            NEWARR arr size
+            LOADC r200 size
+            NEWARR arr r200
             LOADC outer 0
+                LOADC r202 epochs
             outer_loop:
                 LOADC i 0
+                    LOADC r201 size
                 loop:
                     SETARR arr i i
                     GETARR val arr i
-                    FOR i size 1 < loop
-                FOR outer epochs 1 < outer_loop
+                    FOR i r201 1 < loop
+                FOR outer r202 1 < outer_loop
             FREEARR arr
             HALT");
 
@@ -48,10 +51,12 @@ public class MemoryBenchmark
             DEFINE i r2
             DEFINE arr r1
             LOADC i 0
+                LOADC r204 epochs
             loop:
-                NEWARR arr 32
+                LOADC r203 32
+                NEWARR arr r203
                 FREEARR arr
-                FOR i epochs 1 < loop
+                FOR i r204 1 < loop
             HALT");
 
         // 3. Out-of-order churn (variable sizing, creating free list traversal overhead)
@@ -63,11 +68,16 @@ public class MemoryBenchmark
             DEFINE arr3 r3
             DEFINE arr4 r4
             LOADC i 0
+                LOADC r209 epochs
             loop:
-                NEWARR arr1 16
-                NEWARR arr2 32
-                NEWARR arr3 48
-                NEWARR arr4 64
+                LOADC r205 16
+                NEWARR arr1 r205
+                LOADC r206 32
+                NEWARR arr2 r206
+                LOADC r207 48
+                NEWARR arr3 r207
+                LOADC r208 64
+                NEWARR arr4 r208
                 
                 ; Free in fragmented order to populate free list
                 FREEARR arr2
@@ -75,7 +85,7 @@ public class MemoryBenchmark
                 FREEARR arr1
                 FREEARR arr3
                 
-                FOR i epochs 1 < loop
+                FOR i r209 1 < loop
             HALT");
     }
 

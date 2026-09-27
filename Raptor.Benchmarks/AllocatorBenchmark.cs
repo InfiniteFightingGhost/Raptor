@@ -31,10 +31,12 @@ DEFINE i r5
 DEFINE size {Size}
 DEFINE arr r1
 LOADC i 0
+    LOADC r201 epochs
 loop:
-    NEWARR arr size
+    LOADC r200 size
+    NEWARR arr r200
     FREEARR arr
-    FOR i epochs 1 < loop
+    FOR i r201 1 < loop
 HALT"
         );
 
@@ -48,16 +50,21 @@ DEFINE b r2
 DEFINE c r3
 DEFINE d r4
 LOADC i 0
+    LOADC r206 epochs
 loop:
-    NEWARR a size
-    NEWARR b size
-    NEWARR c size
-    NEWARR d size
+    LOADC r202 size
+    NEWARR a r202
+    LOADC r203 size
+    NEWARR b r203
+    LOADC r204 size
+    NEWARR c r204
+    LOADC r205 size
+    NEWARR d r205
     FREEARR b
     FREEARR d
     FREEARR a
     FREEARR c
-    FOR i epochs 1 < loop
+    FOR i r206 1 < loop
 HALT"
         );
     }

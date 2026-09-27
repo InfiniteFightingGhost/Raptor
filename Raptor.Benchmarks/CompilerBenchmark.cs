@@ -40,10 +40,11 @@ sum = sum * 2.0 + 1.0 - 3.0 / 2.0;
 DEFINE epochs 1000
 DEFINE i r1
 LOADC i 0
+    LOADC r200 epochs
 loop:
     ADD r2 r2 r3
     MUL r4 r2 r3
-    FOR i epochs 1 < loop
+    FOR i r200 1 < loop
 HALT";
 
     private ScriptEngine _engine = null!;

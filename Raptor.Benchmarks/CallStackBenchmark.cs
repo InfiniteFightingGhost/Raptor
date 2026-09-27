@@ -54,10 +54,11 @@ public class CallStackBenchmark
             DEFINE i r5
             DEFINE depth r1
             LOADC i 0
+                LOADC r200 epochs
             loop:
                 LOADC depth 10
                 CALL recurse() depth
-                FOR i epochs 1 < loop
+                FOR i r200 1 < loop
             HALT
 
             recurse()
@@ -76,10 +77,11 @@ public class CallStackBenchmark
             DEFINE i r5
             DEFINE depth r1
             LOADC i 0
+                LOADC r201 epochs
             loop:
                 LOADC depth 30
                 CALL recurse() depth
-                FOR i epochs 1 < loop
+                FOR i r201 1 < loop
             HALT
 
             recurse()
@@ -98,9 +100,10 @@ public class CallStackBenchmark
             DEFINE i r2
             LOADC r1 2.0
             LOADC i 0
+                LOADC r202 epochs
             loop:
                 CALL internalAdd() r1
-                FOR i epochs 1 < loop
+                FOR i r202 1 < loop
             HALT
 
             internalAdd()
@@ -115,9 +118,10 @@ public class CallStackBenchmark
             DEFINE i r2
             LOADC r1 2.0
             LOADC i 0
+                LOADC r203 epochs
             loop:
                 CALL directAdd() r1
-                FOR i epochs 1 < loop
+                FOR i r203 1 < loop
             HALT"
         );
 
@@ -128,9 +132,10 @@ public class CallStackBenchmark
             DEFINE i r2
             LOADC r1 2.0
             LOADC i 0
+                LOADC r204 epochs
             loop:
                 CALL typedAdd() r1
-                FOR i epochs 1 < loop
+                FOR i r204 1 < loop
             HALT"
         );
 
@@ -145,9 +150,10 @@ public class CallStackBenchmark
             LOADC r4 4.0
             LOADC r5 5.0
             LOADC i 0
+                LOADC r205 epochs
             loop:
                 CALL sumFive() r1
-                FOR i epochs 1 < loop
+                FOR i r205 1 < loop
             HALT"
         );
 
@@ -156,9 +162,10 @@ public class CallStackBenchmark
             DEFINE epochs 10000
             DEFINE i r1
             LOADC i 0
+                LOADC r206 epochs
             loop:
                 CALL lazy() r1
-                FOR i epochs 1 < loop
+                FOR i r206 1 < loop
             HALT"
         );
     }

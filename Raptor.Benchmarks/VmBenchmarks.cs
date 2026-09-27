@@ -151,6 +151,7 @@ DEFINE hits r4
 DEFINE i r5
 LOADC hits 0
 LOADC i 0
+    LOADC r200 epochs
 loop:
     RAND x
     RAND y
@@ -159,7 +160,7 @@ loop:
     ADD y y x
     LE 0 y 1
     ADD hits hits 1
-    FOR i epochs 1 < loop
+    FOR i r200 1 < loop
 DEFINE result r6
 DIV result hits epochs
 HALT";
@@ -330,21 +331,36 @@ SUB temp1 width one_val
 LOADC temp2 2.0
 DIV step temp2 temp1
 
-NEWARR spheres 14
-SETARR spheres 0 0
-SETARR spheres 1 0
-SETARR spheres 2 3
-SETARR spheres 3 1
-SETARR spheres 4 255
-SETARR spheres 5 100
-SETARR spheres 6 20
-SETARR spheres 7 0
-SETARR spheres 8 -100.5
-SETARR spheres 9 3
-SETARR spheres 10 100
-SETARR spheres 11 20
-SETARR spheres 12 200
-SETARR spheres 13 20
+LOADC r201 14
+NEWARR spheres r201
+LOADC r202 0
+SETARR spheres r202 0
+LOADC r203 1
+SETARR spheres r203 0
+LOADC r204 2
+SETARR spheres r204 3
+LOADC r205 3
+SETARR spheres r205 1
+LOADC r206 4
+SETARR spheres r206 255
+LOADC r207 5
+SETARR spheres r207 100
+LOADC r208 6
+SETARR spheres r208 20
+LOADC r209 7
+SETARR spheres r209 0
+LOADC r210 8
+SETARR spheres r210 -100.5
+LOADC r211 9
+SETARR spheres r211 3
+LOADC r212 10
+SETARR spheres r212 100
+LOADC r213 11
+SETARR spheres r213 20
+LOADC r214 12
+SETARR spheres r214 200
+LOADC r215 13
+SETARR spheres r215 20
 
 LOADC j 0
 LOADC ry 1.0
@@ -483,7 +499,8 @@ output_color:
 render_sky:
     MUL sky_t dy 0.5
     ADD sky_t sky_t 0.5
-    SUB one_minus_sky_t 1.0 sky_t
+    LOADC r216 1.0
+    SUB one_minus_sky_t r216 sky_t
     MUL r one_minus_sky_t 255.0
     MUL temp1 sky_t 128.0
     ADD r r temp1
@@ -574,9 +591,10 @@ DEFINE epochs 10000
 DEFINE i r2
 LOADC r1 2.0
 LOADC i 0
+    LOADC r217 epochs
 loop:
     CALL directAdd() r1
-    FOR i epochs 1 < loop
+    FOR i r217 1 < loop
 HALT";
 
     private const string FfiTypedWrapperAsm =
@@ -585,9 +603,10 @@ DEFINE epochs 10000
 DEFINE i r2
 LOADC r1 2.0
 LOADC i 0
+    LOADC r218 epochs
 loop:
     CALL typedAdd() r1
-    FOR i epochs 1 < loop
+    FOR i r218 1 < loop
 HALT";
 
     private const string FfiFallbackAsm =
@@ -600,9 +619,10 @@ LOADC r3 3.0
 LOADC r4 4.0
 LOADC r5 5.0
 LOADC i 0
+    LOADC r219 epochs
 loop:
     CALL sumFive() r1
-    FOR i epochs 1 < loop
+    FOR i r219 1 < loop
 HALT";
 
     private const string InternalCallAsm =
@@ -611,9 +631,10 @@ DEFINE epochs 10000
 DEFINE i r2
 LOADC r1 2.0
 LOADC i 0
+    LOADC r220 epochs
 loop:
     CALL internalAdd() r1
-    FOR i epochs 1 < loop
+    FOR i r220 1 < loop
 HALT
 
 internalAdd()
@@ -632,6 +653,7 @@ LOADC r5 9.81
 LOADC r6 0.016
 LOADC r7 0.0
 LOADC i 0
+    LOADC r221 epochs
 loop:
     MUL r9 r5 r6
     SUB r4 r4 r9
@@ -644,7 +666,7 @@ loop:
     MOVE r2 r7
     LOADC r4 0.0
 skip_ground:
-    FOR i epochs 1 < loop
+    FOR i r221 1 < loop
 HALT";
 
     private const string CombatDamageAsm =
@@ -667,6 +689,7 @@ LOADC defense 5.0
 LOADC hit_rate 0.8
 LOADC zero 0.0
 LOADC i 0
+    LOADC r222 epochs
 loop:
     LT 0 zero enemy_hp
     JUMP check_hit
@@ -684,7 +707,7 @@ deal_dmg:
 apply_damage:
     SUB enemy_hp enemy_hp damage_dealt
 next_round:
-    FOR i epochs 1 < loop
+    FOR i r222 1 < loop
 end_combat:
     HALT";
 }
