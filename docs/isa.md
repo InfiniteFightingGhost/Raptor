@@ -4,13 +4,13 @@ This document specifies the virtual machine's instruction set architecture (ISA)
 
 ## Operand Types Key
 
-- `rA`: Destination register (8-bit index, `0` to `255`). Always resolves to a register relative to active frame pointer `RegPtr`.
-- `rB` / `rC`: Source register operands (9-bit index, `0` to `255`).
-- `kB` / `kC`: Constant pool operands (9-bit index, encoded as `256` to `511`). Points to `Constants[Index - 256]`.
-- `opB` / `opC`: Operands resolving via Register/Constant (RC) addressing. Can be a register (if $< 256$) or a constant (if $\ge 256$).
-- `Bx`: Unsigned 18-bit immediate value or constant pool index.
-- `sBx16`: Signed 16-bit branch offset, biased by `32,767`.
-- `sBx26`: Signed 26-bit branch offset, biased by `33,554,431`.
+- `rA`: Destination register (8-bit, `0`..`255`), relative to the active frame pointer `RegPtr`.
+- `rB`: Source register operand (8-bit, `0`..`255`). **Always a register** — a constant cannot be encoded in `B`.
+- `rC` / `kC`: The `C` operand (9-bit, `0`..`511`) in RC form: `0`..`255` is register `rC`; `256`..`511` is constant-pool index `rC - 256` (`Constants[rC - 256]`).
+- `opB` / `opC`: The `B` and `C` operands as written in the table below (`opC` may be a register or a constant).
+- `Bx`: Unsigned 17-bit immediate value or constant pool index (`iABx`).
+- `sBx17`: Signed 17-bit branch offset, biased by `65,535` (`iAsBx`).
+- `sBx25`: Signed 25-bit branch offset, biased by `16,777,215` (`iAx`).
 
 ## Instruction Set Table
 
@@ -52,7 +52,68 @@ This document specifies the virtual machine's instruction set architecture (ISA)
 | `BINRSH`| `0x21` (33) | `ABC` | `BINRSH rA opB opC` | Performs bitwise right shift of `opB` by `opC` bits (cast to integers), writing the result as a double to `rA`. |
 | `LENARR`| `0x22` (34) | `ABC` | `LENARR rA rPtr` | Reads element count of heap double array `rPtr` and writes to register `rA`. <br> $\text{rA} = (\text{Heap}[\text{rPtr} - 4] - 4) / 8$ |
 
-## Instruction Bit Encoding Helpers
+## Instruction Bit Encoding
 
-For details on instruction parsing, bit masking, and layouts, see the [Core Architecture Specification](architecture.md).
+> **Status:** v2 layout (7-bit opcode). The previous v1 layout used a 6-bit opcode with 9-bit
+> register/constant operands in **both** `B` and `C`; v2 narrows `B` to 8 bits to free the opcode bit.
+
+### Operand word (iABC)
+
+```
+ bit 31        30..23      22..15      14..7       6..0
+    +------------+----------+----------+-----------+-------+
+    |     C (9)               |  B  (8)  |  A  (8)  | op(7) |
+    +------------+----------+----------+-----------+-------+
+```
+
+| Field | Bits | Meaning |
+| :--- | :--- | :--- |
+| `op` | 0..6 (7) | Opcode, `0`..`127`. |
+| `A` | 7..14 (8) | Destination register, `0`..`255`. |
+| `B` | 15..22 (8) | Source register, `0`..`255`. **Always a register.** |
+| `C` | 23..31 (9) | Source operand in RC form: `0`..`255` is register `rC`; `256`..`511` is constant `Constants[C - 256]`. |
+
+There is **at most one constant operand per instruction, and it lives in `C`**. An expression that
+needs a constant on the left, or two constants at once, is materialised by the compiler with `LOADC`.
+This keeps the right-hand-constant fast path (`x + 1`, `i < n`) a single instruction.
+
+### Formats
+
+| Format | Layout | Accessors |
+| :--- | :--- | :--- |
+| `iABC` | `op7 \| A8 \| B8 \| C9` | `A`, `B`, `C` |
+| `iABx` | `op7 \| A8 \| Bx17` | `Bx` unsigned, `0`..`131071` |
+| `iAsBx` | `op7 \| A8 \| sBx17` | `sBx17` signed, bias `65,535` |
+| `iAx` | `op7 \| Ax25` | `sBx25` signed, bias `16,777,215` |
+
+### Superinstruction second words
+
+`FOR` and the fused comparisons (`JLT`/`JLE`/`JEQ`) are two words. Word 1 is the operand word
+(`iABC`); word 2 carries the branch target and is read with `*Ip++` before the branch is applied:
+
+| Instruction | Word 2 | Meaning |
+| :--- | :--- | :--- |
+| `FOR` | `op7 \| comp8 \| sBx17` | Comparison code `0`..`5` in `A`, biased loop-back offset. |
+| `JLT`/`JLE`/`JEQ` | `op7 \| Ax25` | `sBx25` target offset relative to the word after word 2. |
+
+### Limits
+
+* **Registers:** 256 (`A` and `B` are 8-bit; `C`'s register range is `0`..`255`).
+* **Constants:** 256, addressed by `C` in RC form (`C - 256`). Matches the `SetConstant` cap.
+  `LOADC` uses `Bx17` for its pool index but the assembler enforces the 256 cap.
+* **Method table / `Bx`:** 17-bit (`0`..`131071`); the table itself is far smaller.
+* **Branch range:** `sBx25` ±16M words for `JUMP` and fused branches; `sBx17` ±65k for `FOR`.
+
+### Migration note (v1 → v2)
+
+v1 packed register/constant selection into 9-bit `B`/`C` (`index < 256 ? register : Constants[index - 256]`),
+so **both** `B` and `C` could be constants. v2 keeps that RC encoding in `C` but narrows `B` to 8 bits,
+which frees the extra opcode bit. Consequences:
+
+* `B` is no longer constant-addressable — a left-hand constant must be `LOADC`'d into a register first.
+* At most one constant operand per instruction, and only in `C`.
+* `Bx` 18 → 17 bits; `sBx16` → `sBx17`; `sBx26` → `sBx25`.
+* `FOR` bounds (`max`, `step`) and array sizes/indices are frequently constants today
+  (`FOR i epochs 1 < loop`, `NEWARR r 100`, `SETARR r 0 v`); under v2 the compiler/asm materialises
+  them into registers.
 
