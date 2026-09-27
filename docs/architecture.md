@@ -16,62 +16,62 @@ This document specifies the virtual machine's register layout, instruction encod
 
 ## Bit-Packed Instruction Format
 
-The VM uses fixed-width 32-bit instructions represented by the `Instruction` struct. Instructions are packed into four layouts: `ABC`, `ABx`, `AsBx`, and `sBx26`.
+The VM uses fixed-width 32-bit instructions represented by the `Instruction` struct. Instructions are packed into four layouts: `ABC` (iABC), `ABx` (iABx), `AsBx` (iAsBx), and `Ax` (iAx, used by `JUMP`). The opcode field is **7 bits**; [isa.md](isa.md) is the authoritative layout reference.
 
 ### Bit Allocation Layouts
 
-1. **ABC Format** (Three-register/constant operations like `ADD`, `SUB`, `MUL`):
+1. **ABC Format** (Three-address operations like `ADD`, `SUB`, `MUL`):
    ```text
-   +-----------------------+---------+---------+---------+
-   |   C (9)   |   B (9)   |  A (8)  | Op (6)  | Bits
-   +-----------------------+---------+---------+---------+
-   31          22          13        5         0
+   +-------------------------+---------+---------+--------+
+   |        C (9)            |  B (8)  |  A (8)  | Op (7) |
+   +-------------------------+---------+---------+--------+
+   31                       23        15        7        0
    ```
-   - OpCode (6 bits): Opcodes `0` to `63`.
+   - OpCode (7 bits): Opcodes `0` to `127`.
    - A (8 bits): Destination register `0` to `255`.
-   - B (9 bits): First operand. If `< 256`, maps to register. If `>= 256`, maps to constant pool index `B - 256`.
-   - C (9 bits): Second operand. If `< 256`, maps to register. If `>= 256`, maps to constant pool index `C - 256`.
+   - B (8 bits): First operand — **register only** (`0`..`255`); a constant cannot be encoded here.
+   - C (9 bits): Second operand (RC). If `< 256`, register; if `>= 256`, constant pool index `C - 256`.
 
-2. **ABx Format** (Two-operand operations with larger immediate constant pool indices like `LOADC`, `MOVE`, `CALL`):
+2. **ABx Format** (Operations with a wide immediate like `LOADC`, `MOVE`, `CALL`):
    ```text
-   +---------------------------------+---------+---------+
-   |             Bx (18)             |  A (8)  | Op (6)  | Bits
-   +---------------------------------+---------+---------+
-   31                                13        5         0
+   +-----------------------------------+---------+--------+
+   |              Bx (17)              |  A (8)  | Op (7) |
+   +-----------------------------------+---------+--------+
+   31                                  15        7        0
    ```
    - A (8 bits): Destination register `0` to `255`.
-   - Bx (18 bits): Unsigned index or immediate value (up to `262,143`).
+   - Bx (17 bits): Unsigned index or immediate value (up to `131,071`).
 
-3. **AsBx Format** (Two-operand operations with signed immediate offsets like `FOR` second-half):
+3. **AsBx Format** (Signed immediate offsets, e.g. the `FOR` second word):
    ```text
-   +---------------------------------+---------+---------+
-   |            sBx16 (16)           |  A (8)  | Op (6)  | Bits
-   +---------------------------------+---------+---------+
-   31                                13        5         0
+   +-----------------------------------+---------+--------+
+   |             sBx17 (17)            |  A (8)  | Op (7) |
+   +-----------------------------------+---------+--------+
+   31                                  15        7        0
    ```
-   - A (8 bits): Opcode modifier/operand (e.g. comparison condition).
-   - sBx16 (16 bits): Signed branch offset, biased by `32,767`.
+   - A (8 bits): Opcode modifier/operand (e.g. the comparison code for `FOR`).
+   - sBx17 (17 bits): Signed branch offset, biased by `65,535`.
 
-4. **sBx26 Format** (Single-operand branch operations like `JUMP`):
+4. **Ax Format** (Single-operand branches like `JUMP`, and the fused-branch second word):
    ```text
-   +-------------------------------------------+---------+
-   |                 sBx26 (26)                | Op (6)  | Bits
-   +-------------------------------------------+---------+
-   31                                          5         0
+   +-------------------------------------------------+--------+
+   |                    Ax (25)                      | Op (7) |
+   +-------------------------------------------------+--------+
+   31                                                7        0
    ```
-   - sBx26 (26 bits): Large signed branch offset, biased by `33,554,431`.
+   - Ax (25 bits): Signed branch offset (`sBx25`), biased by `16,777,215`.
 
 ## Register/Constant Addressing (RC Operand Resolution)
 
-The VM uses Register/Constant (RC) addressing for 9-bit operands (fields `B` and `C` in `ABC` format, or `B` in `ABx` format when used as an operand):
+Register/Constant (RC) addressing applies to the **`C` operand only** (the `B` operand is register-only in v2):
 - If the value is less than 256, it references register `Registers[Index]` relative to active frame pointer `state.RegPtr`.
 - If the value is 256 or greater, it references global constant `Constants[Index - 256]`.
 
 Implementation in [VirtualMachine.cs](../Raptor/VirtualMachine.cs):
 ```csharp
-double valB = b < 256 ? Reg(state.RegPtr, b) : state.ConstPtr[b - 256];
+double valC = c < 256 ? Reg(state.RegPtr, c) : state.ConstPtr[c - 256];
 ```
-This permits up to 256 registers and 256 active constants to be accessed directly within a single three-address instruction.
+This permits up to 256 registers and 256 active constants to be referenced from a single instruction. A constant can only appear on the right-hand (`C`) side; materialise a left-hand constant with `LOADC`.
 
 ## Sliding Register Windows
 
