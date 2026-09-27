@@ -8,6 +8,33 @@ This document records official performance baselines for the Raptor VM & Compile
 * **Reference Hardware:** AMD Ryzen 7 (Zen 4 Architecture) / Linux x64
 * **Compiler Configuration:** Release Mode (`-c Release`), `<Optimize>true</Optimize>`, `<PublishAot>true</PublishAot>`
 
+### Memory-Layout Sensitivity
+
+Raptor's hot loop is sensitive to **where its pinned arrays land in memory** (`_instructions`,
+`_registers`, `_constants` and the heap). The identical Fibonacci loop has been measured anywhere
+from ~330 μs to ~440 μs across otherwise identical processes, and a single optimization has flipped
+between +30% and -18% depending only on the host program's allocation order. `perf stat` shows this
+tracks `ls_bad_status2.stli_other` (4K aliasing / false store-to-load dependencies) and front-end
+stall cycles, which vary by 50-90x between layouts.
+
+Practical rules when benchmarking:
+
+* Never trust a single run. Measure the same code across several process launches (ASLR reshuffles
+  the heap each time) and compare distributions, not one number.
+* Lock the CPU clock and disable boost first, or frequency scaling dominates the noise:
+
+  ```bash
+  sudo cpupower frequency-set -g performance
+  echo 0 | sudo tee /sys/devices/system/cpu/cpufreq/boost
+  ```
+
+* BenchmarkDotNet's mean and a min-of-batches harness can disagree by ~30% on this VM. Report both,
+  or pin to a single core.
+* Treat differences under ~5% as noise unless the run was clock-locked.
+
+The long-term fix is to place `_instructions`, `_registers` and `_constants` in a single pinned
+arena at controlled 4K offsets, so their cache sets can never collide.
+
 ## Version Baseline History
 
 ### v1.0.0-alpha (2026-07-20)
