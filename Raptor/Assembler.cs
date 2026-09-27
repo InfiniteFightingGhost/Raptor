@@ -179,7 +179,7 @@ namespace Raptor
                         case "BINRSH":
                             byte destA3 = byte.Parse(words[1].TrimStart('r'));
 
-                            ushort destB3 = ushort.Parse(words[2].TrimStart('r'));
+                            ushort destB3 = RegOperand(words[2], words[0]);
 
                             ushort destC3;
                             if (words[3].StartsWith("r"))
@@ -203,7 +203,7 @@ namespace Raptor
                         case "LE":
                             destA3 = byte.Parse(words[1].TrimStart('r'));
 
-                            destB3 = ushort.Parse(words[2].TrimStart('r'));
+                            destB3 = RegOperand(words[2], words[0]);
 
                             if (words[3].StartsWith("r"))
                             {
@@ -226,7 +226,7 @@ namespace Raptor
                             byte jExpected = byte.Parse(words[1].TrimStart('r'));
 
                             ushort jB;
-                            jB = ushort.Parse(words[2].TrimStart('r'));
+                            jB = RegOperand(words[2], words[0]);
 
                             ushort jC;
                             if (words[3].StartsWith("r"))
@@ -248,7 +248,7 @@ namespace Raptor
                         case "UNM":
                             byte destA4 = byte.Parse(words[1].TrimStart('r'));
 
-                            ushort destB4 = ushort.Parse(words[2].TrimStart('r'));
+                            ushort destB4 = RegOperand(words[2], words[0]);
 
                             instruction = Instruction.CreateABx(OpCode.UNM, destA4, destB4);
                             break;
@@ -289,17 +289,7 @@ namespace Raptor
                             instruction = Instruction.CreateABx(OpCode.RETURN, start, end);
                             break;
                         case "PRINT":
-
-                            ushort printA;
-                            if (words[1].StartsWith("r"))
-                            {
-                                printA = ushort.Parse(words[1].TrimStart('r'));
-                            }
-                            else
-                            {
-                                printA = (ushort)(_chunk.SetConstant(ParseDouble(words[1])) + 256);
-                            }
-
+                            ushort printA = RegOperand(words[1], words[0]);
                             instruction = Instruction.CreateABC(OpCode.PRINT, 0, printA, 0);
                             break;
                         case "RAND":
@@ -307,16 +297,7 @@ namespace Raptor
                             instruction = Instruction.CreateABC(OpCode.RAND, randR, 0, 0);
                             break;
                         case "PRINTA":
-
-                            if (words[1].StartsWith("r"))
-                            {
-                                printA = ushort.Parse(words[1].TrimStart('r'));
-                            }
-                            else
-                            {
-                                printA = (ushort)(_chunk.SetConstant(ParseDouble(words[1])) + 256);
-                            }
-
+                            printA = RegOperand(words[1], words[0]);
                             instruction = Instruction.CreateABC(OpCode.PRINTA, 0, printA, 0);
                             break;
 
@@ -325,17 +306,17 @@ namespace Raptor
                             break;
                         case "SQRT":
                             destA4 = byte.Parse(words[1].TrimStart('r'));
-                            destB4 = ushort.Parse(words[2].TrimStart('r'));
+                            destB4 = RegOperand(words[2], words[0]);
                             instruction = Instruction.CreateABx(OpCode.SQRT, destA4, destB4);
                             break;
                         case "FISR":
                             destA4 = byte.Parse(words[1].TrimStart('r'));
-                            destB4 = ushort.Parse(words[2].TrimStart('r'));
+                            destB4 = RegOperand(words[2], words[0]);
                             instruction = Instruction.CreateABx(OpCode.FISR, destA4, destB4);
                             break;
                         case "FOR":
                             byte rIndex = byte.Parse(words[1].TrimStart('r'));
-                            ushort rMax = ushort.Parse(words[2].TrimStart('r'));
+                            ushort rMax = RegOperand(words[2], "FOR");
 
                             ushort rStep;
                             if (words[3].StartsWith("r"))
@@ -399,7 +380,7 @@ namespace Raptor
                             }
                             byte regPtr = byte.Parse(words[1].Trim('r'));
 
-                            ushort index = ushort.Parse(words[2].TrimStart('r'));
+                            ushort index = RegOperand(words[2], words[0]);
 
                             ushort indexC = 0;
                             if (words.Length > 3)
@@ -487,6 +468,22 @@ namespace Raptor
 
         private static double ParseDouble(string s) =>
             double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
+
+        ///<summary>
+        ///Parses a register operand (<c>r0</c>..<c>r255</c>). In the v2 encoding the B slot is
+        ///register-only, so a constant there is a hard error instead of being silently truncated
+        ///by the 8-bit field. Constants must be materialised with <c>LOADC</c> first.
+        ///</summary>
+        private static byte RegOperand(string token, string opName)
+        {
+            if (token.Length < 2 || token[0] != 'r' || !byte.TryParse(token.AsSpan(1), out byte index))
+            {
+                throw new Exception(
+                    $"{opName}: operand '{token}' must be a register (r0..r255); B cannot hold a constant — load it with LOADC first"
+                );
+            }
+            return index;
+        }
 
         private uint ExecuteLoadC(string[] words)
         {
