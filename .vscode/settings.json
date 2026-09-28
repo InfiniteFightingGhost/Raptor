@@ -1,0 +1,25 @@
+{
+  // Raptor repo-local settings. Global LazyVim-style settings stay in your user profile.
+  "files.associations": {
+    "*.rapt": "plaintext"
+  },
+  "[plaintext]": {
+    "editor.tabSize": 2,
+    "editor.wordWrap": "on"
+  },
+  "search.exclude": {
+    "**/build": true,
+    "**/TestResults": true,
+    "**/coveragereport": true,
+    "**/.vs": true
+  },
+  "files.watcherExclude": {
+    "**/build/**": true,
+    "**/TestResults/**": true
+  },
+  // coverlet emits TestResults/**/coverage.cobertura.xml
+  "coverage-gutters.coverageBaseDir": "**",
+  // Raptor vocabulary for the spell checker
+  "cSpell.words": ["raptor", "rapt", "disassembler", "opcode", "opcodes", "verifier", "aot", "MSIL", "ffi", "unreached", "deopt"],
+  "dotnet.defaultSolution": "Raptor.sln"
+}

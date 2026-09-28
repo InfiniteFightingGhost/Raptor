@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "asvetliakov.vscode-neovim",
+    "vspacecode.whichkey",
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "ms-vscode.hexeditor",
+    "ryanluker.vscode-coverage-gutters",
+    "streetsidesoftware.code-spell-checker"
+  ]
+}
