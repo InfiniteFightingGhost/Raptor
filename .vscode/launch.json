@@ -1,0 +1,31 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Raptor CLI: run current .rapt",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Raptor: build",
+      "program": "${workspaceFolder}/build/Raptor.Cli/bin/Release/net10.0/Raptor.Cli.dll",
+      "args": ["run", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
+    },
+    {
+      "name": "Raptor CLI: run test_array.rapt",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "Raptor: build",
+      "program": "${workspaceFolder}/build/Raptor.Cli/bin/Release/net10.0/Raptor.Cli.dll",
+      "args": ["run", "${workspaceFolder}/test_array.rapt"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": ".NET: attach to process",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}

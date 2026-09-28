@@ -1,0 +1,60 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Raptor: build",
+      "type": "shell",
+      "command": "dotnet build Raptor.sln --configuration Release /p:TreatWarningsAsErrors=true",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Raptor: test (net10, fast)",
+      "type": "shell",
+      "command": "dotnet test Raptor.Tests/Raptor.Tests.csproj -f net10.0 --configuration Release --verbosity minimal --collect:\"XPlat Code Coverage\"",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Raptor: test all TFMs",
+      "detail": "Mirrors CI: net8.0 + net9.0 + net10.0",
+      "type": "shell",
+      "command": "dotnet test Raptor.Tests/Raptor.Tests.csproj -f net8.0 --configuration Release --verbosity minimal && dotnet test Raptor.Tests/Raptor.Tests.csproj -f net9.0 --configuration Release --verbosity minimal && dotnet test Raptor.Tests/Raptor.Tests.csproj -f net10.0 --configuration Release --verbosity minimal",
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Raptor: format check",
+      "detail": "Same gate CI runs on ubuntu-latest",
+      "type": "shell",
+      "command": "dotnet format Raptor.sln --verify-no-changes",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Raptor: run current .rapt",
+      "type": "shell",
+      "command": "dotnet run --configuration Release --project Raptor.Cli -- run \"${file}\"",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "shared", "focus": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Raptor: benchmarks (fast)",
+      "detail": "Same gate CI runs after tests",
+      "type": "shell",
+      "command": "dotnet run --configuration Release --project Raptor.Benchmarks --no-build -- --fast",
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": "Raptor: build",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    }
+  ]
+}
