@@ -25,7 +25,7 @@ namespace Raptor
         ///<summary>Points to the current instruction.</summary>
         public uint* Ip;
         public byte* HeapPtr;
-
+        
         ///<summary>
         ///Points to the head of the instrisically linked list of free blocks in the VM's heap.
         ///</summary>
