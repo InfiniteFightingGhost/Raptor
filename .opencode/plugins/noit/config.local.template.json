@@ -1,0 +1,29 @@
+{
+  "schema": "noit-local/1",
+  "manual": {
+    "name": "непознато",
+    "egn": "непознато",
+    "class": "непознато",
+    "school": "непознато",
+    "city": "непознато",
+    "projectNumber": "непознато",
+    "participants": "непознато",
+    "author": "непознато",
+    "organization": "непознато",
+    "role": "непознато",
+    "goals": "непознато",
+    "taskDescription": "непознато",
+    "documentation": "непознато",
+    "aiAsFunctionality": "неприложимо",
+    "model": "не се предоставят от доставчика",
+    "provider": "opencode",
+    "settings": "неприложимо",
+    "environment": "непознато",
+    "access": "непознато",
+    "serviceChanges": "неприложимо",
+    "ownWork": "непознато",
+    "verification": "непознато",
+    "limitations": "непознато"
+  },
+  "participants": []
+}
