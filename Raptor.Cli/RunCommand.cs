@@ -37,7 +37,7 @@ public class RunCommand : Command<RunCommand.Settings>
         return Execute(null!, settings, CancellationToken.None);
     }
 
-    protected override int Execute(
+    public override int Execute(
         CommandContext context,
         RunCommand.Settings settings,
         CancellationToken token

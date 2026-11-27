@@ -6,7 +6,7 @@ public class DocsCommand : Command<DocsCommand.Settings>
 {
     public class Settings : CommandSettings { }
 
-    protected override int Execute(
+    public override int Execute(
         CommandContext context,
         DocsCommand.Settings settings,
         CancellationToken token

@@ -39,11 +39,7 @@ if (area > 50.0) {
         return Execute(null!, settings, CancellationToken.None);
     }
 
-    protected override int Execute(
-        CommandContext context,
-        Settings settings,
-        CancellationToken token
-    )
+    public override int Execute(CommandContext context, Settings settings, CancellationToken token)
     {
         string targetPath = settings.ScriptPath;
         if (!targetPath.EndsWith(".rapt", StringComparison.OrdinalIgnoreCase))

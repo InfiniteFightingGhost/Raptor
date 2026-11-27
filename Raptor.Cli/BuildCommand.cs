@@ -37,7 +37,7 @@ namespace Raptor.Cli
             return Execute(null!, settings, CancellationToken.None);
         }
 
-        protected override int Execute(
+        public override int Execute(
             CommandContext context,
             BuildCommand.Settings settings,
             CancellationToken token
