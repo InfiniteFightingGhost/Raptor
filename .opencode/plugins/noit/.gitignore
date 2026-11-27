@@ -1,0 +1,12 @@
+# Dependencies (installed with `npm install` in this folder)
+node_modules/
+
+# Local NOIT captures — if this folder is ever opened as an opencode project,
+# never commit generated data (only export/AI/ is meant to be shared)
+.noit/
+
+# Logs and OS junk
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

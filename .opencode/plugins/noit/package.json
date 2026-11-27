@@ -1,0 +1,9 @@
+{
+  "name": "noit-ai-declaration",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": "./index.ts",
+  "dependencies": {
+    "@opencode/plugin": "2.2.7"
+  }
+}

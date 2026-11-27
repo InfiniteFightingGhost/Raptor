@@ -40,3 +40,14 @@ physics.rasm
 
 # Unity Media Files
 *.meta
+
+# NOIT AI Declaration — local capture and personal data stay untracked.
+# .noit/config.local.json holds PII (name, ЕГН, class, school, city) and
+# .noit/config.backup.*.json holds pre-migration copies; never commit them.
+# The full .noit/export/ package also contains personal data (declaration.md
+# prints ЕГН), so it is no longer tracked. Only the designated public,
+# PII-free export directory .noit/public/ may be committed.
+.noit/*
+!.noit/public/
+.noit/config.local.json
+.noit/config.backup.*.json

@@ -1,0 +1,33 @@
+{
+  "schema": "noit-config/2",
+  "project": {
+    "name": "{{PROJECT_NAME}}",
+    "directory": "{{PROJECT_DIRECTORY}}"
+  },
+  "environment": {
+    "opencodeVersion": "{{OPENCODE_VERSION}}",
+    "plugin": "{{PLUGIN_ID}}",
+    "pluginVersion": "{{PLUGIN_VERSION}}"
+  },
+  "export": {
+    "records": [
+      {
+        "id": "B01",
+        "title": "Общ дневник на ИИ сесиите",
+        "task": "непознато",
+        "sessionIDs": []
+      }
+    ],
+    "includeKarta": true,
+    "includeDeclaration": true,
+    "public": false,
+    "tools": []
+  },
+  "backfill": {
+    "sync": false,
+    "limit": 100,
+    "concurrency": 4,
+    "projectId": "{{PROJECT_ID}}",
+    "directory": "{{PROJECT_DIRECTORY}}"
+  }
+}
